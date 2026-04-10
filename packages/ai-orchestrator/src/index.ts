@@ -616,19 +616,16 @@ export default {
           );
         }
 
-        // Step 1: Call AI Gateway to decide which tools to call
+        // Step 1: Call AI Gateway WITHOUT tools for general response
         let aiResponse;
         try {
           aiResponse = await callAIGateway(
             env.CF_AIG_TOKEN,
             [
-              { 
-                role: 'system', 
-                content: 'You are a helpful assistant. Answer questions directly using your knowledge. Only use tools if the user specifically asks for: (1) mathematical calculations like "what is 5+3" or "calculate 25*47", or (2) weather information like "what is the weather in Tokyo".'
-              },
+              { role: 'system', content: 'You are a helpful assistant.' },
               { role: 'user', content: prompt }
-            ],
-            AI_TOOLS
+            ]
+            // No tools passed - just get general response
           );
         } catch (error) {
           return new Response(
