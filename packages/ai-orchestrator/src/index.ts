@@ -26,11 +26,11 @@ interface ToolDefinition {
   };
 }
 
-// Tool definitions for Worker AI - only provided when specifically needed
+// Tool definitions for Worker AI
 const AI_TOOLS: ToolDefinition[] = [
   {
     name: "calculator",
-    description: "ONLY use when the user asks for mathematical calculations, arithmetic, or math problems. Supports basic operations.",
+    description: "Use for mathematical calculations and arithmetic operations like addition, subtraction, multiplication, division.",
     parameters: {
       type: "object",
       properties: {
@@ -47,7 +47,7 @@ const AI_TOOLS: ToolDefinition[] = [
   },
   {
     name: "get_weather",
-    description: "ONLY use when the user specifically asks about weather, temperature, or forecast for a location.",
+    description: "Use when the user asks about weather, temperature, or forecast for a specific location.",
     parameters: {
       type: "object",
       properties: {
@@ -624,7 +624,7 @@ export default {
             [
               { 
                 role: 'system', 
-                content: 'You are a helpful assistant with access to tools. When you need to use a tool, indicate it clearly.'
+                content: 'You are a helpful assistant. You have access to tools but should ONLY use them when the user explicitly asks for calculations or weather. For general questions, greetings, or conversations, respond directly without using any tools.'
               },
               { role: 'user', content: prompt }
             ],
