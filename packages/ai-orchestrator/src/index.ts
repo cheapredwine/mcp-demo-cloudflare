@@ -26,32 +26,18 @@ interface ToolDefinition {
   };
 }
 
-// Tool definitions for Worker AI
+// Tool definitions for Worker AI - only provided when specifically needed
 const AI_TOOLS: ToolDefinition[] = [
   {
-    name: "echo",
-    description: "Echo back a message. Use for testing or when asked to repeat something.",
-    parameters: {
-      type: "object",
-      properties: {
-        message: { 
-          type: "string", 
-          description: "The message to echo back"
-        }
-      },
-      required: ["message"]
-    }
-  },
-  {
     name: "calculator",
-    description: "Perform mathematical calculations. Supports add, subtract, multiply, divide.",
+    description: "ONLY use when the user asks for mathematical calculations, arithmetic, or math problems. Supports basic operations.",
     parameters: {
       type: "object",
       properties: {
         operation: { 
           type: "string", 
           enum: ["add", "subtract", "multiply", "divide"],
-          description: "The mathematical operation to perform"
+          description: "The mathematical operation"
         },
         a: { type: "number", description: "First number" },
         b: { type: "number", description: "Second number" }
@@ -61,35 +47,21 @@ const AI_TOOLS: ToolDefinition[] = [
   },
   {
     name: "get_weather",
-    description: "Get current weather information for a location. Use when asked about weather, temperature, or conditions.",
+    description: "ONLY use when the user specifically asks about weather, temperature, or forecast for a location.",
     parameters: {
       type: "object",
       properties: {
         location: { 
           type: "string", 
-          description: "City or location name (e.g., 'Tokyo', 'New York', 'London')"
+          description: "City name"
         },
         units: { 
           type: "string", 
           enum: ["celsius", "fahrenheit"],
-          description: "Temperature units (default: celsius)"
+          description: "Temperature units"
         }
       },
       required: ["location"]
-    }
-  },
-  {
-    name: "random_fact",
-    description: "Get a random interesting fact. Use when asked for trivia, facts, or interesting information.",
-    parameters: {
-      type: "object",
-      properties: {
-        category: { 
-          type: "string", 
-          enum: ["technology", "science", "history", "nature", "space"],
-          description: "Category of fact (default: random)"
-        }
-      }
     }
   }
 ];
@@ -417,6 +389,24 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       margin: 8px 0;
       border-radius: 0 8px 8px 0;
     }
+    .mcp-status {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .mcp-status.used {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+    .mcp-status.not-used {
+      background: #f3f4f6;
+      color: #6b7280;
+      border: 1px solid #e5e7eb;
+    }
     .loading {
       color: #667eea;
       font-style: italic;
@@ -477,7 +467,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     </div>
 
     <div class="card" id="result-card" style="display: none;">
-      <h2>📊 Results</h2>
+      <h2>📊 Results <span id="mcp-status" class="mcp-status not-used" style="display: none;"></span></h2>
       
       <div class="result-section">
         <h3>Your Prompt</h3>
@@ -485,7 +475,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       </div>
 
       <div class="result-section" id="tools-section" style="display: none;">
-        <h3>🔧 MCP Tool Calls</h3>
+        <h3>🔧 MCP Server Interaction</h3>
         <div id="tools-box" class="result-box response"></div>
       </div>
 
@@ -515,10 +505,12 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       const aiBox = document.getElementById('ai-box');
       const toolsSection = document.getElementById('tools-section');
       const toolsBox = document.getElementById('tools-box');
+      const mcpStatus = document.getElementById('mcp-status');
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Processing...';
       resultCard.style.display = 'block';
+      mcpStatus.style.display = 'none';
       requestBox.textContent = prompt;
       aiSection.style.display = 'none';
       toolsSection.style.display = 'none';
@@ -546,8 +538,13 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           }
 
           if (data.toolCalls && data.toolCalls.length > 0) {
+            // MCP was used
+            mcpStatus.style.display = 'inline-block';
+            mcpStatus.className = 'mcp-status used';
+            mcpStatus.textContent = 'MCP Server Used (' + data.toolCalls.length + ' tool call' + (data.toolCalls.length > 1 ? 's' : '') + ')';
+            
             toolsSection.style.display = 'block';
-            let toolsHtml = '';
+            let toolsHtml = '<div style="margin-bottom: 12px; color: #166534; font-weight: 500;">✅ The AI invoked the MCP server to retrieve data</div>';
             data.toolCalls.forEach(function(call, i) {
               toolsHtml += '<div class="tool-call">';
               toolsHtml += '<strong>Tool #' + (i + 1) + ':</strong> ' + call.tool + '<br>';
@@ -561,6 +558,11 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
               }
             });
             toolsBox.innerHTML = toolsHtml;
+          } else {
+            // MCP was not used
+            mcpStatus.style.display = 'inline-block';
+            mcpStatus.className = 'mcp-status not-used';
+            mcpStatus.textContent = 'MCP Not Used';
           }
         }
       } catch (error) {
