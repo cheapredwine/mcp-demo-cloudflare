@@ -71,16 +71,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Update server URL
-        run: |
-          # Update the MCP_SERVER_URL in wrangler.toml to point to deployed server
-          # This assumes the server is deployed at mcp-demo-server.<account>.workers.dev
-          # You'll need to customize this based on your actual deployment
-          echo "MCP_SERVER_URL will be updated after deployment"
-      
       - name: Deploy MCP Client
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: packages/workers-client
           command: deploy
+      
+      - name: Post Deploy Info
+        run: |
+          echo "✅ MCP Client deployed!"
+          echo ""
+          echo "⚠️  IMPORTANT: Update MCP_SERVER_URL secret to point to your server:"
+          echo "   1. Go to Cloudflare Dashboard > Workers & Pages"
+          echo "   2. Select 'mcp-demo-client'"
+          echo "   3. Settings > Variables > Add variable 'MCP_SERVER_URL'"
+          echo "   4. Value: https://mcp-demo-server.<your-account>.workers.dev"
