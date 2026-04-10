@@ -24,23 +24,25 @@ Open the AI Orchestrator Web UI and type a message to see the MCP protocol in ac
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  User                                                       │
-│  • Web browser                                              │
+│  • Web browser with 3-Panel UI                              │
 └──────────────────────────┬──────────────────────────────────┘
                            │ HTTP
 ┌──────────────────────────┴──────────────────────────────────┐
 │  AI Orchestrator (Worker)                                   │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │ Workers AI / AI Gateway                               │  │
-│  │ • @cf/mistralai/mistral-small-3.1-24b-instruct       │  │
-│  │ • Intelligent tool selection                          │  │
-│  │ • Caching + Analytics                                 │  │
-│  └───────────────────────┬───────────────────────────────┘  │
-│                          │                                  │
-│              ┌───────────┴───────────┐                     │
-│              │ Service Binding        │                     │
-│              │ (internal, secure)     │                     │
-│              └───────────┬───────────┘                     │
-│                          ↓                                  │
+│  │ 3-Panel Web UI                                       │  │
+│  │ • Prompt | MCP Status | AI Response                  │  │
+│  └───────────────────────────────────────────────────────┘  │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ Workers AI Binding¹
+┌──────────────────────────┴──────────────────────────────────┐
+│  Cloudflare AI Platform                                     │
+│  ┌───────────────────┐  ┌───────────────────────────────┐  │
+│  │ Workers AI        │  │ AI Gateway                    │  │
+│  │ • Mistral model   │←─┤ • Caching + Analytics         │  │
+│  │ • Tool calling    │  │ • Guardrails                  │  │
+│  └───────────────────┘  │ • Firewall for AI             │  │
+│                         └───────────────────────────────┘  │
 └──────────────────────────┬──────────────────────────────────┘
                            │ Service Binding
 ┌──────────────────────────┴──────────────────────────────────┐
@@ -50,6 +52,8 @@ Open the AI Orchestrator Web UI and type a message to see the MCP protocol in ac
 │  • Private (no public URL)                                  │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+**¹ Note:** In this demo, Workers AI is accessed via binding from the AI Orchestrator worker. In production, you might deploy Workers AI as a separate service or use the HTTP API directly.
 
 ### Why Service Bindings?
 
