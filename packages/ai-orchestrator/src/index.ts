@@ -616,17 +616,52 @@ export default {
           );
         }
 
-        // Step 1: Call AI Gateway WITHOUT tools for general response
-        let aiResponse;
+        // Step 1: Determine if we need tools by asking the AI
+        let needsTools = false;
+        let toolIntentResponse;
         try {
-          aiResponse = await callAIGateway(
+          toolIntentResponse = await callAIGateway(
             env.CF_AIG_TOKEN,
             [
-              { role: 'system', content: 'You are a helpful assistant.' },
+              { 
+                role: 'system', 
+                content: 'You are an analyzer. Given a user request, reply with ONLY "TOOLS" if they need calculations or weather data, otherwise reply with ONLY "DIRECT".'
+              },
               { role: 'user', content: prompt }
             ]
-            // No tools passed - just get general response
           );
+          
+          if (toolIntentResponse.response?.includes('TOOLS')) {
+            needsTools = true;
+          }
+        } catch (error) {
+          // If analysis fails, assume direct response
+          needsTools = false;
+        }
+
+        // Step 2: Call AI Gateway with or without tools
+        let aiResponse;
+        try {
+          if (needsTools) {
+            // Call with tools
+            aiResponse = await callAIGateway(
+              env.CF_AIG_TOKEN,
+              [
+                { role: 'system', content: 'You are a helpful assistant.' },
+                { role: 'user', content: prompt }
+              ],
+              AI_TOOLS
+            );
+          } else {
+            // Call without tools
+            aiResponse = await callAIGateway(
+              env.CF_AIG_TOKEN,
+              [
+                { role: 'system', content: 'You are a helpful assistant.' },
+                { role: 'user', content: prompt }
+              ]
+            );
+          }
         } catch (error) {
           return new Response(
             JSON.stringify({ error: String(error) }, null, 2),
