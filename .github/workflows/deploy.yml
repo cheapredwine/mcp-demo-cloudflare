@@ -14,50 +14,48 @@ jobs:
     name: Test
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run tests
         run: npm test
 
-  deploy-server:
+  deploy:
     runs-on: ubuntu-latest
-    name: Deploy MCP Server
+    name: Deploy to Cloudflare
     needs: test
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
-      - name: Check secrets
+
+      - name: Verify secrets
         run: |
-          echo "Checking secrets..."
           if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
             echo "❌ CLOUDFLARE_API_TOKEN is not set!"
             exit 1
           fi
           if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
             echo "❌ CLOUDFLARE_ACCOUNT_ID is not set!"
-            echo "Please add it at: https://github.com/cheapredwine/mcp-demo-cloudflare/settings/secrets/actions"
             exit 1
           fi
-          echo "✅ All secrets are set"
-      
+          echo "✅ Secrets verified"
+
       - name: Deploy MCP Server
         uses: cloudflare/wrangler-action@v3
         with:
@@ -66,72 +64,6 @@ jobs:
           workingDirectory: packages/mcp-server
           command: deploy
 
-  deploy-client:
-    runs-on: ubuntu-latest
-    name: Deploy MCP Client
-    needs: [test, deploy-server]
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Add account_id to wrangler.toml
-        run: |
-          cd packages/workers-client
-          echo "" >> wrangler.toml
-          echo "account_id = \"${{ secrets.CLOUDFLARE_ACCOUNT_ID }}\"" >> wrangler.toml
-          echo "Updated wrangler.toml:"
-          cat wrangler.toml
-      
-      - name: Update MCP_SERVER_URL in wrangler.toml
-        working-directory: packages/workers-client
-        run: |
-          # Replace the localhost URL with the deployed server URL
-          sed -i 's|MCP_SERVER_URL = "http://localhost:8787"|MCP_SERVER_URL = "https://mcp-demo-server.jsherron-test-account.workers.dev"|' wrangler.toml
-          echo "Updated wrangler.toml:"
-          cat wrangler.toml
-      
-      - name: Deploy MCP Client
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: packages/workers-client
-          command: deploy
-      
-      - name: Post Deploy Info
-        run: |
-          echo "✅ MCP Demo deployed successfully!"
-          echo ""
-          echo "📡 MCP Server: https://mcp-demo-server.jsherron-test-account.workers.dev"
-          echo "🌐 MCP Client: https://mcp-demo-client.jsherron-test-account.workers.dev"
-          echo ""
-
-  deploy-ai-orchestrator:
-    runs-on: ubuntu-latest
-    name: Deploy AI Orchestrator
-    needs: [test, deploy-server]
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
       - name: Deploy AI Orchestrator
         uses: cloudflare/wrangler-action@v3
         with:
@@ -139,28 +71,12 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/ai-orchestrator
           command: deploy
-      
-      - name: Post Deploy Info
+
+      - name: Post Deploy Summary
         run: |
-          echo "✅ AI Orchestrator deployed successfully!"
+          echo "✅ Deployment complete!"
           echo ""
+          echo "📡 MCP Server: https://mcp-demo-server.jsherron-test-account.workers.dev"
           echo "🤖 AI Orchestrator: https://mcp-demo-ai-orchestrator.jsherron-test-account.workers.dev"
           echo ""
-
-  configure-security:
-    runs-on: ubuntu-latest
-    name: Configure Basic Security
-    needs: [deploy-ai-orchestrator]
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Setup WAF Rate Limiting
-        run: |
-          echo "Configuring basic rate limiting via Cloudflare API..."
-          echo "This prevents abuse of the AI endpoint"
-          echo ""
-          echo "To complete security setup manually:"
-          echo "1. Go to: https://dash.cloudflare.com → Security → WAF → Rate Limiting"
-          echo "2. Create rule: URL contains '/api/ask', 10 req/min, Block"
-          echo "3. Go to: AI → AI Gateway → mcp-demo → Security → Enable Prompt Validation"
-          echo ""
-          echo "See SECURITY-GUIDE.md for full instructions"
+          echo "🛡️  Security: See SECURITY-GUIDE.md for WAF/rate limiting setup"
