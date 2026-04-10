@@ -311,12 +311,14 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       outline: none;
       border-color: #F48120;
     }
-    .input-row button {
-      height: 40px;
-      padding: 0 24px;
-      font-size: 0.9rem;
-      white-space: nowrap;
-      flex-shrink: 0;
+    #submit-btn {
+      height: 40px !important;
+      padding: 0 20px !important;
+      font-size: 0.9rem !important;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
+      width: auto !important;
+      min-width: 80px !important;
     }
     .input-group {
       margin-bottom: 0;
@@ -340,6 +342,8 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       font-size: 1rem;
       font-weight: 600;
       transition: all 0.2s;
+    }
+    button:not(#submit-btn):not(.example-btn):not(.http-log-toggle) {
       width: 100%;
     }
     button:hover {
