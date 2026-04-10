@@ -195,7 +195,7 @@ async function callMCPToolViaBinding(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      'Accept': 'application/json, text/event-stream',
     },
     body: JSON.stringify(initBody),
   });
