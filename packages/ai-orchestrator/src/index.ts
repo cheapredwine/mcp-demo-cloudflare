@@ -336,26 +336,24 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       box-shadow: none;
     }
     .example-prompts {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 12px;
-      align-items: center;
-    }
-    .example-prompts span {
-      color: #666;
-      font-weight: 500;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+      max-width: 300px;
     }
     .example-btn {
       background: #FFF5EB;
       color: #E06C1F;
       border: 1px solid #FFD4B3;
-      padding: 8px 14px;
+      padding: 6px 8px;
       border-radius: 6px;
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       cursor: pointer;
       transition: all 0.2s;
       font-weight: 500;
+      text-align: center;
+      white-space: nowrap;
     }
     .example-btn:hover {
       background: #F48120;
@@ -588,18 +586,15 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         </ul>
       </div>
 
-      <div class="input-row" style="display: flex; gap: 10px; align-items: flex-start;">
+      <div class="input-row" style="display: flex; gap: 8px; align-items: flex-end;">
         <div class="input-group" style="flex: 1;">
           <label for="prompt" style="font-size: 0.85rem; margin-bottom: 4px;">Your prompt:</label>
-          <textarea id="prompt" placeholder="Try: 'What is the weather in Tokyo?'" style="min-height: 50px; padding: 8px; font-size: 0.9rem;"></textarea>
+          <textarea id="prompt" placeholder="Try: 'What is the weather in Tokyo?'" style="min-height: 40px; height: 40px; padding: 8px; font-size: 0.9rem;"></textarea>
         </div>
-        <div style="display: flex; flex-direction: column; gap: 6px; min-width: 100px;">
-          <button id="submit-btn" onclick="sendPrompt()" style="padding: 10px 16px; font-size: 0.9rem;">Send</button>
-        </div>
+        <button id="submit-btn" onclick="sendPrompt()" style="padding: 8px 20px; font-size: 0.9rem; height: 40px; align-self: flex-end;">Send</button>
       </div>
 
-      <div class="example-prompts" style="margin-top: 8px;">
-        <span style="font-size: 0.8rem;">Examples:</span>
+      <div class="example-prompts">
         <button class="example-btn" onclick="setPromptAndSubmit('What is the weather in Paris?')">Weather</button>
         <button class="example-btn" onclick="setPromptAndSubmit('Calculate 25 * 47')">Calculator</button>
         <button class="example-btn" onclick="setPromptAndSubmit('Tell me about tabby cats')">No MCP</button>
