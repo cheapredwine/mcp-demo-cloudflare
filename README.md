@@ -222,6 +222,29 @@ wrangler deploy
    - Deploy server first
    - Deploy client with updated URL
 
+## Monitoring Logs
+
+### Local Development
+
+When running locally with `wrangler dev`, logs appear in the terminal.
+
+### Production/Deployed
+
+Use `wrangler tail` to watch live logs:
+
+```bash
+# Watch MCP Server logs
+wrangler tail --name mcp-demo-server
+
+# Watch Client logs  
+wrangler tail --name mcp-demo-client
+```
+
+Log format:
+- `[MCP →]` - Incoming request
+- `[MCP ←]` - Outgoing response
+- `[MCP Server]` - Server initialization
+
 ## Testing
 
 ```bash
