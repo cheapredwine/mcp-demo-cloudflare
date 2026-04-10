@@ -58,18 +58,11 @@ jobs:
           fi
           echo "✅ All secrets are set"
       
-      - name: Add account_id to wrangler.toml
-        run: |
-          cd packages/mcp-server
-          echo "" >> wrangler.toml
-          echo "account_id = \"${{ secrets.CLOUDFLARE_ACCOUNT_ID }}\"" >> wrangler.toml
-          echo "Updated wrangler.toml:"
-          cat wrangler.toml
-      
       - name: Deploy MCP Server
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/mcp-server
           command: deploy
 

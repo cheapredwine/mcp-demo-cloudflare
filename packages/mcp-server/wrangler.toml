@@ -3,6 +3,7 @@ main = "src/index.ts"
 compatibility_date = "2025-03-21"
 compatibility_flags = ["nodejs_compat"]
 
+# Account ID is set via CLOUDFLARE_ACCOUNT_ID environment variable or secret
 # Enable observability for logging
 [observability]
 enabled = true
