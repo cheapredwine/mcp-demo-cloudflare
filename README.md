@@ -13,7 +13,7 @@ Open the AI Orchestrator Web UI and type a message to see the MCP protocol in ac
 
 - **MCP Server**: Private stateless server handling MCP protocol (no public URL)
 - **AI Orchestrator**: Workers AI + AI Gateway + Web UI
-  - Uses `@cf/mistralai/mistral-small-3.1-24b-instruct` model
+  - Uses Workers AI LLM model instance
   - AI Gateway provides caching, analytics, and rate limiting
   - Calls MCP tools via Service Bindings
 - **All run on Cloudflare Workers**: Serverless, globally distributed, pay-per-request
@@ -39,7 +39,7 @@ Open the AI Orchestrator Web UI and type a message to see the MCP protocol in ac
 │  Cloudflare AI Platform                                     │
 │  ┌───────────────────┐  ┌───────────────────────────────┐  │
 │  │ Workers AI        │  │ AI Gateway                    │  │
-│  │ • Mistral model   │←─┤ • Caching + Analytics         │  │
+│  │ • LLM model inst. │←─┤ • Caching + Analytics         │  │
 │  │ • Tool calling    │  │ • Guardrails                  │  │
 │  └───────────────────┘  │ • Firewall for AI             │  │
 │                         └───────────────────────────────┘  │
