@@ -629,20 +629,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
   </script>
 </body>
 </html>`;
-          }
-        }
-      } catch (error) {
-        aiSection.style.display = 'block';
-        aiBox.className = 'result-box error';
-        aiBox.textContent = 'Error: ' + error.message;
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Send to AI';
-      }
-    }
-  </script>
-</body>
-</html>`;
 
 // Main Worker export
 export default {
