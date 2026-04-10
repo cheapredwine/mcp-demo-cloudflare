@@ -44,25 +44,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Debug - Check Token
-        shell: bash
+      - name: Check secrets
         run: |
-          echo "=========================================="
-          echo "TOKEN DEBUG INFO"
-          echo "=========================================="
-          if [ -z "$CF_TOKEN" ]; then
-            echo "❌ TOKEN IS NOT SET"
-            echo "Please add CLOUDFLARE_API_TOKEN secret at:"
-            echo "https://github.com/cheapredwine/mcp-demo-cloudflare/settings/secrets/actions"
+          echo "Checking secrets..."
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "❌ CLOUDFLARE_API_TOKEN is not set!"
             exit 1
-          else
-            echo "✅ TOKEN IS SET"
-            echo "Token starts with: ${CF_TOKEN:0:10}"
-            echo "Token length: ${#CF_TOKEN}"
           fi
-          echo "=========================================="
-        env:
-          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "❌ CLOUDFLARE_ACCOUNT_ID is not set!"
+            echo "Please add it at: https://github.com/cheapredwine/mcp-demo-cloudflare/settings/secrets/actions"
+            exit 1
+          fi
+          echo "✅ All secrets are set"
+      
+      - name: Add account_id to wrangler.toml
+        run: |
+          cd packages/mcp-server
+          echo "" >> wrangler.toml
+          echo "account_id = \"${{ secrets.CLOUDFLARE_ACCOUNT_ID }}\"" >> wrangler.toml
+          echo "Updated wrangler.toml:"
+          cat wrangler.toml
       
       - name: Deploy MCP Server
         uses: cloudflare/wrangler-action@v3
@@ -87,6 +89,14 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
+      
+      - name: Add account_id to wrangler.toml
+        run: |
+          cd packages/workers-client
+          echo "" >> wrangler.toml
+          echo "account_id = \"${{ secrets.CLOUDFLARE_ACCOUNT_ID }}\"" >> wrangler.toml
+          echo "Updated wrangler.toml:"
+          cat wrangler.toml
       
       - name: Deploy MCP Client
         uses: cloudflare/wrangler-action@v3
