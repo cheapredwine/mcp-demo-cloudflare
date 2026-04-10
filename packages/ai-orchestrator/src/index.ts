@@ -77,7 +77,7 @@ async function callAIGateway(
   error?: string;
 }> {
   const body: Record<string, unknown> = {
-    model: "workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    model: "workers-ai/@cf/mistral/mistral-small-3.1-24b-instruct",
     messages,
   };
   
