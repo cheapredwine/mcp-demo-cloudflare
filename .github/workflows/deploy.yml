@@ -27,9 +27,9 @@ jobs:
       - name: Run tests
         run: npm test
 
-  deploy:
+  deploy-mcp-server:
     runs-on: ubuntu-latest
-    name: Deploy to Cloudflare
+    name: Deploy MCP Server
     needs: test
     if: github.ref == 'refs/heads/main'
     steps:
@@ -44,18 +44,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify secrets
-        run: |
-          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
-            echo "❌ CLOUDFLARE_API_TOKEN is not set!"
-            exit 1
-          fi
-          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
-            echo "❌ CLOUDFLARE_ACCOUNT_ID is not set!"
-            exit 1
-          fi
-          echo "✅ Secrets verified"
-
       - name: Deploy MCP Server
         uses: cloudflare/wrangler-action@v3
         with:
@@ -63,6 +51,23 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/mcp-server
           command: deploy
+
+  deploy-ai-orchestrator:
+    runs-on: ubuntu-latest
+    name: Deploy AI Orchestrator
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Deploy AI Orchestrator
         uses: cloudflare/wrangler-action@v3
@@ -72,6 +77,12 @@ jobs:
           workingDirectory: packages/ai-orchestrator
           command: deploy
 
+  post-deploy:
+    runs-on: ubuntu-latest
+    name: Deployment Summary
+    needs: [deploy-mcp-server, deploy-ai-orchestrator]
+    if: github.ref == 'refs/heads/main'
+    steps:
       - name: Post Deploy Summary
         run: |
           echo "✅ Deployment complete!"
@@ -79,4 +90,4 @@ jobs:
           echo "📡 MCP Server: https://mcp-demo-server.jsherron-test-account.workers.dev"
           echo "🤖 AI Orchestrator: https://mcp-demo-ai-orchestrator.jsherron-test-account.workers.dev"
           echo ""
-          echo "🛡️  Security: See SECURITY-GUIDE.md for WAF/rate limiting setup"
+          echo "🛡️  Security: See README.md Security Configuration section"
