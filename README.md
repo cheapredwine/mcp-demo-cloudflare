@@ -4,7 +4,7 @@ A working MCP (Model Context Protocol) server and client running on Cloudflare W
 
 ## 🚀 Live Demo
 
-- **AI Orchestrator:** https://mcp-demo.jsherron.com/ (or https://mcp-demo-ai-orchestrator.jsherron-test-account.workers.dev/)
+- **AI Orchestrator:** https://mcp-demo.jsherron.com/
 - **MCP Server:** Private (accessible only via Service Binding from AI Orchestrator)
 
 Open the AI Orchestrator Web UI and type a message to see the MCP protocol in action!
