@@ -712,7 +712,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       mcpStatus.style.display = 'none';
 
       try {
-        const response = await fetch('api/ask', {
+        const response = await fetch('/api/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt })
