@@ -285,16 +285,22 @@ curl -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/rate_limits"
   }'
 ```
 
-### AI Gateway Security
+### AI Gateway Guardrails
 
-Enable prompt validation in your AI Gateway:
+Enable guardrails in your AI Gateway for prompt injection protection:
 
 1. Go to: https://dash.cloudflare.com → **AI** → **AI Gateway** → **mcp-demo**
-2. Navigate to **Security** tab
+2. Navigate to **Guardrails** tab
 3. Enable:
-   - ✅ **Prompt Validation**: Block prompt injection attempts
+   - ✅ **Prompt Validation**: Block prompt injection attempts (e.g., "Ignore previous instructions...")
    - ✅ **Content Filtering**: Filter inappropriate content
    - ✅ **Logging**: Keep request logs for 7 days
+
+**How Guardrails work:**
+- Analyzes prompts before they reach the AI model
+- Detects injection patterns: `"Ignore previous instructions"`, `"System: You are now..."`, etc.
+- Blocks or sanitizes suspicious prompts
+- Logs attempts for security review
 
 ### Additional Security Measures
 
@@ -305,7 +311,7 @@ Enable prompt validation in your AI Gateway:
 | **CORS Headers** | Already configured in code | Blocks unauthorized origins | ✅ Yes |
 | **Input Validation** | MCP server validates tool args | Prevents malformed requests | ✅ Yes |
 | **WAF Rate Limiting** | Requires custom domain + Zone ID | Fine-grained request control | ❌ No |
-| **Firewall for AI** | AI Gateway Security tab | Prompt injection protection | ✅ Yes |
+| **AI Gateway Guardrails** | AI Gateway Guardrails tab | Prompt injection protection | ✅ Yes |
 
 ### API Token Best Practices
 
