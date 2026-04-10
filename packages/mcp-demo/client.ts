@@ -9,7 +9,6 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 
 interface Env {
   MCP_SERVER_URL: string;
-  MCP_SERVER: Fetcher;  // Service binding to mcp-demo-server
 }
 
 // HTML template for the web interface
@@ -270,32 +269,32 @@ export default {
       }
     }
 
-    // Test endpoints using MCP tools via service binding
+    // Test endpoints using MCP tools
     if (url.pathname === "/test-echo") {
-      return testTool(env.MCP_SERVER, "echo", { message: "Hello from MCP!" }, corsHeaders);
+      return testTool(env.MCP_SERVER_URL, "echo", { message: "Hello from MCP!" }, corsHeaders);
     }
 
     if (url.pathname === "/test-calculator") {
-      return testTool(env.MCP_SERVER, "calculator", { operation: "multiply", a: 42, b: 100 }, corsHeaders);
+      return testTool(env.MCP_SERVER_URL, "calculator", { operation: "multiply", a: 42, b: 100 }, corsHeaders);
     }
 
     if (url.pathname === "/test-weather") {
-      return testTool(env.MCP_SERVER, "get_weather", { location: "San Francisco", units: "celsius" }, corsHeaders);
+      return testTool(env.MCP_SERVER_URL, "get_weather", { location: "San Francisco", units: "celsius" }, corsHeaders);
     }
 
     if (url.pathname === "/test-fact") {
-      return testTool(env.MCP_SERVER, "random_fact", { category: "technology" }, corsHeaders);
+      return testTool(env.MCP_SERVER_URL, "random_fact", { category: "technology" }, corsHeaders);
     }
 
     if (url.pathname === "/test-all") {
       try {
         const results: Record<string, unknown> = {};
         
-        results.echo = await callMCPTool(env.MCP_SERVER, "echo", { message: "Test echo" });
-        results.calculator = await callMCPTool(env.MCP_SERVER, "calculator", { operation: "add", a: 10, b: 20 });
-        results.weather = await callMCPTool(env.MCP_SERVER, "get_weather", { location: "Tokyo" });
-        results.fact = await callMCPTool(env.MCP_SERVER, "random_fact", { category: "space" });
-        results.traffic = await callMCPTool(env.MCP_SERVER, "get_traffic_log", { limit: 5 });
+        results.echo = await callMCPTool(env.MCP_SERVER_URL, "echo", { message: "Test echo" });
+        results.calculator = await callMCPTool(env.MCP_SERVER_URL, "calculator", { operation: "add", a: 10, b: 20 });
+        results.weather = await callMCPTool(env.MCP_SERVER_URL, "get_weather", { location: "Tokyo" });
+        results.fact = await callMCPTool(env.MCP_SERVER_URL, "random_fact", { category: "space" });
+        results.traffic = await callMCPTool(env.MCP_SERVER_URL, "get_traffic_log", { limit: 5 });
         
         return new Response(
           JSON.stringify({ tests: results }, null, 2),
@@ -320,13 +319,13 @@ export default {
  * Test a single tool
  */
 async function testTool(
-  server: Fetcher,
+  serverUrl: string,
   toolName: string,
   args: Record<string, unknown>,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   try {
-    const result = await callMCPTool(server, toolName, args);
+    const result = await callMCPTool(serverUrl, toolName, args);
     return new Response(
       JSON.stringify({ tool: toolName, result }, null, 2),
       { headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -340,91 +339,10 @@ async function testTool(
 }
 
 /**
- * Custom transport that uses Cloudflare Service Binding
- */
-class ServiceBindingTransport {
-  private service: Fetcher;
-  private sessionId?: string;
-  private _onmessage?: (message: unknown) => void;
-  private _onerror?: (error: Error) => void;
-  private _onclose?: () => void;
-  private _started = false;
-
-  constructor(service: Fetcher) {
-    this.service = service;
-  }
-
-  async start(): Promise<void> {
-    if (this._started) {
-      throw new Error('Transport already started');
-    }
-    this._started = true;
-  }
-
-  async close(): Promise<void> {
-    this._started = false;
-    if (this._onclose) {
-      this._onclose();
-    }
-  }
-
-  async send(message: unknown): Promise<void> {
-    if (!this._started) {
-      throw new Error('Transport not started');
-    }
-
-    try {
-      const response = await this.service.fetch('http://mcp-server/mcp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json, text/event-stream',
-          ...(this.sessionId ? { 'Mcp-Session-Id': this.sessionId } : {}),
-        },
-        body: JSON.stringify(message),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Service binding error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      // Store session ID from response
-      const sessionId = response.headers.get('mcp-session-id');
-      if (sessionId) {
-        this.sessionId = sessionId;
-      }
-
-      if (this._onmessage) {
-        this._onmessage(data);
-      }
-    } catch (error) {
-      if (this._onerror) {
-        this._onerror(error instanceof Error ? error : new Error(String(error)));
-      }
-      throw error;
-    }
-  }
-
-  set onmessage(handler: ((message: unknown) => void) | undefined) {
-    this._onmessage = handler;
-  }
-
-  set onerror(handler: ((error: Error) => void) | undefined) {
-    this._onerror = handler;
-  }
-
-  set onclose(handler: (() => void) | undefined) {
-    this._onclose = handler;
-  }
-}
-
-/**
- * Call an MCP tool on the server via service binding
+ * Call an MCP tool on the server
  */
 async function callMCPTool(
-  server: Fetcher,
+  serverUrl: string,
   toolName: string,
   args: Record<string, unknown>
 ): Promise<unknown> {
@@ -433,7 +351,7 @@ async function callMCPTool(
     version: "1.0.0",
   });
 
-  const transport = new ServiceBindingTransport(server);
+  const transport = new StreamableHTTPClientTransport(new URL(`${serverUrl}/mcp`));
   
   try {
     await client.connect(transport);
@@ -452,15 +370,15 @@ async function callMCPTool(
 }
 
 /**
- * Get server info via service binding
+ * Get server info via MCP resources
  */
-async function getServerInfo(server: Fetcher): Promise<unknown> {
+async function getServerInfo(serverUrl: string): Promise<unknown> {
   const client = new Client({
     name: "mcp-demo-client",
     version: "1.0.0",
   });
 
-  const transport = new ServiceBindingTransport(server);
+  const transport = new StreamableHTTPClientTransport(new URL(`${serverUrl}/mcp`));
   
   try {
     await client.connect(transport);
