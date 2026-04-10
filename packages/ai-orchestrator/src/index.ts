@@ -286,8 +286,39 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       font-size: 1.1rem;
       font-weight: 600;
     }
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      width: 100%;
+    }
+    .input-row textarea {
+      flex: 1;
+      width: 100%;
+      min-height: 40px;
+      height: 40px;
+      padding: 8px;
+      border: 2px solid #E5E5E5;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      resize: none;
+      font-family: inherit;
+    }
+    .input-row textarea:focus {
+      outline: none;
+      border-color: #F48120;
+    }
+    .input-row button {
+      height: 40px;
+      padding: 0 24px;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
     .input-group {
       margin-bottom: 0;
+      flex: 1;
+      min-width: 0;
     }
     .input-group label {
       display: block;
@@ -295,22 +326,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       color: #333;
       font-weight: 600;
       font-size: 0.85rem;
-    }
-    textarea {
-      width: 100%;
-      min-height: 50px;
-      padding: 8px;
-      border: 2px solid #E5E5E5;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      resize: vertical;
-      font-family: inherit;
-      transition: border-color 0.2s;
-    }
-    textarea:focus {
-      outline: none;
-      border-color: #F48120;
-      box-shadow: 0 0 0 2px rgba(244,129,32,0.1);
     }
     button {
       background: #F48120;
@@ -586,12 +601,12 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         </ul>
       </div>
 
-      <div class="input-row" style="display: flex; gap: 8px; align-items: flex-end;">
-        <div class="input-group" style="flex: 1;">
-          <label for="prompt" style="font-size: 0.85rem; margin-bottom: 4px;">Your prompt:</label>
-          <textarea id="prompt" placeholder="Try: 'What is the weather in Tokyo?'" style="min-height: 40px; height: 40px; padding: 8px; font-size: 0.9rem;"></textarea>
+      <div class="input-row">
+        <div class="input-group">
+          <label for="prompt">Your prompt:</label>
+          <textarea id="prompt" placeholder="Try: 'What is the weather in Tokyo?'"></textarea>
         </div>
-        <button id="submit-btn" onclick="sendPrompt()" style="padding: 8px 20px; font-size: 0.9rem; height: 40px; align-self: flex-end;">Send</button>
+        <button id="submit-btn" onclick="sendPrompt()">Send</button>
       </div>
 
       <div class="example-prompts">
@@ -722,13 +737,13 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 
         if (data.error) {
           aiBox.className = 'result-box error';
-          aiBox.textContent = 'Error: ' + data.error;
+          aiBox.textContent = 'Error: ' + (typeof data.error === 'object' ? JSON.stringify(data.error) : data.error);
         } else {
           if (data.ai && data.ai.response) {
             aiBox.textContent = data.ai.response;
           } else if (data.ai && data.ai.error) {
             aiBox.className = 'result-box error';
-            aiBox.textContent = 'Error: ' + data.ai.error;
+            aiBox.textContent = 'Error: ' + (typeof data.ai.error === 'object' ? JSON.stringify(data.ai.error) : data.ai.error);
           }
 
           // Show MCP status and tools
