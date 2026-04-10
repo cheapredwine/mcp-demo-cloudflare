@@ -99,13 +99,13 @@ jobs:
           workingDirectory: packages/workers-client
           command: deploy
       
-      - name: Update Client Environment Variable
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: packages/workers-client
-          command: vars put MCP_SERVER_URL https://mcp-demo-server.jsherron-test-account.workers.dev
+      - name: Update MCP_SERVER_URL in wrangler.toml
+        working-directory: packages/workers-client
+        run: |
+          # Replace the localhost URL with the deployed server URL
+          sed -i 's|MCP_SERVER_URL = "http://localhost:8787"|MCP_SERVER_URL = "https://mcp-demo-server.jsherron-test-account.workers.dev"|' wrangler.toml
+          echo "Updated wrangler.toml:"
+          cat wrangler.toml
       
       - name: Post Deploy Info
         run: |
