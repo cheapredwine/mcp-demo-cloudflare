@@ -40,49 +40,42 @@ const HTML_TEMPLATE = `
     .subtitle {
       color: rgba(255,255,255,0.9);
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
     .card {
       background: white;
       border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     .card h2 {
       color: #333;
-      margin-bottom: 16px;
-      font-size: 1.5rem;
+      margin-bottom: 12px;
+      font-size: 1.25rem;
     }
-    .tool-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
+    .tools-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
-    .tool-item {
-      background: #f8f9fa;
-      padding: 16px;
-      border-radius: 8px;
-      border-left: 4px solid #667eea;
-    }
-    .tool-item h4 {
-      color: #667eea;
-      margin-bottom: 8px;
-    }
-    .tool-item p {
-      color: #666;
-      font-size: 0.9rem;
+    .tool-badge {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 0.85rem;
+      font-weight: 500;
     }
     button {
       background: #667eea;
       color: white;
       border: none;
-      padding: 12px 24px;
+      padding: 10px 20px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 1rem;
-      margin: 5px;
+      font-size: 0.95rem;
+      margin: 4px;
       transition: background 0.2s;
     }
     button:hover {
@@ -92,20 +85,41 @@ const HTML_TEMPLATE = `
       background: #ccc;
       cursor: not-allowed;
     }
-    .result {
-      background: #f0f9ff;
-      border: 1px solid #bae6fd;
-      border-radius: 8px;
-      padding: 16px;
+    .result-container {
       margin-top: 16px;
+    }
+    .result-section {
+      margin-bottom: 16px;
+    }
+    .result-section h3 {
+      color: #667eea;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .result-box {
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
       white-space: pre-wrap;
       font-family: 'Monaco', 'Menlo', monospace;
-      font-size: 0.85rem;
-      min-height: 100px;
+      font-size: 0.8rem;
+      max-height: 300px;
+      overflow-y: auto;
     }
-    .error {
+    .result-box.request {
+      background: #f0f9ff;
+      border-color: #bae6fd;
+    }
+    .result-box.response {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+    .result-box.error {
       background: #fef2f2;
-      border: 1px solid #fecaca;
+      border-color: #fecaca;
       color: #dc2626;
     }
     .loading {
@@ -120,27 +134,12 @@ const HTML_TEMPLATE = `
 
     <div class="card">
       <h2>🔧 Available Tools</h2>
-      <div class="tool-grid">
-        <div class="tool-item">
-          <h4>echo</h4>
-          <p>Echo back a message</p>
-        </div>
-        <div class="tool-item">
-          <h4>calculator</h4>
-          <p>Basic math operations</p>
-        </div>
-        <div class="tool-item">
-          <h4>get_weather</h4>
-          <p>Simulated weather data</p>
-        </div>
-        <div class="tool-item">
-          <h4>random_fact</h4>
-          <p>Random interesting facts</p>
-        </div>
-        <div class="tool-item">
-          <h4>get_traffic_log</h4>
-          <p>Request logging info</p>
-        </div>
+      <div class="tools-row">
+        <span class="tool-badge">echo</span>
+        <span class="tool-badge">calculator</span>
+        <span class="tool-badge">get_weather</span>
+        <span class="tool-badge">random_fact</span>
+        <span class="tool-badge">get_traffic_log</span>
       </div>
     </div>
 
@@ -151,15 +150,44 @@ const HTML_TEMPLATE = `
       <button onclick="testTool('weather')">Test weather</button>
       <button onclick="testTool('fact')">Test random fact</button>
       <button onclick="testTool('all')">Test all</button>
-      <div id="result" class="result">Click a button to test a tool...</div>
+      
+      <div id="result" class="result-container">
+        <div class="result-section">
+          <h3>Request</h3>
+          <div id="request-box" class="result-box request">Click a button to send a request...</div>
+        </div>
+        <div class="result-section">
+          <h3>Response</h3>
+          <div id="response-box" class="result-box response">Response will appear here...</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
+    const toolRequests = {
+      'echo': {
+        name: 'echo',
+        arguments: { message: 'Hello from MCP!' }
+      },
+      'calculator': {
+        name: 'calculator',
+        arguments: { operation: 'multiply', a: 42, b: 100 }
+      },
+      'weather': {
+        name: 'get_weather',
+        arguments: { location: 'San Francisco', units: 'celsius' }
+      },
+      'fact': {
+        name: 'random_fact',
+        arguments: { category: 'technology' }
+      },
+      'all': 'Run all 5 tool tests'
+    };
+
     async function testTool(tool) {
-      const resultDiv = document.getElementById('result');
-      resultDiv.textContent = 'Loading...';
-      resultDiv.className = 'result loading';
+      const requestBox = document.getElementById('request-box');
+      const responseBox = document.getElementById('response-box');
       
       const endpoints = {
         'echo': '/test-echo',
@@ -169,17 +197,27 @@ const HTML_TEMPLATE = `
         'all': '/test-all'
       };
       
+      // Show request
+      if (tool === 'all') {
+        requestBox.textContent = toolRequests[tool];
+      } else {
+        requestBox.textContent = JSON.stringify(toolRequests[tool], null, 2);
+      }
+      
+      responseBox.textContent = 'Loading...';
+      responseBox.className = 'result-box response loading';
+      
       try {
         const response = await fetch(endpoints[tool]);
         if (!response.ok) {
           throw new Error('HTTP ' + response.status + ': ' + response.statusText);
         }
         const data = await response.json();
-        resultDiv.textContent = JSON.stringify(data, null, 2);
-        resultDiv.className = 'result';
+        responseBox.textContent = JSON.stringify(data, null, 2);
+        responseBox.className = 'result-box response';
       } catch (error) {
-        resultDiv.textContent = 'Error: ' + error.message;
-        resultDiv.className = 'result error';
+        responseBox.textContent = 'Error: ' + error.message;
+        responseBox.className = 'result-box error';
       }
     }
   </script>

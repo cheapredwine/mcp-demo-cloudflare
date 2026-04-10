@@ -7,7 +7,7 @@
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, ListResourcesRequestSchema, ReadResourceRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 
 /**
  * Fact database for random_fact tool
@@ -318,8 +318,10 @@ export default {
       const server = createServer();
       
       // Use WebStandard transport for Cloudflare Workers
+      // Enable JSON response mode for stateless requests (waits for all responses before returning)
       const transport = new WebStandardStreamableHTTPServerTransport({
         sessionIdGenerator: undefined, // Stateless mode
+        enableJsonResponse: true,      // Return JSON instead of SSE streaming
       });
       
       // Connect server to transport

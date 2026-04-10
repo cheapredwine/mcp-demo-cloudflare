@@ -26,8 +26,9 @@ describe('MCP Server Source Code', () => {
       expect(sourceCode).toContain('import { Server } from "@modelcontextprotocol/sdk/server/index.js"');
     });
 
-    it('should use WebStandardStreamableHTTPServerTransport', () => {
+    it('should use WebStandardStreamableHTTPServerTransport from webStandardStreamableHttp.js', () => {
       expect(sourceCode).toContain('WebStandardStreamableHTTPServerTransport');
+      expect(sourceCode).toContain('@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js');
     });
 
     it('should NOT use Durable Objects', () => {

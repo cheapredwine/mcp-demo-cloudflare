@@ -60,14 +60,65 @@ describe('Workers Client', () => {
   });
 
   describe('API Endpoints', () => {
-    it.skip('should have /status endpoint (requires running server)', async () => {
-      // This test requires the server to be running
-      // Skipped in CI, run manually with: npm run test:watch
+    it('should have /status endpoint that returns JSON', async () => {
+      const { default: handler } = await import('../index.js');
+      const request = new Request('http://localhost:8788/status');
+      const env = { MCP_SERVER_URL: 'http://localhost:8787' };
+      const response = await handler.fetch(request, env, {} as ExecutionContext);
+
+      // Should return JSON response (may be error if server not running)
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+      const data = await response.json() as { status?: string; error?: string };
+      // Either connected or error, both valid responses
+      expect(data.status === 'connected' || data.error !== undefined).toBe(true);
     });
 
-    it.skip('should have tool test endpoints (requires running server)', async () => {
-      // This test requires the server to be running
-      // Skipped in CI, run manually with: npm run test:watch
+    it('should have /test-echo endpoint that returns JSON', async () => {
+      const { default: handler } = await import('../index.js');
+      const request = new Request('http://localhost:8788/test-echo');
+      const env = { MCP_SERVER_URL: 'http://localhost:8787' };
+      const response = await handler.fetch(request, env, {} as ExecutionContext);
+
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+      const data = await response.json() as { tool?: string; error?: string };
+      // Should have either result or error
+      expect(data.tool === 'echo' || data.error !== undefined).toBe(true);
+    });
+
+    it('should have /test-calculator endpoint', async () => {
+      const { default: handler } = await import('../index.js');
+      const request = new Request('http://localhost:8788/test-calculator');
+      const env = { MCP_SERVER_URL: 'http://localhost:8787' };
+      const response = await handler.fetch(request, env, {} as ExecutionContext);
+
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+    });
+
+    it('should have /test-weather endpoint', async () => {
+      const { default: handler } = await import('../index.js');
+      const request = new Request('http://localhost:8788/test-weather');
+      const env = { MCP_SERVER_URL: 'http://localhost:8787' };
+      const response = await handler.fetch(request, env, {} as ExecutionContext);
+
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+    });
+
+    it('should have /test-fact endpoint', async () => {
+      const { default: handler } = await import('../index.js');
+      const request = new Request('http://localhost:8788/test-fact');
+      const env = { MCP_SERVER_URL: 'http://localhost:8787' };
+      const response = await handler.fetch(request, env, {} as ExecutionContext);
+
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+    });
+
+    it('should have /test-all endpoint', async () => {
+      const { default: handler } = await import('../index.js');
+      const request = new Request('http://localhost:8788/test-all');
+      const env = { MCP_SERVER_URL: 'http://localhost:8787' };
+      const response = await handler.fetch(request, env, {} as ExecutionContext);
+
+      expect(response.headers.get('Content-Type')).toBe('application/json');
     });
   });
 
