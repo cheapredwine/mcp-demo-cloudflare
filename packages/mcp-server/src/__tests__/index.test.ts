@@ -6,7 +6,7 @@ import { dirname, join } from 'path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Read the source file as text
-describe('MCP Server Source Code - Stateless Regular Worker', () => {
+describe('MCP Server Source Code', () => {
   let sourceCode: string;
 
   beforeAll(() => {
@@ -18,10 +18,6 @@ describe('MCP Server Source Code - Stateless Regular Worker', () => {
       expect(sourceCode).toContain('Stateless');
     });
 
-    it('should mention regular Workers', () => {
-      expect(sourceCode).toContain('regular Workers');
-    });
-
     it('should NOT import from agents/mcp', () => {
       expect(sourceCode).not.toContain('import { McpAgent } from "agents/mcp"');
     });
@@ -30,12 +26,8 @@ describe('MCP Server Source Code - Stateless Regular Worker', () => {
       expect(sourceCode).toContain('import { Server } from "@modelcontextprotocol/sdk/server/index.js"');
     });
 
-    it('should use StreamableHTTPServerTransport', () => {
-      expect(sourceCode).toContain('StreamableHTTPServerTransport');
-    });
-
-    it('should NOT use McpAgent', () => {
-      expect(sourceCode).not.toContain('extends McpAgent');
+    it('should use WebStandardStreamableHTTPServerTransport', () => {
+      expect(sourceCode).toContain('WebStandardStreamableHTTPServerTransport');
     });
 
     it('should NOT use Durable Objects', () => {
@@ -54,124 +46,133 @@ describe('MCP Server Source Code - Stateless Regular Worker', () => {
     });
   });
 
-  describe('Tool Specifications', () => {
-    it('should have TOOL_SPECS constant', () => {
-      expect(sourceCode).toContain('const TOOL_SPECS');
-    });
-
-    it('should have FACTS database', () => {
+  describe('Fact Database', () => {
+    it('should have FACTS constant', () => {
       expect(sourceCode).toContain('const FACTS');
     });
+
+    it('should have all 5 categories', () => {
+      expect(sourceCode).toContain('science:');
+      expect(sourceCode).toContain('history:');
+      expect(sourceCode).toContain('technology:');
+      expect(sourceCode).toContain('nature:');
+      expect(sourceCode).toContain('space:');
+    });
   });
 });
 
-describe('Stateless Tools', () => {
+describe('MCP Tools', () => {
   let sourceCode: string;
 
   beforeAll(() => {
     sourceCode = readFileSync(join(__dirname, '../index.ts'), 'utf-8');
   });
 
-  describe('Tool Functions', () => {
-    it('should have executeEcho as standalone function', () => {
-      expect(sourceCode).toContain('async function executeEcho');
-      expect(sourceCode).not.toContain('private async executeEcho');
+  describe('Tool Registration', () => {
+    it('should register 5 tools', () => {
+      const toolMatches = sourceCode.match(/name: "(echo|calculator|get_weather|random_fact|get_traffic_log)"/g);
+      expect(toolMatches).toHaveLength(5);
     });
 
-    it('should have executeCalculator as standalone function', () => {
-      expect(sourceCode).toContain('async function executeCalculator');
+    it('should have echo tool', () => {
+      expect(sourceCode).toContain('name: "echo"');
     });
 
-    it('should have executeWeather as standalone function', () => {
-      expect(sourceCode).toContain('async function executeWeather');
+    it('should have calculator tool', () => {
+      expect(sourceCode).toContain('name: "calculator"');
     });
 
-    it('should have executeRandomFact as standalone function', () => {
-      expect(sourceCode).toContain('async function executeRandomFact');
+    it('should have get_weather tool', () => {
+      expect(sourceCode).toContain('name: "get_weather"');
     });
 
-    it('should have executeTrafficLog as standalone function', () => {
-      expect(sourceCode).toContain('async function executeTrafficLog');
-    });
-  });
-
-  describe('Server Configuration', () => {
-    it('should create Server with name and version', () => {
-      expect(sourceCode).toContain('name: "mcp-demo-server"');
-      expect(sourceCode).toContain('version: "1.0.0"');
+    it('should have random_fact tool', () => {
+      expect(sourceCode).toContain('name: "random_fact"');
     });
 
-    it('should register ListToolsRequestSchema handler', () => {
-      expect(sourceCode).toContain('ListToolsRequestSchema');
-      expect(sourceCode).toContain('server.setRequestHandler(ListToolsRequestSchema');
-    });
-
-    it('should register CallToolRequestSchema handler', () => {
-      expect(sourceCode).toContain('CallToolRequestSchema');
-      expect(sourceCode).toContain('server.setRequestHandler(CallToolRequestSchema');
-    });
-
-    it('should register ListResourcesRequestSchema handler', () => {
-      expect(sourceCode).toContain('ListResourcesRequestSchema');
-    });
-
-    it('should register ReadResourceRequestSchema handler', () => {
-      expect(sourceCode).toContain('ReadResourceRequestSchema');
+    it('should have get_traffic_log tool', () => {
+      expect(sourceCode).toContain('name: "get_traffic_log"');
     });
   });
 
-  describe('Code Mode Tools (Stateless)', () => {
-    it('should have search tool registered', () => {
-      expect(sourceCode).toContain('name: "search"');
+  describe('Echo Tool', () => {
+    it('should handle echo in switch', () => {
+      expect(sourceCode).toContain('case "echo":');
     });
 
-    it('should have execute tool registered', () => {
-      expect(sourceCode).toContain('name: "execute"');
+    it('should echo the message', () => {
+      expect(sourceCode).toContain('`Echo: ${message}`');
+    });
+  });
+
+  describe('Calculator Tool', () => {
+    it('should handle calculator in switch', () => {
+      expect(sourceCode).toContain('case "calculator":');
     });
 
-    it('should filter TOOL_SPECS in search', () => {
-      expect(sourceCode).toContain('for (const [name, spec] of Object.entries(TOOL_SPECS))');
+    it('should handle all operations', () => {
+      expect(sourceCode).toContain('case "add":');
+      expect(sourceCode).toContain('case "subtract":');
+      expect(sourceCode).toContain('case "multiply":');
+      expect(sourceCode).toContain('case "divide":');
     });
 
-    it('should iterate over operations in execute', () => {
-      expect(sourceCode).toContain('for (let i = 0; i < operations.length; i++)');
+    it('should handle division by zero', () => {
+      expect(sourceCode).toContain('if (b === 0)');
+      expect(sourceCode).toContain('Error: Division by zero');
+    });
+  });
+
+  describe('Weather Tool', () => {
+    it('should handle get_weather in switch', () => {
+      expect(sourceCode).toContain('case "get_weather":');
     });
 
-    it('should switch on tool name', () => {
-      expect(sourceCode).toContain('switch (op.tool)');
+    it('should support celsius and fahrenheit', () => {
+      expect(sourceCode).toContain('celsius');
+      expect(sourceCode).toContain('fahrenheit');
+    });
+
+    it('should return weather fields', () => {
+      expect(sourceCode).toContain('Condition:');
+      expect(sourceCode).toContain('Temperature:');
+      expect(sourceCode).toContain('Humidity:');
+      expect(sourceCode).toContain('Wind:');
+    });
+  });
+
+  describe('Random Fact Tool', () => {
+    it('should handle random_fact in switch', () => {
+      expect(sourceCode).toContain('case "random_fact":');
+    });
+
+    it('should select from FACTS', () => {
+      expect(sourceCode).toContain('FACTS[selectedCategory]');
+    });
+  });
+
+  describe('Traffic Log Tool', () => {
+    it('should handle get_traffic_log in switch', () => {
+      expect(sourceCode).toContain('case "get_traffic_log":');
     });
   });
 });
 
-describe('Resources', () => {
+describe('MCP Resources', () => {
   let sourceCode: string;
 
   beforeAll(() => {
     sourceCode = readFileSync(join(__dirname, '../index.ts'), 'utf-8');
   });
 
-  describe('Server Info Resource', () => {
-    it('should have server-info resource', () => {
+  describe('Resource Registration', () => {
+    it('should register server-info resource', () => {
       expect(sourceCode).toContain('"mcp://resources/server-info"');
     });
 
-    it('should mention stateless in server info', () => {
-      expect(sourceCode).toContain('Stateless');
-      expect(sourceCode).toContain('regular Cloudflare Workers');
-    });
-
-    it('should list Code Mode tools', () => {
-      expect(sourceCode).toContain('tools: ["search", "execute"]');
-    });
-  });
-
-  describe('Tool Specs Resource', () => {
-    it('should have tool-specs resource', () => {
-      expect(sourceCode).toContain('"mcp://resources/tool-specs"');
-    });
-
-    it('should include examples', () => {
-      expect(sourceCode).toContain('examples:');
+    it('should list tools in server info', () => {
+      expect(sourceCode).toContain('tools:');
+      expect(sourceCode).toContain('"echo"');
     });
   });
 });
@@ -217,22 +218,13 @@ describe('Code Quality', () => {
     expect(sourceCode).toContain('interface Env');
   });
 
-  it('should handle errors in search', () => {
+  it('should handle errors', () => {
     expect(sourceCode).toContain('try {');
     expect(sourceCode).toContain('catch (error)');
   });
 
-  it('should handle errors in tool calls', () => {
-    expect(sourceCode).toMatch(/catch \(error\)/);
-  });
-
   it('should include JSDoc comments', () => {
     expect(sourceCode).toContain('/**');
-  });
-
-  it('should NOT have state management', () => {
-    expect(sourceCode).not.toContain('setState(');
-    expect(sourceCode).not.toContain('initialState');
   });
 });
 
@@ -249,10 +241,6 @@ describe('Wrangler Configuration', () => {
 
   it('should NOT have migrations', () => {
     expect(wranglerConfig).not.toContain('migrations');
-  });
-
-  it('should mention stateless', () => {
-    expect(wranglerConfig).toContain('STATELESS');
   });
 });
 
