@@ -9,6 +9,6 @@ account_id = "1ddebf6f9507d3fc9052158be9d42dee"
 binding = "MCP_SERVER"
 service = "mcp-demo-server"
 
-# Note: CF_AIG_TOKEN secret must be set via:
-#   wrangler secret put CF_AIG_TOKEN
-# Or in the Cloudflare Dashboard: Workers & Pages > mcp-demo-ai-orchestrator > Settings > Variables and Secrets
+# Workers AI binding with AI Gateway integration
+[[ai]]
+binding = "AI"

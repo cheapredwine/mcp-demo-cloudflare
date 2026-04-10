@@ -1,21 +1,18 @@
 /**
- * AI Orchestrator - Uses Cloudflare AI Gateway with MCP Tool Calling
+ * AI Orchestrator - Uses Cloudflare Workers AI with AI Gateway
  * 
  * Demonstrates:
- * - Cloudflare AI Gateway via HTTP API (caching, analytics, rate limiting)
- * - Worker AI with structured tool calling
+ * - Workers AI binding with AI Gateway integration (caching, analytics)
+ * - MCP Tool Calling via Workers AI
  * - Service Binding to MCP server for tool execution
  */
 
 interface Env {
-  CF_AIG_TOKEN: string;  // Cloudflare API token for AI Gateway
+  AI: Ai;
   MCP_SERVER: Fetcher;
 }
 
-// AI Gateway endpoint (OpenAI-compatible)
-const AI_GATEWAY_URL = "https://gateway.ai.cloudflare.com/v1/1ddebf6f9507d3fc9052158be9d42dee/mcp-demo/compat/chat/completions";
-
-// Tool definition interface
+// Tool definition interface for Workers AI
 interface ToolDefinition {
   name: string;
   description: string;
@@ -66,9 +63,9 @@ const AI_TOOLS: ToolDefinition[] = [
   }
 ];
 
-// Call AI Gateway endpoint
-async function callAIGateway(
-  token: string,
+// Call Workers AI with AI Gateway
+async function callWorkersAI(
+  ai: Ai,
   messages: Array<{ role: string; content: string }>,
   tools?: ToolDefinition[]
 ): Promise<{
@@ -77,7 +74,6 @@ async function callAIGateway(
   error?: string;
 }> {
   const body: Record<string, unknown> = {
-    model: "workers-ai/@cf/mistral/mistral-small-24b-instruct-2409",
     messages,
   };
   
@@ -92,57 +88,32 @@ async function callAIGateway(
     }));
   }
 
-  const response = await fetch(AI_GATEWAY_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify(body),
-  });
+  try {
+    const response = await ai.run(
+      "@cf/mistral/mistral-small-24b-instruct-2409",
+      body,
+      {
+        gateway: {
+          id: "mcp-demo",
+          skipCache: false,
+          cacheTtl: 3360,
+        },
+      }
+    ) as {
+      response?: string;
+      tool_calls?: Array<{
+        name: string;
+        arguments: Record<string, unknown>;
+      }>;
+    };
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    return { error: `AI Gateway error: ${response.status} - ${errorText}` };
+    return {
+      response: response.response,
+      tool_calls: response.tool_calls,
+    };
+  } catch (error) {
+    return { error: `AI error: ${error}` };
   }
-
-  const data = await response.json() as {
-    choices?: Array<{
-      message?: {
-        content?: string;
-        tool_calls?: Array<{
-          function?: {
-            name?: string;
-            arguments?: string;
-          };
-        }>;
-      };
-    }>;
-  };
-
-  const choice = data.choices?.[0];
-  const message = choice?.message;
-  
-  const result: {
-    response?: string;
-    tool_calls?: Array<{ name: string; arguments: Record<string, unknown> }>;
-    error?: string;
-  } = {};
-
-  if (message?.content) {
-    result.response = message.content;
-  }
-
-  if (message?.tool_calls && message.tool_calls.length > 0) {
-    result.tool_calls = message.tool_calls
-      .filter(tc => tc.function?.name)
-      .map(tc => ({
-        name: tc.function!.name!,
-        arguments: tc.function?.arguments ? JSON.parse(tc.function.arguments) : {},
-      }));
-  }
-
-  return result;
 }
 
 // Call MCP tool via service binding
@@ -434,16 +405,15 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 <body>
   <div class="container">
     <h1>🤖 AI Orchestrator + MCP</h1>
-    <p class="subtitle">Cloudflare AI Gateway + Workers AI + MCP Tools</p>
+    <p class="subtitle">Cloudflare Workers AI + AI Gateway + MCP Tools</p>
 
     <div class="card">
       <div class="info-box">
         <h4>How it works:</h4>
         <ul>
           <li><strong>Browser</strong> sends prompt to AI Orchestrator (Worker)</li>
-          <li><strong>AI Orchestrator</strong> calls AI Gateway HTTP API</li>
-          <li><strong>AI Gateway</strong> provides caching, analytics, and rate limiting</li>
           <li><strong>Workers AI</strong> processes prompt and decides which tools to call</li>
+          <li><strong>AI Gateway</strong> provides caching, analytics, and rate limiting</li>
           <li><strong>Service Binding</strong> securely connects to MCP server</li>
         </ul>
       </div>
@@ -606,21 +576,11 @@ export default {
         const body = await request.json() as { prompt: string };
         const prompt = body.prompt || "";
 
-        // Check if AI Gateway token is configured
-        if (!env.CF_AIG_TOKEN) {
-          return new Response(
-            JSON.stringify({ 
-              error: "AI Gateway token not configured. Please set CF_AIG_TOKEN secret." 
-            }, null, 2),
-            { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-          );
-        }
-
-        // Call AI Gateway with tools available - AI decides whether to use them
+        // Call Workers AI with tools available - AI decides whether to use them
         let aiResponse;
         try {
-          aiResponse = await callAIGateway(
-            env.CF_AIG_TOKEN,
+          aiResponse = await callWorkersAI(
+            env.AI,
             [
               { 
                 role: 'system', 
@@ -677,8 +637,8 @@ export default {
 
           // Call AI again with tool results to get final response
           try {
-            const finalAiResponse = await callAIGateway(
-              env.CF_AIG_TOKEN,
+            const finalAiResponse = await callWorkersAI(
+              env.AI,
               [
                 { 
                   role: 'system', 
