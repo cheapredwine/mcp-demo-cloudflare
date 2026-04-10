@@ -1,63 +1,29 @@
-# MCP Demo with Code Mode-like Pattern
+# MCP Demo on Cloudflare Workers
 
-A stateless MCP (Model Context Protocol) server demonstrating a Code Mode-like API pattern, running on regular Cloudflare Workers without Durable Objects.
+A working MCP (Model Context Protocol) server and client running on Cloudflare Workers. This demonstrates how to build and deploy MCP infrastructure on Cloudflare's edge platform.
 
-## ⚠️ Important: What This Actually Is
+## What This Is
 
-This project demonstrates the **Code Mode interface pattern** (2 tools: `search()` + `execute()`), but it is **NOT true Code Mode** as implemented by Cloudflare.
-
-### This Demo:
-- ✅ Uses the Code Mode API design (search + execute operations array)
-- ✅ Runs on regular Workers (no Durable Objects)
-- ✅ Demonstrates operation batching
-- ✅ Shows discoverable capabilities via resources
-
-### This is NOT:
-- ❌ **NOT true Code Mode** - no dynamic code execution
-- ❌ **NOT late binding** - hardcoded switch statement dispatch
-- ❌ **NOT guaranteed context reduction** - savings depend on LLM actually using resources
-
-### Why Build This?
-The value is **educational** - it shows how the Code Mode API works without the complexity of Dynamic Workers or code execution sandboxes. The real Cloudflare implementation uses JavaScript code strings executed in V8 isolates; this uses declarative JSON arrays.
-
-## What is (Real) Code Mode?
-
-Cloudflare's Code Mode is a technique to reduce context window usage in MCP servers. Instead of exposing many individual tools (which consume tokens), you expose just 2 powerful tools:
-
-1. **`search(code)`** - Execute JavaScript to explore the OpenAPI spec
-2. **`execute(code)`** - Execute JavaScript that orchestrates multiple API calls
-
-The real implementation uses Dynamic Workers to safely execute LLM-generated JavaScript code. This demo uses a **simplified, safe approach** with JSON arrays instead of code execution.
+- **MCP Server**: Stateless server handling MCP protocol requests via Streamable HTTP transport
+- **MCP Client**: Web UI that connects to and demonstrates the server
+- **Both run on Cloudflare Workers**: Serverless, globally distributed, pay-per-request
 
 ## Architecture
 
 ```
-┌─────────────────┐         ┌─────────────────────────────┐
-│  MCP Client     │         │   MCP Server (Stateless)    │
-│  (Web UI)       │◄───────►│   Regular Cloudflare Worker │
-│                 │  HTTP   │   No Durable Objects needed │
-└─────────────────┘         └─────────────────────────────┘
-                                      │
-                    ┌─────────────────┼─────────────────┐
-                    ▼                 ▼                 ▼
-              ┌─────────┐      ┌──────────┐      ┌──────────┐
-              │ search  │      │ execute  │      │resources │
-              │  tool   │      │  tool    │      │  specs   │
-              └─────────┘      └──────────┘      └──────────┘
-```
-
-## Project Structure
-
-```
-packages/
-├── mcp-server/          # Stateless MCP server with Code Mode
-│   ├── src/index.ts     # Main server implementation
-│   ├── wrangler.toml    # Regular Worker config (no Durable Objects)
-│   └── package.json     # Dependencies (no agents SDK)
-│
-└── workers-client/      # Web UI client
-    ├── src/index.ts     # Web interface + API proxy
-    └── wrangler.toml    # Regular Worker config
+┌─────────────────────┐
+│   MCP Client        │  Web UI + API proxy
+│   (Cloudflare       │  Serves HTML demo page
+│    Worker)          │  Makes MCP requests to server
+└──────────┬──────────┘
+           │ HTTP (MCP protocol)
+           ▼
+┌─────────────────────┐
+│   MCP Server        │  Handles MCP protocol
+│   (Cloudflare       │  Exposes 5 demo tools:
+│    Worker)          │  - echo, calculator, weather
+│                     │  - random_fact, traffic_log
+└─────────────────────┘
 ```
 
 ## Quick Start
@@ -71,9 +37,6 @@ packages/
 ### Installation
 
 ```bash
-# Clone or create the project directory
-mkdir mcp-demo && cd mcp-demo
-
 # Install dependencies
 npm install
 ```
@@ -94,41 +57,51 @@ npm run dev
 # Client runs on http://localhost:8788
 ```
 
-**Open browser to:** `http://localhost:8788`
+**Open browser:** `http://localhost:8788`
+
+## Available Tools
+
+The MCP server exposes these tools:
+
+| Tool | Description |
+|------|-------------|
+| `echo` | Echo back a message |
+| `calculator` | Basic math (add, subtract, multiply, divide) |
+| `get_weather` | Simulated weather data |
+| `random_fact` | Random facts by category |
+| `get_traffic_log` | Request logging info |
 
 ## API Endpoints
 
-### Server Endpoints (http://localhost:8787)
+### Server (http://localhost:8787)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/mcp` | POST | MCP protocol endpoint (Streamable HTTP) |
-| `/mcp` | GET | SSE stream for notifications |
+| `/mcp` | POST | MCP protocol endpoint |
+| `/mcp` | GET | SSE stream endpoint |
 
-### Client Endpoints (http://localhost:8788)
+### Client (http://localhost:8788)
 
 | Endpoint | Description |
 |----------|-------------|
-| `/` | Web UI with Code Mode demo |
-| `/status` | Server connection status |
-| `/demo-search` | Demonstrate `search()` tool |
-| `/demo-execute` | Demonstrate `execute()` tool |
-| `/test-echo` | Test echo via execute |
-| `/test-calculator` | Test calculator via execute |
-| `/test-weather` | Test weather via execute |
-| `/test-fact` | Test random fact via execute |
-| `/test-all` | Run all tests in one execute call |
+| `/` | Web UI demo page |
+| `/status` | Server connection check |
+| `/test-echo` | Test echo tool |
+| `/test-calculator` | Test calculator tool |
+| `/test-weather` | Test weather tool |
+| `/test-fact` | Test random fact tool |
+| `/test-all` | Run all tool tests |
 
-## Code Mode Tools
-
-### 1. `search(filter?)`
-
-Search available tools and their specifications.
+## Example Tool Call
 
 **Request:**
 ```json
 {
-  "filter": "weather"
+  "tool": "get_weather",
+  "arguments": {
+    "location": "San Francisco",
+    "units": "celsius"
+  }
 }
 ```
 
@@ -136,57 +109,16 @@ Search available tools and their specifications.
 ```json
 {
   "content": [
-    {
-      "text": "Search Results (1 tools found):"
-    },
-    {
-      "text": "[{\"name\": \"get_weather\", ...}]"
-    }
-  ]
-}
-```
-
-### 2. `execute(operations)`
-
-Execute multiple operations in a single call.
-
-**Request:**
-```json
-{
-  "operations": [
-    {
-      "tool": "getWeather",
-      "params": { "location": "San Francisco", "units": "celsius" }
-    },
-    {
-      "tool": "randomFact",
-      "params": { "category": "technology" }
-    },
-    {
-      "tool": "calculator",
-      "params": { "operation": "multiply", "a": 42, "b": 100 }
-    }
-  ]
-}
-```
-
-**Response:**
-```json
-{
-  "content": [
-    {
-      "text": "Executed 3 operations:"
-    },
-    {
-      "text": "{\"getWeather_0\": {...}, \"randomFact_1\": {...}, ...}"
-    }
+    { "type": "text", "text": "Weather for San Francisco:" },
+    { "type": "text", "text": "Condition: Sunny" },
+    { "type": "text", "text": "Temperature: 22°C" }
   ]
 }
 ```
 
 ## Deployment
 
-### Option 1: Manual Deploy with Wrangler
+### Manual Deploy
 
 **Deploy MCP Server:**
 ```bash
@@ -207,43 +139,22 @@ cd packages/workers-client
 wrangler deploy
 ```
 
-### Option 2: GitHub Actions (Automated)
+### Automated (GitHub Actions)
 
-1. **Add secrets to GitHub repository:**
-   - `CLOUDFLARE_API_TOKEN` - Your Cloudflare API token
-
-2. **Push to main branch:**
-   ```bash
-   git push origin main
-   ```
-
-3. **GitHub Actions will:**
-   - Run tests
-   - Deploy server first
-   - Deploy client with updated URL
+1. Add `CLOUDFLARE_API_TOKEN` to GitHub repository secrets
+2. Push to main branch - GitHub Actions deploys automatically
 
 ## Monitoring Logs
 
-### Local Development
-
-When running locally with `wrangler dev`, logs appear in the terminal.
-
-### Production/Deployed
-
-Use `wrangler tail` to watch live logs:
+Watch live logs with wrangler:
 
 ```bash
-# Watch MCP Server logs
+# Watch server logs
 wrangler tail --name mcp-demo-server
 
-# Watch Client logs  
+# Watch client logs
 wrangler tail --name mcp-demo-client
 ```
-
-Log format:
-- `[MCP →]` - Incoming request
-- `[MCP ←]` - Outgoing response
-- `[MCP Server]` - Server initialization
 
 ## Testing
 
@@ -258,34 +169,33 @@ npm run test:watch
 npm run typecheck
 ```
 
-## Code Mode vs Traditional MCP
+## Project Structure
 
-| Feature | Traditional MCP | Code Mode |
-|---------|----------------|-----------|
-| **Tool Count** | 5+ tools | 2 tools |
-| **Context Tokens** | ~2,500 | ~1,000 |
-| **Token Savings** | - | **60%** |
-| **Multi-step Ops** | Multiple calls | Single call |
-| **Discovery** | `list_tools()` | `search(filter)` |
-| **State** | Stateless | Stateless |
+```
+packages/
+├── mcp-server/          # MCP protocol server
+│   ├── src/index.ts     # Server implementation
+│   ├── wrangler.toml    # Worker config
+│   └── package.json
+│
+└── workers-client/      # Web UI + API client
+    ├── src/index.ts     # Client implementation
+    ├── wrangler.toml    # Worker config
+    └── package.json
+```
 
-## Why Stateless?
+## Key Technologies
 
-This demo runs on **regular Cloudflare Workers** without Durable Objects:
-
-- ✅ **Simpler deployment** - No DO bindings needed
-- ✅ **Lower cost** - Pay per request, no idle costs
-- ✅ **Faster cold start** - No DO initialization
-- ✅ **Easier to understand** - No session state complexity
-
-For production use cases requiring state, you would add Durable Objects or use the `agents` SDK.
+- **@modelcontextprotocol/sdk**: MCP protocol implementation
+- **WebStandardStreamableHTTPServerTransport**: HTTP transport for Workers
+- **Cloudflare Workers**: Serverless edge platform
+- **Wrangler**: CLI for Workers deployment
 
 ## Resources
 
-- **MCP Protocol:** https://modelcontextprotocol.io/
-- **Cloudflare Workers:** https://workers.cloudflare.com/
-- **Code Mode Blog Post:** https://blog.cloudflare.com/code-mode-mcp/
-- **MCP SDK:** https://github.com/modelcontextprotocol/typescript-sdk
+- **MCP Protocol**: https://modelcontextprotocol.io/
+- **Cloudflare Workers**: https://workers.cloudflare.com/
+- **MCP SDK**: https://github.com/modelcontextprotocol/typescript-sdk
 
 ## License
 
