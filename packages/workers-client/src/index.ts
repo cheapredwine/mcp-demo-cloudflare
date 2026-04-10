@@ -1,14 +1,10 @@
 /**
  * MCP Demo Client - Cloudflare Workers
  * 
- * A Cloudflare Workers client with web UI for testing the MCP server.
+ * Uses Service Bindings to communicate with mcp-demo-server worker.
  */
 
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-
 interface Env {
-  MCP_SERVER_URL: string;
   MCP_SERVER: Fetcher;  // Service binding to mcp-demo-server
 }
 
@@ -131,7 +127,7 @@ const HTML_TEMPLATE = `
 <body>
   <div class="container">
     <h1>🚀 MCP Demo</h1>
-    <p class="subtitle">MCP Server and Client running on Cloudflare Workers</p>
+    <p class="subtitle">MCP Server running on Cloudflare Workers</p>
 
     <div class="card">
       <h2>🔧 Available Tools</h2>
@@ -226,11 +222,90 @@ const HTML_TEMPLATE = `
 </html>
 `;
 
+// Simple MCP client using service binding
+async function callMCPTool(
+  service: Fetcher,
+  toolName: string,
+  args: Record<string, unknown>
+): Promise<unknown> {
+  // Call the server directly via service binding
+  const response = await service.fetch('http://mcp-server/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: {
+        name: toolName,
+        arguments: args,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`MCP error: ${response.status}`);
+  }
+
+  const data = await response.json() as { result: unknown };
+  return data.result;
+}
+
+async function getServerInfo(service: Fetcher): Promise<unknown> {
+  const response = await service.fetch('http://mcp-server/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'resources/read',
+      params: {
+        uri: 'mcp://resources/server-info',
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`MCP error: ${response.status}`);
+  }
+
+  const data = await response.json() as { result: unknown };
+  return data.result;
+}
+
+// Test a single tool
+async function testTool(
+  service: Fetcher,
+  toolName: string,
+  args: Record<string, unknown>,
+  corsHeaders: Record<string, string>
+): Promise<Response> {
+  try {
+    const result = await callMCPTool(service, toolName, args);
+    return new Response(
+      JSON.stringify({ tool: toolName, result }, null, 2),
+      { headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: String(error) }, null, 2),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  }
+}
+
+// Main Worker export
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     
-    // CORS headers for browser access
+    // CORS headers
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -254,7 +329,7 @@ export default {
     // Status check
     if (url.pathname === "/status") {
       try {
-        const serverInfo = await getServerInfo(env.MCP_SERVER_URL);
+        const serverInfo = await getServerInfo(env.MCP_SERVER);
         return new Response(
           JSON.stringify({ status: "connected", server: serverInfo }, null, 2),
           { headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -315,164 +390,3 @@ export default {
     );
   },
 };
-
-/**
- * Test a single tool
- */
-async function testTool(
-  server: Fetcher,
-  toolName: string,
-  args: Record<string, unknown>,
-  corsHeaders: Record<string, string>
-): Promise<Response> {
-  try {
-    const result = await callMCPTool(server, toolName, args);
-    return new Response(
-      JSON.stringify({ tool: toolName, result }, null, 2),
-      { headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: String(error) }, null, 2),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
-  }
-}
-
-/**
- * Custom transport that uses Cloudflare Service Binding
- */
-class ServiceBindingTransport {
-  private service: Fetcher;
-  private sessionId?: string;
-  private _onmessage?: (message: unknown) => void;
-  private _onerror?: (error: Error) => void;
-  private _onclose?: () => void;
-  private _started = false;
-
-  constructor(service: Fetcher) {
-    this.service = service;
-  }
-
-  async start(): Promise<void> {
-    if (this._started) {
-      throw new Error('Transport already started');
-    }
-    this._started = true;
-  }
-
-  async close(): Promise<void> {
-    this._started = false;
-    if (this._onclose) {
-      this._onclose();
-    }
-  }
-
-  async send(message: unknown): Promise<void> {
-    if (!this._started) {
-      throw new Error('Transport not started');
-    }
-
-    try {
-      const response = await this.service.fetch('http://mcp-server/mcp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json, text/event-stream',
-          ...(this.sessionId ? { 'Mcp-Session-Id': this.sessionId } : {}),
-        },
-        body: JSON.stringify(message),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Service binding error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      // Store session ID from response
-      const sessionId = response.headers.get('mcp-session-id');
-      if (sessionId) {
-        this.sessionId = sessionId;
-      }
-
-      if (this._onmessage) {
-        this._onmessage(data);
-      }
-    } catch (error) {
-      if (this._onerror) {
-        this._onerror(error instanceof Error ? error : new Error(String(error)));
-      }
-      throw error;
-    }
-  }
-
-  set onmessage(handler: ((message: unknown) => void) | undefined) {
-    this._onmessage = handler;
-  }
-
-  set onerror(handler: ((error: Error) => void) | undefined) {
-    this._onerror = handler;
-  }
-
-  set onclose(handler: (() => void) | undefined) {
-    this._onclose = handler;
-  }
-}
-
-/**
- * Call an MCP tool on the server via service binding
- */
-async function callMCPTool(
-  server: Fetcher,
-  toolName: string,
-  args: Record<string, unknown>
-): Promise<unknown> {
-  const client = new Client({
-    name: "mcp-demo-client",
-    version: "1.0.0",
-  });
-
-  const transport = new ServiceBindingTransport(server);
-  
-  try {
-    await client.connect(transport);
-    
-    const result = await client.callTool({
-      name: toolName,
-      arguments: args,
-    });
-
-    await client.close();
-    return result;
-  } catch (error) {
-    await client.close().catch(() => {});
-    throw error;
-  }
-}
-
-/**
- * Get server info via service binding
- */
-async function getServerInfo(server: Fetcher): Promise<unknown> {
-  const client = new Client({
-    name: "mcp-demo-client",
-    version: "1.0.0",
-  });
-
-  const transport = new ServiceBindingTransport(server);
-  
-  try {
-    await client.connect(transport);
-    
-    const result = await client.readResource({
-      uri: "mcp://resources/server-info",
-    });
-
-    await client.close();
-    return result;
-  } catch (error) {
-    await client.close().catch(() => {});
-    throw error;
-  }
-}
