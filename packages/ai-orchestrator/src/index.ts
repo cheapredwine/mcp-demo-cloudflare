@@ -342,6 +342,44 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       color: white;
       border-color: #F48120;
     }
+    .http-log-panel {
+      background: #1E1E1E;
+      color: #00FF00;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 0.75rem;
+      padding: 12px;
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+    .http-log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #333;
+    }
+    .http-log-entry:last-child {
+      border-bottom: none;
+    }
+    .http-log-toggle {
+      background: #333;
+      color: #00FF00;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px 4px 0 0;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 0.8rem;
+      margin-top: 20px;
+    }
+    .http-log-toggle:hover {
+      background: #444;
+    }
+    .http-log-container {
+      display: none;
+    }
+    .http-log-container.open {
+      display: block;
+    }
     
     /* Three panel layout */
     .results-container {
@@ -484,7 +522,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             <span>Examples:</span>
             <button class="example-btn" onclick="setPrompt('What is the weather in Paris?')">Weather</button>
             <button class="example-btn" onclick="setPrompt('Calculate 25 * 47')">Calculator</button>
-            <button class="example-btn" onclick="setPrompt('Tell me about terns')">Fact</button>
+            <button class="example-btn" onclick="setPrompt('Tell me about tabby cats')">No MCP</button>
             <button class="example-btn" onclick="setPrompt('If apples cost $3 and I have $45, how many can I buy?')">Multi-step</button>
           </div>
         </div>
@@ -535,9 +573,48 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
   </div>
 
   <script>
+    // HTTP request logging
+    const httpLogs = [];
+    
+    function logHttp(method, url, status) {
+      const timestamp = new Date().toLocaleTimeString();
+      const entry = `[${timestamp}] ${method} ${url} ${status || ''}`;
+      httpLogs.push(entry);
+      if (httpLogs.length > 50) httpLogs.shift();
+      updateHttpLog();
+    }
+    
+    function updateHttpLog() {
+      const logContainer = document.getElementById('http-log-content');
+      if (logContainer) {
+        logContainer.innerHTML = httpLogs.map(log => 
+          '<div class="http-log-entry">' + log + '</div>'
+        ).join('');
+        logContainer.scrollTop = logContainer.scrollHeight;
+      }
+    }
+    
+    function toggleHttpLog() {
+      const container = document.getElementById('http-log-container');
+      container.classList.toggle('open');
+      const btn = document.getElementById('http-log-toggle');
+      btn.textContent = container.classList.contains('open') ? '▼ HTTP Log' : '▶ HTTP Log';
+    }
+    
     function setPrompt(text) {
       document.getElementById('prompt').value = text;
     }
+    
+    // Enter to submit, Shift+Enter for newline
+    document.addEventListener('DOMContentLoaded', function() {
+      const textarea = document.getElementById('prompt');
+      textarea.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendPrompt();
+        }
+      });
+    });
 
     async function sendPrompt() {
       const prompt = document.getElementById('prompt').value.trim();
@@ -566,6 +643,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       aiBox.className = 'result-box response';
       toolsBox.innerHTML = '<div class="loading">Checking if MCP tools needed...</div>';
       mcpStatus.style.display = 'none';
+      
+      // Log HTTP request
+      logHttp('POST', '/api/ask');
 
       try {
         const response = await fetch('/api/ask', {
@@ -574,6 +654,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           body: JSON.stringify({ prompt })
         });
 
+        // Log response
+        logHttp('POST', '/api/ask', response.status);
+        
         const data = await response.json();
 
         if (data.error) {
@@ -627,6 +710,14 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       }
     }
   </script>
+  
+  <!-- HTTP Log Panel -->
+  <button id="http-log-toggle" class="http-log-toggle" onclick="toggleHttpLog()">▶ HTTP Log</button>
+  <div id="http-log-container" class="http-log-container">
+    <div id="http-log-content" class="http-log-panel">
+      <div style="color: #666;">HTTP requests will be logged here...</div>
+    </div>
+  </div>
 </body>
 </html>`;
 

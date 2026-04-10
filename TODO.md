@@ -1,1 +1,1 @@
-TODO: Update README and Security guide to explain custom domain requirement for WAF
+TODO: (empty - all items completed)
