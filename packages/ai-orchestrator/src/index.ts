@@ -223,53 +223,59 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       padding: 20px;
     }
     .container {
-      max-width: 900px;
+      max-width: 1400px;
       margin: 0 auto;
     }
     h1 {
       color: white;
       text-align: center;
       margin-bottom: 10px;
-      font-size: 2.5rem;
+      font-size: 2rem;
       font-weight: 700;
     }
     .subtitle {
       color: rgba(255,255,255,0.9);
       text-align: center;
-      margin-bottom: 30px;
-      font-size: 1.1rem;
+      margin-bottom: 20px;
+      font-size: 1rem;
     }
     .card {
       background: white;
       border-radius: 8px;
-      padding: 24px;
+      padding: 20px;
       margin-bottom: 20px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       border: 1px solid #E5E5E5;
     }
     .card h2 {
       color: #1E1E1E;
-      margin-bottom: 16px;
-      font-size: 1.5rem;
+      margin-bottom: 12px;
+      font-size: 1.25rem;
       font-weight: 600;
     }
+    .input-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
     .input-group {
-      margin-bottom: 16px;
+      flex: 1;
+      margin-bottom: 0;
     }
     .input-group label {
       display: block;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: #333;
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
     }
     textarea {
       width: 100%;
-      min-height: 100px;
-      padding: 12px;
+      min-height: 80px;
+      padding: 10px;
       border: 2px solid #E5E5E5;
       border-radius: 6px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       resize: vertical;
       font-family: inherit;
       transition: border-color 0.2s;
@@ -279,14 +285,20 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       border-color: #F48120;
       box-shadow: 0 0 0 3px rgba(244,129,32,0.1);
     }
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 140px;
+    }
     button {
       background: #F48120;
       color: white;
       border: none;
-      padding: 14px 28px;
+      padding: 12px 20px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       transition: all 0.2s;
       width: 100%;
@@ -305,21 +317,22 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     .example-prompts {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 12px;
+      gap: 6px;
+      margin-top: 10px;
       align-items: center;
     }
     .example-prompts span {
       color: #666;
       font-weight: 500;
+      font-size: 0.85rem;
     }
     .example-btn {
       background: #FFF5EB;
       color: #E06C1F;
       border: 1px solid #FFD4B3;
-      padding: 8px 14px;
+      padding: 6px 10px;
       border-radius: 6px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       cursor: pointer;
       transition: all 0.2s;
       font-weight: 500;
@@ -329,30 +342,56 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       color: white;
       border-color: #F48120;
     }
-    .result-section {
+    
+    /* Three panel layout */
+    .results-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
       margin-top: 20px;
     }
-    .result-section h3 {
-      color: #F48120;
-      font-size: 0.85rem;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border: 1px solid #E5E5E5;
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #F48120;
+    }
+    .panel h3 {
+      color: #1E1E1E;
+      font-size: 0.95rem;
       font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .panel-content {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 400px;
     }
     .result-box {
       background: #FAFAFA;
       border: 1px solid #E5E5E5;
       border-radius: 6px;
-      padding: 16px;
+      padding: 12px;
       white-space: pre-wrap;
       font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-      font-size: 0.85rem;
-      max-height: 400px;
-      overflow-y: auto;
+      font-size: 0.8rem;
       line-height: 1.5;
+      min-height: 100px;
     }
-    .result-box.request {
+    .result-box.prompt {
       background: #FFF8F3;
       border-color: #FFD4B3;
       border-left: 4px solid #F48120;
@@ -371,25 +410,25 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     .tool-call {
       background: #FFF8F3;
       border-left: 4px solid #F48120;
-      padding: 12px;
-      margin: 8px 0;
+      padding: 10px;
+      margin: 6px 0;
       border-radius: 0 6px 6px 0;
+      font-size: 0.8rem;
     }
     .tool-result {
       background: #F6FDF9;
       border-left: 4px solid #22C55E;
-      padding: 12px;
-      margin: 8px 0;
+      padding: 10px;
+      margin: 6px 0;
       border-radius: 0 6px 6px 0;
+      font-size: 0.8rem;
     }
     .mcp-status {
       display: inline-block;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.85rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
       font-weight: 600;
-      margin-bottom: 16px;
-      margin-left: 12px;
     }
     .mcp-status.used {
       background: #DCFCE7;
@@ -405,29 +444,11 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       color: #F48120;
       font-style: italic;
     }
-    .info-box {
-      background: linear-gradient(135deg, #FFF8F3 0%, #FFF5EB 100%);
-      border: 1px solid #FFD4B3;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    .info-box h4 {
-      color: #E06C1F;
-      margin-bottom: 12px;
-      font-size: 1rem;
-      font-weight: 600;
-    }
-    .info-box ul {
-      margin-left: 20px;
-      color: #333;
-    }
-    .info-box li {
-      margin-bottom: 8px;
-      line-height: 1.5;
-    }
-    .info-box li strong {
-      color: #F48120;
+    .empty-state {
+      color: #999;
+      font-style: italic;
+      text-align: center;
+      padding: 40px 20px;
     }
     .cloudflare-badge {
       display: inline-flex;
@@ -442,58 +463,73 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+    @media (max-width: 900px) {
+      .results-container {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>AI Orchestrator + MCP</h1>
+    <h1>🤖 AI Orchestrator + MCP</h1>
     <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + MCP Tools</p>
 
     <div class="card">
-      <div class="info-box">
-        <h4>How it works:</h4>
-        <ul>
-          <li><strong>Browser</strong> sends prompt to AI Orchestrator (Worker)</li>
-          <li><strong>Workers AI</strong> processes prompt and decides which tools to call</li>
-          <li><strong>AI Gateway</strong> provides caching, analytics, and rate limiting</li>
-          <li><strong>Service Binding</strong> securely connects to MCP server</li>
-        </ul>
-      </div>
-
-      <h2>💬 Ask the AI</h2>
-      
-      <div class="input-group">
-        <label for="prompt">Your prompt:</label>
-        <textarea id="prompt" placeholder="Try: 'What is the weather in Tokyo?'"></textarea>
-      </div>
-
-      <button id="submit-btn" onclick="sendPrompt()">Send to AI</button>
-
-      <div class="example-prompts">
-        <span>Examples:</span>
-        <button class="example-btn" onclick="setPrompt('What is the weather in Paris?')">Weather</button>
-        <button class="example-btn" onclick="setPrompt('Calculate 25 * 47')">Calculator</button>
-        <button class="example-btn" onclick="setPrompt('Tell me a science fact')">Fact</button>
-        <button class="example-btn" onclick="setPrompt('If apples cost $3 each and I have $45, how many can I buy? Also, what is the weather where apples grow best?')">Multi-tool</button>
+      <div class="input-row">
+        <div class="input-group">
+          <label for="prompt">Your prompt:</label>
+          <textarea id="prompt" placeholder="Try: 'What is the weather in Tokyo?'"></textarea>
+          <div class="example-prompts">
+            <span>Examples:</span>
+            <button class="example-btn" onclick="setPrompt('What is the weather in Paris?')">Weather</button>
+            <button class="example-btn" onclick="setPrompt('Calculate 25 * 47')">Calculator</button>
+            <button class="example-btn" onclick="setPrompt('Tell me about terns')">Fact</button>
+            <button class="example-btn" onclick="setPrompt('If apples cost $3 and I have $45, how many can I buy?')">Multi-step</button>
+          </div>
+        </div>
+        <div class="button-group">
+          <button id="submit-btn" onclick="sendPrompt()">Send to AI</button>
+        </div>
       </div>
     </div>
 
-    <div class="card" id="result-card" style="display: none;">
-      <h2>📊 Results <span id="mcp-status" class="mcp-status not-used" style="display: none;"></span></h2>
-      
-      <div class="result-section">
-        <h3>Your Prompt</h3>
-        <div id="request-box" class="result-box request"></div>
+    <div class="results-container" id="results-container" style="display: none;">
+      <!-- Left Panel: Prompt -->
+      <div class="panel" id="prompt-panel">
+        <div class="panel-header">
+          <h3>💬 Your Prompt</h3>
+        </div>
+        <div class="panel-content">
+          <div id="request-box" class="result-box prompt">
+            <div class="empty-state">Enter a prompt above and click "Send to AI"</div>
+          </div>
+        </div>
       </div>
 
-      <div class="result-section" id="tools-section" style="display: none;">
-        <h3>🔧 MCP Server Interaction</h3>
-        <div id="tools-box" class="result-box response"></div>
+      <!-- Center Panel: MCP Interaction -->
+      <div class="panel" id="mcp-panel">
+        <div class="panel-header">
+          <h3>🔧 MCP Server</h3>
+          <span id="mcp-status" class="mcp-status" style="display: none;"></span>
+        </div>
+        <div class="panel-content">
+          <div id="tools-box" class="result-box">
+            <div class="empty-state">MCP interaction will appear here when tools are called</div>
+          </div>
+        </div>
       </div>
 
-      <div class="result-section" id="ai-section" style="display: none;">
-        <h3>🤖 AI Response</h3>
-        <div id="ai-box" class="result-box response"></div>
+      <!-- Right Panel: AI Response -->
+      <div class="panel" id="response-panel">
+        <div class="panel-header">
+          <h3>🤖 AI Response</h3>
+        </div>
+        <div class="panel-content">
+          <div id="ai-box" class="result-box response">
+            <div class="empty-state">AI response will appear here</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -511,21 +547,25 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       }
 
       const submitBtn = document.getElementById('submit-btn');
-      const resultCard = document.getElementById('result-card');
+      const resultsContainer = document.getElementById('results-container');
       const requestBox = document.getElementById('request-box');
-      const aiSection = document.getElementById('ai-section');
       const aiBox = document.getElementById('ai-box');
-      const toolsSection = document.getElementById('tools-section');
       const toolsBox = document.getElementById('tools-box');
       const mcpStatus = document.getElementById('mcp-status');
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Processing...';
-      resultCard.style.display = 'block';
-      mcpStatus.style.display = 'none';
+      resultsContainer.style.display = 'grid';
+      
+      // Show prompt immediately
       requestBox.textContent = prompt;
-      aiSection.style.display = 'none';
-      toolsSection.style.display = 'none';
+      requestBox.className = 'result-box prompt';
+      
+      // Reset other panels
+      aiBox.innerHTML = '<div class="loading">Waiting for AI response...</div>';
+      aiBox.className = 'result-box response';
+      toolsBox.innerHTML = '<div class="loading">Checking if MCP tools needed...</div>';
+      mcpStatus.style.display = 'none';
 
       try {
         const response = await fetch('/api/ask', {
@@ -537,11 +577,11 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         const data = await response.json();
 
         if (data.error) {
-          aiSection.style.display = 'block';
           aiBox.className = 'result-box error';
           aiBox.textContent = 'Error: ' + data.error;
+          toolsBox.innerHTML = '<div class="empty-state">Error occurred</div>';
         } else {
-          aiSection.style.display = 'block';
+          // Show AI response
           if (data.ai && data.ai.response) {
             aiBox.textContent = data.ai.response;
           } else if (data.ai && data.ai.error) {
@@ -549,32 +589,46 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             aiBox.textContent = 'Error: ' + data.ai.error;
           }
 
+          // Show MCP status and tools
+          mcpStatus.style.display = 'inline-block';
           if (data.toolCalls && data.toolCalls.length > 0) {
             // MCP was used
-            mcpStatus.style.display = 'inline-block';
             mcpStatus.className = 'mcp-status used';
-            mcpStatus.textContent = 'MCP Server Used (' + data.toolCalls.length + ' tool call' + (data.toolCalls.length > 1 ? 's' : '') + ')';
+            mcpStatus.textContent = 'MCP Used (' + data.toolCalls.length + ')';
             
-            toolsSection.style.display = 'block';
-            let toolsHtml = '<div style="margin-bottom: 12px; color: #166534; font-weight: 500;">✅ The AI invoked the MCP server to retrieve data</div>';
+            let toolsHtml = '<div style="margin-bottom: 10px; color: #166534; font-weight: 500; font-size: 0.85rem;">✅ AI invoked MCP tools</div>';
             data.toolCalls.forEach(function(call, i) {
               toolsHtml += '<div class="tool-call">';
               toolsHtml += '<strong>Tool #' + (i + 1) + ':</strong> ' + call.tool + '<br>';
-              toolsHtml += '<strong>Arguments:</strong><br>' + JSON.stringify(call.arguments, null, 2);
+              toolsHtml += '<strong>Args:</strong> ' + JSON.stringify(call.arguments);
               toolsHtml += '</div>';
               
               if (call.result) {
                 toolsHtml += '<div class="tool-result">';
-                toolsHtml += '<strong>Result:</strong><br>' + JSON.stringify(call.result, null, 2);
+                toolsHtml += '<strong>Result:</strong> ' + JSON.stringify(call.result);
                 toolsHtml += '</div>';
               }
             });
             toolsBox.innerHTML = toolsHtml;
           } else {
             // MCP was not used
-            mcpStatus.style.display = 'inline-block';
             mcpStatus.className = 'mcp-status not-used';
             mcpStatus.textContent = 'MCP Not Used';
+            toolsBox.innerHTML = '<div style="color: #6B7280; font-style: italic; padding: 20px; text-align: center;">AI answered directly without using tools</div>';
+          }
+        }
+      } catch (error) {
+        aiBox.className = 'result-box error';
+        aiBox.textContent = 'Error: ' + error.message;
+        toolsBox.innerHTML = '<div class="empty-state">Error occurred</div>';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send to AI';
+      }
+    }
+  </script>
+</body>
+</html>`;
           }
         }
       } catch (error) {
