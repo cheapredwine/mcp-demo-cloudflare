@@ -578,7 +578,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     
     function logHttp(method, url, status) {
       const timestamp = new Date().toLocaleTimeString();
-      const entry = `[${timestamp}] ${method} ${url} ${status || ''}`;
+      const entry = '[' + timestamp + '] ' + method + ' ' + url + ' ' + (status || '');
       httpLogs.push(entry);
       if (httpLogs.length > 50) httpLogs.shift();
       updateHttpLog();
@@ -587,9 +587,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     function updateHttpLog() {
       const logContainer = document.getElementById('http-log-content');
       if (logContainer) {
-        logContainer.innerHTML = httpLogs.map(log => 
-          '<div class="http-log-entry">' + log + '</div>'
-        ).join('');
+        logContainer.innerHTML = httpLogs.map(function(log) { 
+          return '<div class="http-log-entry">' + log + '</div>';
+        }).join('');
         logContainer.scrollTop = logContainer.scrollHeight;
       }
     }
