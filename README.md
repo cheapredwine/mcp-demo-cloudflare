@@ -4,17 +4,15 @@ A working MCP (Model Context Protocol) server and client running on Cloudflare W
 
 ## 🚀 Live Demo
 
-- **MCP Client:** https://mcp-demo-client.jsherron-test-account.workers.dev/
-- **AI Gateway:** https://mcp-demo-ai-gateway.jsherron-test-account.workers.dev/ 🆕
+- **AI Orchestrator:** https://mcp-demo-ai-orchestrator.jsherron-test-account.workers.dev/
 - **MCP Server:** https://mcp-demo-server.jsherron-test-account.workers.dev/mcp
 
-Open the Web UI and click any test button to see the MCP protocol in action!
+Open the AI Orchestrator Web UI and type a message to see the MCP protocol in action!
 
 ## What This Is
 
 - **MCP Server**: Stateless server handling MCP protocol requests via Streamable HTTP transport
-- **MCP Client**: Web UI that connects to the server using Cloudflare Service Bindings
-- **AI Gateway** 🆕: Worker AI with Firewall for AI protection, intelligently calling MCP tools
+- **AI Orchestrator**: Worker AI that intelligently calls MCP tools via Service Bindings
 - **All run on Cloudflare Workers**: Serverless, globally distributed, pay-per-request
 - **Key Innovation**: Uses Service Bindings instead of HTTP for worker-to-worker communication (avoids Cloudflare's 1042 error)
 
@@ -22,15 +20,14 @@ Open the Web UI and click any test button to see the MCP protocol in action!
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  AI Gateway (NEW)                                           │
+│  User                                                       │
+│  • Web browser                                              │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ HTTP
+┌──────────────────────────┴──────────────────────────────────┐
+│  AI Orchestrator                                            │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │ Firewall for AI                                       │  │
-│  │ • Block prompt injection attacks                      │  │
-│  │ • Rate limiting                                       │  │
-│  └───────────────────────────────────────────────────────┘  │
-│                          ↓                                  │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │ Worker AI + Tools                                     │  │
+│  │ Worker AI                                             │  │
 │  │ • Natural language understanding                      │  │
 │  │ • Intelligent tool selection                          │  │
 │  └───────────────────────────────────────────────────────┘  │
@@ -38,17 +35,10 @@ Open the Web UI and click any test button to see the MCP protocol in action!
 └──────────────────────────┬──────────────────────────────────┘
                            │ Service Binding
 ┌──────────────────────────┴──────────────────────────────────┐
-│  MCP Client                                                 │
-│  • Web UI + API proxy                                       │
-│  • Service Binding to MCP Server                            │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ Service Binding
-┌──────────────────────────┴──────────────────────────────────┐
 │  MCP Server                                                 │
 │  • Handles MCP protocol                                     │
-│  • Exposes 5 demo tools:                                    │
-│    - echo, calculator, weather                              │
-│    - random_fact, traffic_log                               │
+│  • Exposes 2 demo tools:                                    │
+│    - calculator, get_weather                                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -84,23 +74,15 @@ npm run dev
 # Server runs on http://localhost:8787
 ```
 
-**Terminal 2 - Start Client:**
+**Terminal 2 - Start AI Orchestrator:**
 ```bash
-cd packages/workers-client
+cd packages/ai-orchestrator
 npm run dev
-# Client runs on http://localhost:8788
-```
-
-**Terminal 3 - Start AI Gateway (optional):**
-```bash
-cd packages/ai-gateway
-npm run dev
-# AI Gateway runs on http://localhost:8789
+# AI Orchestrator runs on http://localhost:8789
 ```
 
 **Open browser:** 
-- MCP Client: `http://localhost:8788`
-- AI Gateway: `http://localhost:8789`
+- AI Orchestrator: `http://localhost:8789`
 
 ## Available Tools
 
@@ -108,11 +90,8 @@ The MCP server exposes these tools:
 
 | Tool | Description |
 |------|-------------|
-| `echo` | Echo back a message |
 | `calculator` | Basic math (add, subtract, multiply, divide) |
 | `get_weather` | Simulated weather data |
-| `random_fact` | Random facts by category |
-| `get_traffic_log` | Request logging info |
 
 ## API Endpoints
 
@@ -121,18 +100,6 @@ The MCP server exposes these tools:
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/mcp` | POST | MCP protocol endpoint |
-
-### Client (http://localhost:8788)
-
-| Endpoint | Description |
-|----------|-------------|
-| `/` | Web UI demo page |
-| `/status` | Server connection check |
-| `/test-echo` | Test echo tool |
-| `/test-calculator` | Test calculator tool |
-| `/test-weather` | Test weather tool |
-| `/test-fact` | Test random fact tool |
-| `/test-all` | Run all tool tests |
 
 ### AI Orchestrator (http://localhost:8789)
 
@@ -210,12 +177,6 @@ cd packages/mcp-server
 wrangler deploy
 ```
 
-**Deploy Client:**
-```bash
-cd packages/workers-client
-wrangler deploy
-```
-
 **Deploy AI Orchestrator:**
 ```bash
 cd packages/ai-orchestrator
@@ -225,13 +186,7 @@ wrangler deploy
 wrangler secret put CF_AIG_TOKEN
 ```
 
-**Configure Service Bindings (one-time):**
-
-For Client:
-```bash
-cd packages/workers-client
-wrangler service bind MCP_SERVER --service=mcp-demo-server
-```
+**Configure Service Binding (one-time):**
 
 For AI Orchestrator:
 ```bash
@@ -240,7 +195,7 @@ wrangler service bind MCP_SERVER --service=mcp-demo-server
 ```
 
 Or via Cloudflare Dashboard:
-1. Go to Workers & Pages → Select worker (mcp-demo-client or mcp-demo-ai-gateway)
+1. Go to Workers & Pages → Select worker (mcp-demo-ai-orchestrator)
 2. Settings → Service bindings
 3. Add: `MCP_SERVER` → `mcp-demo-server`
 
@@ -356,8 +311,8 @@ Watch live logs with wrangler:
 # Watch server logs
 wrangler tail --name mcp-demo-server
 
-# Watch client logs  
-wrangler tail --name mcp-demo-client
+# Watch AI Orchestrator logs  
+wrangler tail --name mcp-demo-ai-orchestrator
 ```
 
 Or view in Cloudflare Dashboard:
@@ -385,19 +340,13 @@ npm run typecheck
 packages/
 ├── mcp-server/          # MCP protocol server
 │   ├── src/index.ts     # Server implementation
-│   ├── src/__tests__/   # Tests (40 tests)
+│   ├── src/__tests__/   # Tests
 │   ├── wrangler.toml    # Worker config
 │   └── package.json
 │
-├── workers-client/      # Web UI + API client
-│   ├── src/index.ts     # Client with Service Binding
-│   ├── src/__tests__/   # Tests (16 tests)
-│   ├── wrangler.toml    # Worker config (with service binding)
-│   └── package.json
-│
-└── ai-gateway/          # 🆕 AI Gateway with Firewall for AI
-    ├── src/index.ts     # Worker AI + Firewall + MCP integration
-    ├── src/__tests__/   # Tests (20 tests)
+└── ai-orchestrator/     # AI Orchestrator with Worker AI
+    ├── src/index.ts     # AI + MCP integration
+    ├── src/__tests__/   # Tests
     ├── wrangler.toml    # Worker config (AI binding + service binding)
     └── package.json
 ```
@@ -415,20 +364,13 @@ packages/
 
 ## How It Works
 
-### MCP Client Flow
-1. **Client receives HTTP request** from browser
-2. **Client uses Service Binding** to call server (`env.MCP_SERVER.fetch()`)
-3. **Server processes MCP protocol** and returns result
-4. **Client returns result** to browser as JSON
-
-### AI Gateway Flow
-1. **AI Gateway receives prompt** from browser
-2. **Firewall for AI** checks for prompt injection attacks
-3. **Worker AI** processes the prompt with tool definitions
-4. **AI decides which tools to call** (if any)
-5. **Service Binding** calls MCP server for each tool
-6. **Results returned to AI** for natural language response
-7. **Formatted response** returned to browser
+### AI Orchestrator Flow
+1. **AI Orchestrator receives prompt** from browser
+2. **Worker AI** processes the prompt with tool definitions
+3. **AI decides which tools to call** (if any)
+4. **Service Binding** calls MCP server for each tool
+5. **Results returned to AI** for natural language response
+6. **Formatted response** returned to browser
 
 The MCP protocol flow:
 1. Initialize connection
