@@ -134,19 +134,35 @@ The MCP server exposes these tools:
 | `/test-fact` | Test random fact tool |
 | `/test-all` | Run all tool tests |
 
-### AI Gateway (http://localhost:8789)
+### AI Orchestrator (http://localhost:8789)
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/` | GET | AI Gateway Web UI |
-| `/api/ask` | POST | Ask the AI (with Firewall for AI protection) |
+| `/` | GET | AI Orchestrator Web UI |
+| `/api/ask` | POST | Ask the AI (with MCP tool calling) |
 | `/health` | GET | Health check |
 
-**AI Gateway Features:**
-- 🛡️ **Firewall for AI**: Detects and blocks prompt injection attacks
+**AI Orchestrator Features:**
 - 🤖 **Worker AI**: Natural language processing with tool calling
 - 🔧 **MCP Tool Integration**: AI intelligently decides which tools to call
-- 🎮 **Attack Mode**: Toggle to test prompt injection detection
+- 📊 **MCP Usage Indicator**: UI shows whether MCP server was used or not
+- 🔄 **Two-Step Flow**: AI decides tools → executes → responds naturally
+
+**Example Interactions:**
+
+| Prompt | MCP Used? | Why |
+|--------|-----------|-----|
+| `"What is 25 * 47?"` | ✅ **YES** | Calculator tool needed |
+| `"What's the weather in Tokyo?"` | ✅ **YES** | Weather tool needed |
+| `"Hello, how are you?"` | ❌ **NO** | Direct response, no tools needed |
+| `"Tell me about yourself"` | ❌ **NO** | Direct response, no tools needed |
+| `"Calculate 10+5 and what's the weather in Paris?"` | ✅ **YES** | Both calculator AND weather tools |
+
+**How it works:**
+1. You type a prompt
+2. AI analyzes if it needs MCP tools
+3. If YES: Calls MCP server → shows "MCP Server Used" badge with tool details
+4. If NO: Responds directly → shows "MCP Not Used" badge
 
 ## Example Tool Call
 
@@ -200,10 +216,13 @@ cd packages/workers-client
 wrangler deploy
 ```
 
-**Deploy AI Gateway:**
+**Deploy AI Orchestrator:**
 ```bash
-cd packages/ai-gateway
+cd packages/ai-orchestrator
 wrangler deploy
+
+# Set your AI Gateway token (get from Cloudflare Dashboard)
+wrangler secret put CF_AIG_TOKEN
 ```
 
 **Configure Service Bindings (one-time):**
@@ -214,9 +233,9 @@ cd packages/workers-client
 wrangler service bind MCP_SERVER --service=mcp-demo-server
 ```
 
-For AI Gateway:
+For AI Orchestrator:
 ```bash
-cd packages/ai-gateway
+cd packages/ai-orchestrator
 wrangler service bind MCP_SERVER --service=mcp-demo-server
 ```
 
