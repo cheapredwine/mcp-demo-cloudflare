@@ -97,14 +97,14 @@ function drawBox(x, y, w, h, title, subtitle, icon, color) {
 }
 
 // Title
-ctx.font = 'bold 36px Arial';
+ctx.font = 'bold 32px Arial';
 ctx.fillStyle = DARK;
 ctx.textAlign = 'center';
-ctx.fillText('🤖 MCP Demo Architecture', width/2, 50);
+ctx.fillText('MCP Demo Architecture', width/2, 45);
 
-ctx.font = '18px Arial';
+ctx.font = '16px Arial';
 ctx.fillStyle = '#444';
-ctx.fillText('Cloudflare Workers + AI Gateway + MCP Protocol', width/2, 80);
+ctx.fillText('3-Panel UI: Prompt | MCP Server | AI Response', width/2, 70);
 
 // User/Browser
 ctx.beginPath();
