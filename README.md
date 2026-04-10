@@ -1,15 +1,33 @@
-# MCP Demo with Code Mode
+# MCP Demo with Code Mode-like Pattern
 
-A stateless MCP (Model Context Protocol) server demonstrating Cloudflare's Code Mode pattern, running on regular Cloudflare Workers without Durable Objects.
+A stateless MCP (Model Context Protocol) server demonstrating a Code Mode-like API pattern, running on regular Cloudflare Workers without Durable Objects.
 
-## What is Code Mode?
+## ⚠️ Important: What This Actually Is
 
-Code Mode is a technique to reduce context window usage in MCP servers. Instead of exposing many individual tools (which consume tokens), you expose just 2 powerful tools that let the LLM:
+This project demonstrates the **Code Mode interface pattern** (2 tools: `search()` + `execute()`), but it is **NOT true Code Mode** as implemented by Cloudflare.
 
-1. **`search(filter)`** - Dynamically discover available capabilities
-2. **`execute(operations)`** - Orchestrate multiple operations in a single call
+### This Demo:
+- ✅ Uses the Code Mode API design (search + execute operations array)
+- ✅ Runs on regular Workers (no Durable Objects)
+- ✅ Demonstrates operation batching
+- ✅ Shows discoverable capabilities via resources
 
-This reduces context window usage by ~60% (from ~2,500 tokens to ~1,000 tokens) while enabling complex multi-step operations.
+### This is NOT:
+- ❌ **NOT true Code Mode** - no dynamic code execution
+- ❌ **NOT late binding** - hardcoded switch statement dispatch
+- ❌ **NOT guaranteed context reduction** - savings depend on LLM actually using resources
+
+### Why Build This?
+The value is **educational** - it shows how the Code Mode API works without the complexity of Dynamic Workers or code execution sandboxes. The real Cloudflare implementation uses JavaScript code strings executed in V8 isolates; this uses declarative JSON arrays.
+
+## What is (Real) Code Mode?
+
+Cloudflare's Code Mode is a technique to reduce context window usage in MCP servers. Instead of exposing many individual tools (which consume tokens), you expose just 2 powerful tools:
+
+1. **`search(code)`** - Execute JavaScript to explore the OpenAPI spec
+2. **`execute(code)`** - Execute JavaScript that orchestrates multiple API calls
+
+The real implementation uses Dynamic Workers to safely execute LLM-generated JavaScript code. This demo uses a **simplified, safe approach** with JSON arrays instead of code execution.
 
 ## Architecture
 
