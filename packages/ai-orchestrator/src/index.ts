@@ -624,7 +624,7 @@ export default {
             [
               { 
                 role: 'system', 
-                content: 'You are a helpful assistant with access to tools. You can answer general knowledge questions directly. Only use the available tools if the user asks for calculations or weather information.'
+                content: 'You are a helpful assistant. You have access to exactly TWO tools: (1) calculator - for math operations, (2) get_weather - for weather info. For general questions, answer directly without tools. Do not invent or use any other tools.'
               },
               { role: 'user', content: prompt }
             ],
