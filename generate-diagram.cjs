@@ -131,7 +131,10 @@ drawBox(400, 160, 320, 200, 'AI Orchestrator', 'Workers AI + AI Gateway', '🤖'
 drawBox(780, 160, 320, 200, 'MCP Server', 'MCP Protocol Server', '🔧', '#2196F3');
 
 // AI Gateway (below orchestrator)
-drawBox(400, 420, 320, 150, 'AI Gateway', 'Caching + Analytics', '⚡', '#9C27B0');
+drawBox(400, 420, 320, 130, 'AI Gateway', 'Caching + Analytics + Rate Limiting', '⚡', '#9C27B0');
+
+// Workers AI Models (below AI Gateway)
+drawBox(400, 600, 320, 100, 'Workers AI', '@cf/mistralai/mistral-small-3.1', '🧠', '#FF6B35');
 
 // Service Binding label
 drawRoundedRect(750, 220, 160, 40, 6, '#E3F2FD');
@@ -150,12 +153,8 @@ drawArrow(720, 240, 770, 240, '#1565C0');
 // Orchestrator -> AI Gateway
 drawArrow(560, 360, 560, 415, DARK);
 
-// AI Gateway -> External
-ctx.font = '14px Arial';
-ctx.fillStyle = '#666';
-ctx.textAlign = 'center';
-ctx.fillText('Workers AI Models', 560, 600);
-drawArrow(560, 570, 560, 620, '#9C27B0');
+// AI Gateway -> Workers AI
+drawArrow(560, 550, 560, 595, '#9C27B0');
 
 // Legend
 ctx.font = 'bold 14px Arial';
