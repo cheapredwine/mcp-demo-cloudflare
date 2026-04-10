@@ -91,14 +91,6 @@ jobs:
           echo "Updated wrangler.toml:"
           cat wrangler.toml
       
-      - name: Deploy MCP Client
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: packages/workers-client
-          command: deploy
-      
       - name: Update MCP_SERVER_URL in wrangler.toml
         working-directory: packages/workers-client
         run: |
@@ -106,6 +98,14 @@ jobs:
           sed -i 's|MCP_SERVER_URL = "http://localhost:8787"|MCP_SERVER_URL = "https://mcp-demo-server.jsherron-test-account.workers.dev"|' wrangler.toml
           echo "Updated wrangler.toml:"
           cat wrangler.toml
+      
+      - name: Deploy MCP Client
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: packages/workers-client
+          command: deploy
       
       - name: Post Deploy Info
         run: |
