@@ -12,6 +12,33 @@ interface Env {
   MCP_SERVER: Fetcher;
 }
 
+// Call log tracking
+interface CallLog {
+  timestamp: string;
+  type: 'ai' | 'mcp-init' | 'mcp-tool';
+  method?: string;
+  endpoint: string;
+  status?: number;
+  details?: string;
+}
+
+function createCallLogger() {
+  const logs: CallLog[] = [];
+  
+  function log(type: CallLog['type'], endpoint: string, status?: number, details?: string, method?: string) {
+    logs.push({
+      timestamp: new Date().toISOString().split('T')[1].split('.')[0],
+      type,
+      method,
+      endpoint,
+      status,
+      details
+    });
+  }
+  
+  return { logs, log };
+}
+
 // Tool definition interface for Workers AI
 interface ToolDefinition {
   name: string;
@@ -120,9 +147,12 @@ async function callWorkersAI(
 async function callMCPToolViaBinding(
   service: Fetcher,
   toolName: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  log?: (type: CallLog['type'], endpoint: string, status?: number, details?: string, method?: string) => void
 ): Promise<unknown> {
   // Initialize MCP session
+  if (log) log('mcp-init', 'Service Binding: MCP initialize', undefined, 'MCP protocol initialization', 'POST');
+  
   const initBody = {
     jsonrpc: '2.0',
     id: 1,
@@ -194,12 +224,15 @@ async function callMCPToolViaBinding(
 // Process AI response with tool calls
 async function processToolCalls(
   service: Fetcher,
-  toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>
+  toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>,
+  log?: (type: CallLog['type'], endpoint: string, status?: number, details?: string, method?: string) => void
 ): Promise<Array<{ tool: string; result: unknown }>> {
   const results = [];
   
   for (const call of toolCalls) {
-    const result = await callMCPToolViaBinding(service, call.name, call.arguments);
+    if (log) log('mcp-tool', 'Service Binding: tools/call - ' + call.name, undefined, 'Calling tool: ' + call.name, 'POST');
+    const result = await callMCPToolViaBinding(service, call.name, call.arguments, log);
+    if (log) log('mcp-tool', 'Service Binding: tools/call - ' + call.name, 200, 'Tool completed', 'POST');
     results.push({ tool: call.name, result });
   }
   
@@ -223,59 +256,53 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       padding: 20px;
     }
     .container {
-      max-width: 1400px;
+      max-width: 900px;
       margin: 0 auto;
     }
     h1 {
       color: white;
       text-align: center;
       margin-bottom: 10px;
-      font-size: 2rem;
+      font-size: 2.5rem;
       font-weight: 700;
     }
     .subtitle {
       color: rgba(255,255,255,0.9);
       text-align: center;
-      margin-bottom: 20px;
-      font-size: 1rem;
+      margin-bottom: 30px;
+      font-size: 1.1rem;
     }
     .card {
       background: white;
       border-radius: 8px;
-      padding: 20px;
+      padding: 24px;
       margin-bottom: 20px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       border: 1px solid #E5E5E5;
     }
     .card h2 {
       color: #1E1E1E;
-      margin-bottom: 12px;
-      font-size: 1.25rem;
+      margin-bottom: 16px;
+      font-size: 1.5rem;
       font-weight: 600;
     }
-    .input-row {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-    }
     .input-group {
-      flex: 1;
-      margin-bottom: 0;
+      margin-bottom: 16px;
     }
     .input-group label {
       display: block;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       color: #333;
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
     }
     textarea {
       width: 100%;
-      min-height: 80px;
-      padding: 10px;
+      min-height: 100px;
+      padding: 12px;
       border: 2px solid #E5E5E5;
       border-radius: 6px;
-      font-size: 0.95rem;
+      font-size: 1rem;
       resize: vertical;
       font-family: inherit;
       transition: border-color 0.2s;
@@ -285,20 +312,14 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       border-color: #F48120;
       box-shadow: 0 0 0 3px rgba(244,129,32,0.1);
     }
-    .button-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 140px;
-    }
     button {
       background: #F48120;
       color: white;
       border: none;
-      padding: 12px 20px;
+      padding: 14px 28px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 600;
       transition: all 0.2s;
       width: 100%;
@@ -317,22 +338,21 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     .example-prompts {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 10px;
+      gap: 8px;
+      margin-top: 12px;
       align-items: center;
     }
     .example-prompts span {
       color: #666;
       font-weight: 500;
-      font-size: 0.85rem;
     }
     .example-btn {
       background: #FFF5EB;
       color: #E06C1F;
       border: 1px solid #FFD4B3;
-      padding: 6px 10px;
+      padding: 8px 14px;
       border-radius: 6px;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       cursor: pointer;
       transition: all 0.2s;
       font-weight: 500;
@@ -342,94 +362,30 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       color: white;
       border-color: #F48120;
     }
-    .http-log-panel {
-      background: #1E1E1E;
-      color: #00FF00;
-      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-      font-size: 0.75rem;
-      padding: 12px;
-      border-radius: 6px;
-      max-height: 200px;
-      overflow-y: auto;
+    .result-section {
       margin-top: 20px;
     }
-    .http-log-entry {
-      padding: 4px 0;
-      border-bottom: 1px solid #333;
-    }
-    .http-log-entry:last-child {
-      border-bottom: none;
-    }
-    .http-log-toggle {
-      background: #333;
-      color: #00FF00;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px 4px 0 0;
-      cursor: pointer;
-      font-family: monospace;
-      font-size: 0.8rem;
-      margin-top: 20px;
-    }
-    .http-log-toggle:hover {
-      background: #444;
-    }
-    .http-log-container {
-      display: none;
-    }
-    .http-log-container.open {
-      display: block;
-    }
-    
-    /* Three panel layout */
-    .results-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 20px;
-      margin-top: 20px;
-    }
-    .panel {
-      background: white;
-      border-radius: 8px;
-      padding: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      border: 1px solid #E5E5E5;
-      min-height: 300px;
-      display: flex;
-      flex-direction: column;
-    }
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid #F48120;
-    }
-    .panel h3 {
-      color: #1E1E1E;
-      font-size: 0.95rem;
-      font-weight: 700;
+    .result-section h3 {
+      color: #F48120;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .panel-content {
-      flex: 1;
-      overflow-y: auto;
-      max-height: 400px;
+      letter-spacing: 0.8px;
+      font-weight: 700;
     }
     .result-box {
       background: #FAFAFA;
       border: 1px solid #E5E5E5;
       border-radius: 6px;
-      padding: 12px;
+      padding: 16px;
       white-space: pre-wrap;
       font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
+      max-height: 400px;
+      overflow-y: auto;
       line-height: 1.5;
-      min-height: 100px;
     }
-    .result-box.prompt {
+    .result-box.request {
       background: #FFF8F3;
       border-color: #FFD4B3;
       border-left: 4px solid #F48120;
@@ -448,25 +404,25 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     .tool-call {
       background: #FFF8F3;
       border-left: 4px solid #F48120;
-      padding: 10px;
-      margin: 6px 0;
+      padding: 12px;
+      margin: 8px 0;
       border-radius: 0 6px 6px 0;
-      font-size: 0.8rem;
     }
     .tool-result {
       background: #F6FDF9;
       border-left: 4px solid #22C55E;
-      padding: 10px;
-      margin: 6px 0;
+      padding: 12px;
+      margin: 8px 0;
       border-radius: 0 6px 6px 0;
-      font-size: 0.8rem;
     }
     .mcp-status {
       display: inline-block;
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 0.75rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
       font-weight: 600;
+      margin-bottom: 16px;
+      margin-left: 12px;
     }
     .mcp-status.used {
       background: #DCFCE7;
@@ -482,11 +438,29 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       color: #F48120;
       font-style: italic;
     }
-    .empty-state {
-      color: #999;
-      font-style: italic;
-      text-align: center;
-      padding: 40px 20px;
+    .info-box {
+      background: linear-gradient(135deg, #FFF8F3 0%, #FFF5EB 100%);
+      border: 1px solid #FFD4B3;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .info-box h4 {
+      color: #E06C1F;
+      margin-bottom: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .info-box ul {
+      margin-left: 20px;
+      color: #333;
+    }
+    .info-box li {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .info-box li strong {
+      color: #F48120;
     }
     .cloudflare-badge {
       display: inline-flex;
@@ -501,108 +475,110 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-    @media (max-width: 900px) {
-      .results-container {
-        grid-template-columns: 1fr;
-      }
+    .http-log-panel {
+      background: #1E1E1E;
+      color: #00FF00;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 0.75rem;
+      padding: 12px;
+      border-radius: 0 0 6px 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 0;
+    }
+    .http-log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #333;
+    }
+    .http-log-entry:last-child {
+      border-bottom: none;
+    }
+    .http-log-toggle {
+      background: #333;
+      color: #00FF00;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 0.8rem;
+      margin-top: 20px;
+      width: 100%;
+      text-align: left;
+    }
+    .http-log-toggle:hover {
+      background: #444;
+    }
+    .http-log-container {
+      display: none;
+    }
+    .http-log-container.open {
+      display: block;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🤖 AI Orchestrator + MCP</h1>
+    <h1>AI Orchestrator + MCP</h1>
     <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + MCP Tools</p>
 
     <div class="card">
-      <div class="input-row">
-        <div class="input-group">
-          <label for="prompt">Your prompt:</label>
-          <textarea id="prompt" placeholder="Try: 'What is the weather in Tokyo?'"></textarea>
+      <div class="info-box">
+        <h4>How it works:</h4>
+        <ul>
+          <li><strong>Browser</strong> sends prompt to AI Orchestrator (Worker)</li>
+          <li><strong>Workers AI</strong> processes prompt and decides which tools to call</li>
+          <li><strong>AI Gateway</strong> provides caching, analytics, and rate limiting</li>
+          <li><strong>Service Binding</strong> securely connects to MCP server</li>
+        </ul>
+      </div>
+
+      <h2>💬 Ask the AI</h2>
+      
+      <div class="input-group">
+        <label for="prompt">Your prompt:</label>
+        <textarea id="prompt" placeholder="Try: 'What is the weather in Tokyo?'"></textarea>
+      </div>
+
+      <button id="submit-btn" onclick="sendPrompt()">Send to AI</button>
+
           <div class="example-prompts">
             <span>Examples:</span>
-            <button class="example-btn" onclick="setPrompt('What is the weather in Paris?')">Weather</button>
-            <button class="example-btn" onclick="setPrompt('Calculate 25 * 47')">Calculator</button>
-            <button class="example-btn" onclick="setPrompt('Tell me about tabby cats')">No MCP</button>
-            <button class="example-btn" onclick="setPrompt('If apples cost $3 and I have $45, how many can I buy?')">Multi-step</button>
+            <button class="example-btn" onclick="setPromptAndSubmit('What is the weather in Paris?')">Weather</button>
+            <button class="example-btn" onclick="setPromptAndSubmit('Calculate 25 * 47')">Calculator</button>
+            <button class="example-btn" onclick="setPromptAndSubmit('Tell me about tabby cats')">No MCP</button>
+            <button class="example-btn" onclick="setPromptAndSubmit('If apples cost $3 each and I have $45, how many can I buy? Also, what is the weather where apples grow best?')">Multi-tool</button>
           </div>
-        </div>
-        <div class="button-group">
-          <button id="submit-btn" onclick="sendPrompt()">Send to AI</button>
-        </div>
-      </div>
     </div>
 
-    <div class="results-container" id="results-container" style="display: none;">
-      <!-- Left Panel: Prompt -->
-      <div class="panel" id="prompt-panel">
-        <div class="panel-header">
-          <h3>💬 Your Prompt</h3>
-        </div>
-        <div class="panel-content">
-          <div id="request-box" class="result-box prompt">
-            <div class="empty-state">Enter a prompt above and click "Send to AI"</div>
-          </div>
-        </div>
+    <div class="card" id="result-card" style="display: none;">
+      <h2>📊 Results <span id="mcp-status" class="mcp-status not-used" style="display: none;"></span></h2>
+      
+      <div class="result-section">
+        <h3>Your Prompt</h3>
+        <div id="request-box" class="result-box request"></div>
       </div>
 
-      <!-- Center Panel: MCP Interaction -->
-      <div class="panel" id="mcp-panel">
-        <div class="panel-header">
-          <h3>🔧 MCP Server</h3>
-          <span id="mcp-status" class="mcp-status" style="display: none;"></span>
-        </div>
-        <div class="panel-content">
-          <div id="tools-box" class="result-box">
-            <div class="empty-state">MCP interaction will appear here when tools are called</div>
-          </div>
-        </div>
+      <div class="result-section" id="tools-section" style="display: none;">
+        <h3>🔧 MCP Server Interaction</h3>
+        <div id="tools-box" class="result-box response"></div>
       </div>
 
-      <!-- Right Panel: AI Response -->
-      <div class="panel" id="response-panel">
-        <div class="panel-header">
-          <h3>🤖 AI Response</h3>
-        </div>
-        <div class="panel-content">
-          <div id="ai-box" class="result-box response">
-            <div class="empty-state">AI response will appear here</div>
-          </div>
-        </div>
+      <div class="result-section" id="ai-section" style="display: none;">
+        <h3>🤖 AI Response</h3>
+        <div id="ai-box" class="result-box response"></div>
       </div>
     </div>
   </div>
 
   <script>
-    // HTTP request logging
-    const httpLogs = [];
-    
-    function logHttp(method, url, status) {
-      const timestamp = new Date().toLocaleTimeString();
-      const entry = '[' + timestamp + '] ' + method + ' ' + url + ' ' + (status || '');
-      httpLogs.push(entry);
-      if (httpLogs.length > 50) httpLogs.shift();
-      updateHttpLog();
-    }
-    
-    function updateHttpLog() {
-      const logContainer = document.getElementById('http-log-content');
-      if (logContainer) {
-        logContainer.innerHTML = httpLogs.map(function(log) { 
-          return '<div class="http-log-entry">' + log + '</div>';
-        }).join('');
-        logContainer.scrollTop = logContainer.scrollHeight;
-      }
-    }
-    
-    function toggleHttpLog() {
-      const container = document.getElementById('http-log-container');
-      container.classList.toggle('open');
-      const btn = document.getElementById('http-log-toggle');
-      btn.textContent = container.classList.contains('open') ? '▼ HTTP Log' : '▶ HTTP Log';
-    }
-    
     function setPrompt(text) {
       document.getElementById('prompt').value = text;
+    }
+    
+    function setPromptAndSubmit(text) {
+      setPrompt(text);
+      sendPrompt();
     }
     
     // Enter to submit, Shift+Enter for newline
@@ -624,28 +600,21 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       }
 
       const submitBtn = document.getElementById('submit-btn');
-      const resultsContainer = document.getElementById('results-container');
+      const resultCard = document.getElementById('result-card');
       const requestBox = document.getElementById('request-box');
+      const aiSection = document.getElementById('ai-section');
       const aiBox = document.getElementById('ai-box');
+      const toolsSection = document.getElementById('tools-section');
       const toolsBox = document.getElementById('tools-box');
       const mcpStatus = document.getElementById('mcp-status');
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Processing...';
-      resultsContainer.style.display = 'grid';
-      
-      // Show prompt immediately
-      requestBox.textContent = prompt;
-      requestBox.className = 'result-box prompt';
-      
-      // Reset other panels
-      aiBox.innerHTML = '<div class="loading">Waiting for AI response...</div>';
-      aiBox.className = 'result-box response';
-      toolsBox.innerHTML = '<div class="loading">Checking if MCP tools needed...</div>';
+      resultCard.style.display = 'block';
       mcpStatus.style.display = 'none';
-      
-      // Log HTTP request
-      logHttp('POST', '/api/ask');
+      requestBox.textContent = prompt;
+      aiSection.style.display = 'none';
+      toolsSection.style.display = 'none';
 
       try {
         const response = await fetch('/api/ask', {
@@ -654,17 +623,36 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           body: JSON.stringify({ prompt })
         });
 
-        // Log response
-        logHttp('POST', '/api/ask', response.status);
-        
         const data = await response.json();
+        
+        // Display HTTP call logs if available
+        if (data.callLogs && data.callLogs.length > 0) {
+          const logContainer = document.getElementById('http-log-content');
+          const logContainer2 = document.getElementById('http-log-container');
+          const logToggle = document.getElementById('http-log-toggle');
+          if (logContainer && logContainer2 && logToggle) {
+            logContainer.innerHTML = data.callLogs.map(function(log) {
+              var statusColor = log.status >= 200 && log.status < 300 ? '#22C55E' : 
+                               log.status >= 400 ? '#EF4444' : '#F48120';
+              return '<div class="http-log-entry">' +
+                '<span style="color: #888;">[' + log.timestamp + ']</span> ' +
+                '<span style="color: #00FF00;">' + (log.method || 'POST') + '</span> ' +
+                '<span style="color: #fff;">' + log.endpoint + '</span> ' +
+                (log.status ? '<span style="color: ' + statusColor + ';">' + log.status + '</span>' : '') +
+                (log.details ? ' <span style="color: #888;">- ' + log.details + '</span>' : '') +
+                '</div>';
+            }).join('');
+            logContainer2.classList.add('open');
+            logToggle.textContent = '▼ HTTP Log (' + data.callLogs.length + ' calls)';
+          }
+        }
 
         if (data.error) {
+          aiSection.style.display = 'block';
           aiBox.className = 'result-box error';
           aiBox.textContent = 'Error: ' + data.error;
-          toolsBox.innerHTML = '<div class="empty-state">Error occurred</div>';
         } else {
-          // Show AI response
+          aiSection.style.display = 'block';
           if (data.ai && data.ai.response) {
             aiBox.textContent = data.ai.response;
           } else if (data.ai && data.ai.error) {
@@ -672,38 +660,38 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             aiBox.textContent = 'Error: ' + data.ai.error;
           }
 
-          // Show MCP status and tools
-          mcpStatus.style.display = 'inline-block';
           if (data.toolCalls && data.toolCalls.length > 0) {
             // MCP was used
+            mcpStatus.style.display = 'inline-block';
             mcpStatus.className = 'mcp-status used';
-            mcpStatus.textContent = 'MCP Used (' + data.toolCalls.length + ')';
+            mcpStatus.textContent = 'MCP Server Used (' + data.toolCalls.length + ' tool call' + (data.toolCalls.length > 1 ? 's' : '') + ')';
             
-            let toolsHtml = '<div style="margin-bottom: 10px; color: #166534; font-weight: 500; font-size: 0.85rem;">✅ AI invoked MCP tools</div>';
+            toolsSection.style.display = 'block';
+            let toolsHtml = '<div style="margin-bottom: 12px; color: #166534; font-weight: 500;">✅ The AI invoked the MCP server to retrieve data</div>';
             data.toolCalls.forEach(function(call, i) {
               toolsHtml += '<div class="tool-call">';
               toolsHtml += '<strong>Tool #' + (i + 1) + ':</strong> ' + call.tool + '<br>';
-              toolsHtml += '<strong>Args:</strong> ' + JSON.stringify(call.arguments);
+              toolsHtml += '<strong>Arguments:</strong><br>' + JSON.stringify(call.arguments, null, 2);
               toolsHtml += '</div>';
               
               if (call.result) {
                 toolsHtml += '<div class="tool-result">';
-                toolsHtml += '<strong>Result:</strong> ' + JSON.stringify(call.result);
+                toolsHtml += '<strong>Result:</strong><br>' + JSON.stringify(call.result, null, 2);
                 toolsHtml += '</div>';
               }
             });
             toolsBox.innerHTML = toolsHtml;
           } else {
             // MCP was not used
+            mcpStatus.style.display = 'inline-block';
             mcpStatus.className = 'mcp-status not-used';
             mcpStatus.textContent = 'MCP Not Used';
-            toolsBox.innerHTML = '<div style="color: #6B7280; font-style: italic; padding: 20px; text-align: center;">AI answered directly without using tools</div>';
           }
         }
       } catch (error) {
+        aiSection.style.display = 'block';
         aiBox.className = 'result-box error';
         aiBox.textContent = 'Error: ' + error.message;
-        toolsBox.innerHTML = '<div class="empty-state">Error occurred</div>';
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Send to AI';
@@ -711,11 +699,10 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     }
   </script>
   
-  <!-- HTTP Log Panel -->
-  <button id="http-log-toggle" class="http-log-toggle" onclick="toggleHttpLog()">▶ HTTP Log</button>
+  <button id="http-log-toggle" class="http-log-toggle" onclick="var c = document.getElementById('http-log-container'), t = document.getElementById('http-log-toggle'); c.classList.toggle('open'); t.textContent = c.classList.contains('open') ? '▼ HTTP Log' : '▶ HTTP Log';">▶ HTTP Log</button>
   <div id="http-log-container" class="http-log-container">
     <div id="http-log-content" class="http-log-panel">
-      <div style="color: #666;">HTTP requests will be logged here...</div>
+      <div style="color: #666;">HTTP requests will appear here after you send a prompt...</div>
     </div>
   </div>
 </body>
@@ -745,9 +732,13 @@ export default {
 
     // API endpoint to process prompts
     if (url.pathname === "/api/ask" && request.method === "POST") {
+      const { logs, log } = createCallLogger();
+      
       try {
         const body = await request.json() as { prompt: string };
         const prompt = body.prompt || "";
+        
+        log('ai', 'Workers AI /ai/run', undefined, 'Initial AI call with tools', 'POST');
 
         // Call Workers AI with tools available - AI decides whether to use them
         let aiResponse;
@@ -763,16 +754,19 @@ export default {
             ],
             AI_TOOLS
           );
+          log('ai', 'Workers AI /ai/run', 200, 'AI responded', 'POST');
         } catch (error) {
+          log('ai', 'Workers AI /ai/run', 500, 'Error: ' + String(error), 'POST');
           return new Response(
-            JSON.stringify({ error: String(error) }, null, 2),
+            JSON.stringify({ error: String(error), callLogs: logs }, null, 2),
             { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         }
 
         if (aiResponse.error) {
+          log('ai', 'Workers AI', 500, 'AI error: ' + aiResponse.error);
           return new Response(
-            JSON.stringify({ error: aiResponse.error }, null, 2),
+            JSON.stringify({ error: aiResponse.error, callLogs: logs }, null, 2),
             { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         }
@@ -793,7 +787,8 @@ export default {
         
         if (validToolCalls.length > 0) {
           // Execute the tool calls via service binding
-          const results = await processToolCalls(env.MCP_SERVER, validToolCalls);
+          log('mcp-init', 'Service Binding: Starting tool execution', undefined, 'Executing ' + validToolCalls.length + ' tool call(s)', 'POST');
+          const results = await processToolCalls(env.MCP_SERVER, validToolCalls, log);
           
           for (let i = 0; i < validToolCalls.length; i++) {
             toolCalls.push({
@@ -810,6 +805,7 @@ export default {
 
           // Call AI again with tool results to get final response
           try {
+            log('ai', 'Workers AI /ai/run', undefined, 'Second AI call with tool results', 'POST');
             const finalAiResponse = await callWorkersAI(
               env.AI,
               [
@@ -818,19 +814,21 @@ export default {
                   content: 'You are a helpful assistant. Based on the tool results provided, give a clear and helpful response to the user.'
                 },
                 { role: 'user', content: prompt },
-                { role: 'assistant', content: `I need to use tools to answer this. Let me call: ${validToolCalls.map(tc => tc.name).join(', ')}` },
-                { role: 'user', content: `Here are the tool results:\n\n${toolResultsMessage}\n\nPlease provide a helpful response based on these results.` }
+                { role: 'assistant', content: 'I need to use tools to answer this. Let me call: ' + validToolCalls.map(tc => tc.name).join(', ') },
+                { role: 'user', content: 'Here are the tool results:\n\n' + toolResultsMessage + '\n\nPlease provide a helpful response based on these results.' }
               ]
             );
+            log('ai', 'Workers AI /ai/run', 200, 'Final response received', 'POST');
 
             if (!finalAiResponse.error && finalAiResponse.response) {
               finalResponse = finalAiResponse.response;
             }
           } catch (error) {
+            log('ai', 'Workers AI /ai/run', 500, 'Second AI call failed: ' + String(error), 'POST');
             // If second AI call fails, append tool results to any existing response
             finalResponse = finalResponse 
-              ? `${finalResponse}\n\nTool Results:\n${toolResultsMessage}`
-              : `Tool Results:\n${toolResultsMessage}`;
+              ? finalResponse + '\n\nTool Results:\n' + toolResultsMessage
+              : 'Tool Results:\n' + toolResultsMessage;
           }
         }
 
@@ -841,13 +839,14 @@ export default {
               tool_calls: aiResponse.tool_calls || [],
             },
             toolCalls: toolCalls,
+            callLogs: logs,
           }, null, 2),
           { headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
 
       } catch (error) {
         return new Response(
-          JSON.stringify({ error: String(error) }, null, 2),
+          JSON.stringify({ error: String(error), callLogs: logs }, null, 2),
           { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
