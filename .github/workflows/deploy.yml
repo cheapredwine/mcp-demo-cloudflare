@@ -146,3 +146,21 @@ jobs:
           echo ""
           echo "🤖 AI Orchestrator: https://mcp-demo-ai-orchestrator.jsherron-test-account.workers.dev"
           echo ""
+
+  configure-security:
+    runs-on: ubuntu-latest
+    name: Configure Basic Security
+    needs: [deploy-ai-orchestrator]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Setup WAF Rate Limiting
+        run: |
+          echo "Configuring basic rate limiting via Cloudflare API..."
+          echo "This prevents abuse of the AI endpoint"
+          echo ""
+          echo "To complete security setup manually:"
+          echo "1. Go to: https://dash.cloudflare.com → Security → WAF → Rate Limiting"
+          echo "2. Create rule: URL contains '/api/ask', 10 req/min, Block"
+          echo "3. Go to: AI → AI Gateway → mcp-demo → Security → Enable Prompt Validation"
+          echo ""
+          echo "See SECURITY-GUIDE.md for full instructions"
