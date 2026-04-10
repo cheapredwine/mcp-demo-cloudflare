@@ -250,9 +250,9 @@ After deployment, configure these security measures to protect your AI endpoints
 
 ### Rate Limiting (WAF)
 
-Prevent abuse of the AI endpoint with rate limiting:
+⚠️ **Note:** WAF rate limiting requires a **custom domain** with a Zone ID. Workers on `*.workers.dev` URLs don't support WAF rules. For `workers.dev` deployments, AI Gateway provides built-in rate limiting.
 
-**Via Cloudflare Dashboard:**
+**If using a custom domain:**
 1. Go to: https://dash.cloudflare.com → **Security** → **WAF** → **Rate Limiting**
 2. Create a new rule:
    - **If**: URL contains `/api/ask`
@@ -260,9 +260,14 @@ Prevent abuse of the AI endpoint with rate limiting:
    - **Action**: Block
    - **Duration**: 1 hour
 
-**Via API:**
+**Via API (requires Zone ID):**
 ```bash
-curl -X POST "https://api.cloudflare.com/client/v4/zones/{zone_id}/rate_limits" \
+# Get your Zone ID first:
+ZONE_ID=$(curl -s "https://api.cloudflare.com/client/v4/zones?name=yourdomain.com" \
+  -H "Authorization: Bearer {api_token}" | jq -r '.result[0].id')
+
+# Create rate limit rule:
+curl -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/rate_limits" \
   -H "Authorization: Bearer {api_token}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -293,12 +298,14 @@ Enable prompt validation in your AI Gateway:
 
 ### Additional Security Measures
 
-| Measure | How to Enable | Why |
-|---------|--------------|-----|
-| **HTTPS Only** | Workers enforce HTTPS by default | Prevents MITM attacks |
-| **CORS Headers** | Already configured in code | Blocks unauthorized origins |
-| **Input Validation** | MCP server validates tool args | Prevents malformed requests |
-| **Token Scope** | Create token with minimal permissions | Limits blast radius |
+| Measure | How to Enable | Why | Available on workers.dev? |
+|---------|--------------|-----|---------------------------|
+| **AI Gateway Rate Limiting** | Built into AI Gateway binding | Prevents abuse via AI Gateway analytics | ✅ Yes |
+| **HTTPS Only** | Workers enforce HTTPS by default | Prevents MITM attacks | ✅ Yes |
+| **CORS Headers** | Already configured in code | Blocks unauthorized origins | ✅ Yes |
+| **Input Validation** | MCP server validates tool args | Prevents malformed requests | ✅ Yes |
+| **WAF Rate Limiting** | Requires custom domain + Zone ID | Fine-grained request control | ❌ No |
+| **Firewall for AI** | AI Gateway Security tab | Prompt injection protection | ✅ Yes |
 
 ### API Token Best Practices
 
