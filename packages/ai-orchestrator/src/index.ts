@@ -253,7 +253,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: linear-gradient(135deg, #F48120 0%, #E06C1F 50%, #1E1E1E 100%);
       min-height: 100vh;
-      padding: 20px;
+      padding: 10px;
     }
     .container {
       max-width: 1400px;
@@ -262,47 +262,47 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     h1 {
       color: white;
       text-align: center;
-      margin-bottom: 10px;
-      font-size: 2.5rem;
+      margin-bottom: 5px;
+      font-size: 1.8rem;
       font-weight: 700;
     }
     .subtitle {
       color: rgba(255,255,255,0.9);
       text-align: center;
-      margin-bottom: 30px;
-      font-size: 1.1rem;
+      margin-bottom: 15px;
+      font-size: 0.9rem;
     }
     .card {
       background: white;
       border-radius: 8px;
-      padding: 24px;
-      margin-bottom: 20px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       border: 1px solid #E5E5E5;
     }
     .card h2 {
       color: #1E1E1E;
-      margin-bottom: 16px;
-      font-size: 1.5rem;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
       font-weight: 600;
     }
     .input-group {
-      margin-bottom: 16px;
+      margin-bottom: 0;
     }
     .input-group label {
       display: block;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
       color: #333;
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
     }
     textarea {
       width: 100%;
-      min-height: 100px;
-      padding: 12px;
+      min-height: 50px;
+      padding: 8px;
       border: 2px solid #E5E5E5;
       border-radius: 6px;
-      font-size: 1rem;
+      font-size: 0.9rem;
       resize: vertical;
       font-family: inherit;
       transition: border-color 0.2s;
@@ -310,7 +310,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     textarea:focus {
       outline: none;
       border-color: #F48120;
-      box-shadow: 0 0 0 3px rgba(244,129,32,0.1);
+      box-shadow: 0 0 0 2px rgba(244,129,32,0.1);
     }
     button {
       background: #F48120;
@@ -441,23 +441,24 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     .info-box {
       background: linear-gradient(135deg, #FFF8F3 0%, #FFF5EB 100%);
       border: 1px solid #FFD4B3;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
     }
     .info-box h4 {
       color: #E06C1F;
-      margin-bottom: 12px;
-      font-size: 1rem;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
       font-weight: 600;
     }
     .info-box ul {
-      margin-left: 20px;
+      margin-left: 16px;
       color: #333;
     }
     .info-box li {
-      margin-bottom: 8px;
-      line-height: 1.5;
+      margin-bottom: 4px;
+      line-height: 1.3;
     }
     .info-box li strong {
       color: #F48120;
@@ -587,22 +588,23 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         </ul>
       </div>
 
-      <h2>💬 Ask the AI</h2>
-      
-      <div class="input-group">
-        <label for="prompt">Your prompt:</label>
-        <textarea id="prompt" placeholder="Try: 'What is the weather in Tokyo?'"></textarea>
+      <div class="input-row" style="display: flex; gap: 10px; align-items: flex-start;">
+        <div class="input-group" style="flex: 1;">
+          <label for="prompt" style="font-size: 0.85rem; margin-bottom: 4px;">Your prompt:</label>
+          <textarea id="prompt" placeholder="Try: 'What is the weather in Tokyo?'" style="min-height: 50px; padding: 8px; font-size: 0.9rem;"></textarea>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; min-width: 100px;">
+          <button id="submit-btn" onclick="sendPrompt()" style="padding: 10px 16px; font-size: 0.9rem;">Send</button>
+        </div>
       </div>
 
-      <button id="submit-btn" onclick="sendPrompt()">Send to AI</button>
-
-          <div class="example-prompts">
-            <span>Examples:</span>
-            <button class="example-btn" onclick="setPromptAndSubmit('What is the weather in Paris?')">Weather</button>
-            <button class="example-btn" onclick="setPromptAndSubmit('Calculate 25 * 47')">Calculator</button>
-            <button class="example-btn" onclick="setPromptAndSubmit('Tell me about tabby cats')">No MCP</button>
-            <button class="example-btn" onclick="setPromptAndSubmit('If apples cost $3 each and I have $45, how many can I buy? Also, what is the weather where apples grow best?')">Multi-tool</button>
-          </div>
+      <div class="example-prompts" style="margin-top: 8px;">
+        <span style="font-size: 0.8rem;">Examples:</span>
+        <button class="example-btn" onclick="setPromptAndSubmit('What is the weather in Paris?')">Weather</button>
+        <button class="example-btn" onclick="setPromptAndSubmit('Calculate 25 * 47')">Calculator</button>
+        <button class="example-btn" onclick="setPromptAndSubmit('Tell me about tabby cats')">No MCP</button>
+        <button class="example-btn" onclick="setPromptAndSubmit('If apples cost $3 each and I have $45, how many can I buy?')">Multi-step</button>
+      </div>
     </div>
 
     <div class="results-container" id="results-container">
