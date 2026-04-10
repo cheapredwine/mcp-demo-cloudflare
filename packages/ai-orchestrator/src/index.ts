@@ -212,10 +212,13 @@ async function callMCPToolViaBinding(
     throw new Error(`Tool call failed: ${response.status} - ${errorText}`);
   }
 
-  const data = await response.json() as { result?: unknown; error?: { message: string } };
+  const data = await response.json() as { result?: unknown; error?: { message?: string; code?: number } | string };
   
   if (data.error) {
-    throw new Error(data.error.message);
+    const errorMessage = typeof data.error === 'object' 
+      ? (data.error.message || JSON.stringify(data.error))
+      : String(data.error);
+    throw new Error(errorMessage);
   }
   
   return data.result;
