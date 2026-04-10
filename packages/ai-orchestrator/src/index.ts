@@ -616,52 +616,20 @@ export default {
           );
         }
 
-        // Step 1: Determine if we need tools by asking the AI
-        let needsTools = false;
-        let toolIntentResponse;
+        // Call AI Gateway with tools available - AI decides whether to use them
+        let aiResponse;
         try {
-          toolIntentResponse = await callAIGateway(
+          aiResponse = await callAIGateway(
             env.CF_AIG_TOKEN,
             [
               { 
                 role: 'system', 
-                content: 'You are an analyzer. Given a user request, reply with ONLY "TOOLS" if they need calculations or weather data, otherwise reply with ONLY "DIRECT".'
+                content: 'You are a helpful assistant with access to tools. You can answer general knowledge questions directly. Only use the available tools if the user asks for calculations or weather information.'
               },
               { role: 'user', content: prompt }
-            ]
+            ],
+            AI_TOOLS
           );
-          
-          if (toolIntentResponse.response?.includes('TOOLS')) {
-            needsTools = true;
-          }
-        } catch (error) {
-          // If analysis fails, assume direct response
-          needsTools = false;
-        }
-
-        // Step 2: Call AI Gateway with or without tools
-        let aiResponse;
-        try {
-          if (needsTools) {
-            // Call with tools
-            aiResponse = await callAIGateway(
-              env.CF_AIG_TOKEN,
-              [
-                { role: 'system', content: 'You are a helpful assistant.' },
-                { role: 'user', content: prompt }
-              ],
-              AI_TOOLS
-            );
-          } else {
-            // Call without tools
-            aiResponse = await callAIGateway(
-              env.CF_AIG_TOKEN,
-              [
-                { role: 'system', content: 'You are a helpful assistant.' },
-                { role: 'user', content: prompt }
-              ]
-            );
-          }
         } catch (error) {
           return new Response(
             JSON.stringify({ error: String(error) }, null, 2),
