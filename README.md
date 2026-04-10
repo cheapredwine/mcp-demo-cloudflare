@@ -53,7 +53,7 @@ Open the AI Orchestrator Web UI and type a message to see the MCP protocol in ac
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**¹ Note:** In this demo, Workers AI is accessed via binding from the AI Orchestrator worker. In production, you might deploy Workers AI as a separate service or use the HTTP API directly.
+**¹ Note:** Workers AI is a Cloudflare platform service. In this demo we access it via binding from the AI Orchestrator worker. You can also call it via the REST API from any worker or external service.
 
 ### Why Service Bindings?
 

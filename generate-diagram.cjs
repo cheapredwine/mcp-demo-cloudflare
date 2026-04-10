@@ -2,8 +2,8 @@ const { createCanvas } = require('canvas');
 const fs = require('fs');
 
 // Canvas setup
-const width = 1200;
-const height = 950;
+const width = 1400;
+const height = 1100;
 const canvas = createCanvas(width, height);
 const ctx = canvas.getContext('2d');
 
@@ -101,21 +101,21 @@ function drawBox(x, y, w, h, title, subtitle, icon, color) {
   ctx.fill();
   
   // Icon text
-  ctx.font = 'bold 18px Arial';
+  ctx.font = 'bold 20px Arial';
   ctx.fillStyle = WHITE;
   ctx.textAlign = 'center';
   ctx.fillText(icon, x + 35, y + 36);
   
   // Title
-  ctx.font = 'bold 16px Arial';
+  ctx.font = 'bold 18px Arial';
   ctx.fillStyle = DARK;
   ctx.textAlign = 'left';
   ctx.fillText(title, x + 65, y + 26);
   
   // Subtitle
-  ctx.font = '11px Arial';
+  ctx.font = '13px Arial';
   ctx.fillStyle = '#666';
-  ctx.fillText(subtitle, x + 65, y + 42);
+  ctx.fillText(subtitle, x + 65, y + 44);
 }
 
 // Draw inner component box
@@ -127,16 +127,16 @@ function drawComponentBox(x, y, w, h, title, lines, borderColor) {
   ctx.strokeRect(x, y, w, h);
   
   // Title
-  ctx.font = 'bold 13px Arial';
+  ctx.font = 'bold 14px Arial';
   ctx.fillStyle = DARK;
   ctx.textAlign = 'left';
-  ctx.fillText(title, x + 10, y + 22);
+  ctx.fillText(title, x + 12, y + 24);
   
   // Lines
-  ctx.font = '11px Arial';
-  ctx.fillStyle = '#666';
+  ctx.font = '12px Arial';
+  ctx.fillStyle = '#555';
   lines.forEach((line, i) => {
-    ctx.fillText(line, x + 10, y + 40 + (i * 14));
+    ctx.fillText(line, x + 12, y + 44 + (i * 16));
   });
 }
 
@@ -144,21 +144,21 @@ function drawComponentBox(x, y, w, h, title, lines, borderColor) {
 function drawBadge(x, y, w, h, text, bgColor) {
   ctx.fillStyle = bgColor;
   ctx.fillRect(x, y, w, h);
-  ctx.font = 'bold 10px Arial';
+  ctx.font = 'bold 11px Arial';
   ctx.fillStyle = WHITE;
   ctx.textAlign = 'center';
-  ctx.fillText(text, x + w/2, y + h/2 + 3);
+  ctx.fillText(text, x + w/2, y + h/2 + 4);
 }
 
 // Title
-ctx.font = 'bold 32px Arial';
+ctx.font = 'bold 36px Arial';
 ctx.fillStyle = DARK;
 ctx.textAlign = 'center';
-ctx.fillText('MCP Demo Architecture', width/2, 45);
+ctx.fillText('MCP Demo Architecture', width/2, 50);
 
-ctx.font = '16px Arial';
+ctx.font = '18px Arial';
 ctx.fillStyle = '#444';
-ctx.fillText('Cloudflare Workers + Workers AI + AI Gateway + MCP', width/2, 70);
+ctx.fillText('Cloudflare Workers + Workers AI + AI Gateway + MCP', width/2, 78);
 
 // User (top)
 ctx.beginPath();
@@ -169,38 +169,41 @@ ctx.font = 'bold 24px Arial';
 ctx.fillStyle = WHITE;
 ctx.textAlign = 'center';
 ctx.fillText('👤', width/2, 118);
-ctx.font = 'bold 13px Arial';
+ctx.font = 'bold 14px Arial';
 ctx.fillStyle = DARK;
 ctx.fillText('User', width/2, 160);
-ctx.font = '11px Arial';
+
+// Web browser label to the side
+ctx.font = '12px Arial';
 ctx.fillStyle = '#666';
-ctx.fillText('Web browser with 3-Panel UI', width/2, 175);
+ctx.textAlign = 'left';
+ctx.fillText('🌐 Web browser with 3-Panel UI', width/2 + 60, 140);
 
 // AI Orchestrator (below user)
-drawBox(300, 200, 600, 180, 'AI Orchestrator (Worker)', 'mcp-demo.jsherron.com', '🤖', ORANGE);
+drawBox(350, 210, 700, 180, 'AI Orchestrator (Worker)', 'mcp-demo.jsherron.com', '🤖', ORANGE);
 
 // 3-Panel Web UI inside AI Orchestrator
-drawComponentBox(320, 260, 560, 110, '3-Panel Web UI', [
+drawComponentBox(370, 270, 660, 110, '3-Panel Web UI', [
   '• Prompt | MCP Status | AI Response',
   '• Enter to submit, Shift+Enter for newline',
   '• HTTP Log panel shows all internal calls'
 ], GREEN);
 
 // Arrow: User -> AI Orchestrator
-drawArrow(width/2, 175, width/2, 200, DARK, 'HTTP');
+drawArrow(width/2, 165, width/2, 210, DARK, 'HTTP');
 
 // Arrow: AI Orchestrator -> Cloudflare AI Platform
 drawArrow(width/2, 380, width/2, 420, PURPLE, 'Workers AI Binding', 'left');
 
 // Cloudflare AI Platform (middle layer)
-drawRoundedRect(150, 420, 900, 220, 12, '#E8F4FD');
-ctx.font = 'bold 14px Arial';
+drawRoundedRect(200, 430, 1000, 240, 12, '#E8F4FD');
+ctx.font = 'bold 16px Arial';
 ctx.fillStyle = DARK;
 ctx.textAlign = 'center';
-ctx.fillText('Cloudflare AI Platform', width/2, 445);
+ctx.fillText('Cloudflare AI Platform', width/2, 458);
 
 // Workers AI box (left side of platform)
-drawComponentBox(180, 460, 380, 160, 'Workers AI', [
+drawComponentBox(240, 480, 440, 170, 'Workers AI', [
   '• Workers AI LLM model instance',
   '• Natural language understanding',
   '• Intelligent tool selection',
@@ -208,7 +211,7 @@ drawComponentBox(180, 460, 380, 160, 'Workers AI', [
 ], PURPLE);
 
 // AI Gateway box (right side of platform)
-drawComponentBox(590, 460, 430, 160, 'AI Gateway', [
+drawComponentBox(720, 480, 460, 170, 'AI Gateway', [
   '• Caching + Analytics',
   '• Rate limiting',
   '• Guardrails (prompt injection protection)',
@@ -216,33 +219,33 @@ drawComponentBox(590, 460, 430, 160, 'AI Gateway', [
 ], '#FF6B35');
 
 // Badges for AI Gateway
-drawBadge(750, 545, 100, 20, '🛡️ Guardrails', RED);
-drawBadge(870, 545, 130, 20, '🔥 Firewall for AI', BLUE);
+drawBadge(900, 575, 110, 24, '🛡️ Guardrails', RED);
+drawBadge(1020, 575, 140, 24, '🔥 Firewall for AI', BLUE);
 
 // Bidirectional arrow between Workers AI and AI Gateway
-drawArrow(560, 540, 590, 540, '#666', '', '');
-drawArrow(590, 560, 560, 560, '#666', '', '');
+drawArrow(680, 565, 720, 565, '#666', '', '');
+drawArrow(720, 585, 680, 585, '#666', '', '');
 
 // Arrow: Cloudflare AI Platform -> MCP Server
-drawArrow(width/2, 640, width/2, 680, BLUE, 'Service Binding', 'left');
+drawArrow(width/2, 640, width/2, 700, BLUE, 'Service Binding', 'left');
 
 // MCP Server (bottom)
-drawBox(350, 680, 500, 140, 'MCP Server (Worker)', 'Private - No Public URL', '🔧', BLUE);
+drawBox(400, 700, 600, 160, 'MCP Server (Worker)', 'Private - No Public URL', '🔧', BLUE);
 
 // MCP Server content
-drawComponentBox(370, 730, 460, 80, 'MCP Protocol Handler', [
+drawComponentBox(420, 760, 560, 90, 'MCP Protocol Handler', [
   '• Exposes 2 tools: calculator, get_weather',
   '• Only accessible via Service Binding (secure)'
 ], BLUE);
 
 // Legend (bottom left)
-let legendY = 850;
-ctx.font = 'bold 14px Arial';
+let legendY = 920;
+ctx.font = 'bold 16px Arial';
 ctx.fillStyle = DARK;
 ctx.textAlign = 'left';
 ctx.fillText('Legend:', 50, legendY);
 
-legendY += 25;
+legendY += 32;
 const legendItems = [
   { color: ORANGE, text: 'Cloudflare Workers' },
   { color: GREEN, text: 'Web UI' },
@@ -255,23 +258,23 @@ const legendItems = [
 let legendX = 50;
 legendItems.forEach((item, i) => {
   ctx.fillStyle = item.color;
-  ctx.fillRect(legendX, legendY, 18, 18);
-  ctx.font = '11px Arial';
+  ctx.fillRect(legendX, legendY, 24, 24);
+  ctx.font = '14px Arial';
   ctx.fillStyle = DARK;
-  ctx.fillText(item.text, legendX + 24, legendY + 13);
-  legendX += 140;
+  ctx.fillText(item.text, legendX + 30, legendY + 17);
+  legendX += 200;
   if (i === 2) {
     legendX = 50;
-    legendY += 25;
+    legendY += 32;
   }
 });
 
-// Note (bottom right)
-ctx.font = '10px Arial';
+// Note (bottom)
+ctx.font = '13px Arial';
 ctx.fillStyle = '#666';
 ctx.textAlign = 'left';
-ctx.fillText('Note: In this demo, Workers AI is accessed via binding. In production, you might deploy Workers AI', 50, 935);
-ctx.fillText('as a separate service or use the HTTP API directly.', 50, 948);
+ctx.fillText('Note: Workers AI is a platform service. In this demo we use the Workers AI binding.', 50, 1050);
+ctx.fillText('You can also access it via the REST API from any worker or external service.', 50, 1070);
 
 // Save
 const buffer = canvas.toBuffer('image/png');
