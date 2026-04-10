@@ -4,19 +4,8 @@ describe('AI Orchestrator', () => {
   describe('AI Tools Configuration', () => {
     const AI_TOOLS = [
       {
-        name: 'echo',
-        description: 'Echo back a message.',
-        parameters: {
-          type: 'object',
-          properties: {
-            message: { type: 'string', description: 'The message to echo back' }
-          },
-          required: ['message']
-        }
-      },
-      {
         name: 'calculator',
-        description: 'Perform mathematical calculations.',
+        description: 'ONLY use when the user asks for mathematical calculations.',
         parameters: {
           type: 'object',
           properties: {
@@ -29,7 +18,7 @@ describe('AI Orchestrator', () => {
       },
       {
         name: 'get_weather',
-        description: 'Get current weather information.',
+        description: 'ONLY use when the user specifically asks about weather.',
         parameters: {
           type: 'object',
           properties: {
@@ -38,45 +27,32 @@ describe('AI Orchestrator', () => {
           },
           required: ['location']
         }
-      },
-      {
-        name: 'random_fact',
-        description: 'Get a random interesting fact.',
-        parameters: {
-          type: 'object',
-          properties: {
-            category: { type: 'string', enum: ['technology', 'science', 'history', 'nature', 'space'] }
-          }
-        }
       }
     ];
 
-    it('should have 4 tools defined', () => {
-      expect(AI_TOOLS).toHaveLength(4);
+    it('should have 2 tools defined (reduced from 4)', () => {
+      expect(AI_TOOLS).toHaveLength(2);
     });
 
-    it('should have echo tool with correct schema', () => {
-      const echoTool = AI_TOOLS.find(t => t.name === 'echo');
-      expect(echoTool).toBeDefined();
-      expect(echoTool?.parameters.required).toContain('message');
-    });
-
-    it('should have calculator tool with correct operations', () => {
+    it('should have calculator tool with restrictive description', () => {
       const calcTool = AI_TOOLS.find(t => t.name === 'calculator');
       expect(calcTool).toBeDefined();
+      expect(calcTool?.description).toContain('ONLY use');
       expect(calcTool?.parameters.properties.operation.enum).toEqual(['add', 'subtract', 'multiply', 'divide']);
     });
 
-    it('should have weather tool with correct parameters', () => {
+    it('should have weather tool with restrictive description', () => {
       const weatherTool = AI_TOOLS.find(t => t.name === 'get_weather');
       expect(weatherTool).toBeDefined();
+      expect(weatherTool?.description).toContain('ONLY use');
       expect(weatherTool?.parameters.required).toEqual(['location']);
     });
 
-    it('should have fact tool with correct categories', () => {
+    it('should NOT have echo or random_fact tools anymore', () => {
+      const echoTool = AI_TOOLS.find(t => t.name === 'echo');
       const factTool = AI_TOOLS.find(t => t.name === 'random_fact');
-      expect(factTool).toBeDefined();
-      expect(factTool?.parameters.properties.category.enum).toContain('technology');
+      expect(echoTool).toBeUndefined();
+      expect(factTool).toBeUndefined();
     });
   });
 
@@ -86,19 +62,20 @@ describe('AI Orchestrator', () => {
         {
           type: 'function',
           function: {
-            name: 'echo',
-            description: 'Echo back a message',
+            name: 'calculator',
+            description: 'ONLY use for math',
             parameters: {
               type: 'object',
-              properties: { message: { type: 'string' } },
-              required: ['message']
+              properties: { a: { type: 'number' } },
+              required: ['a']
             }
           }
         }
       ];
 
       expect(tools[0].type).toBe('function');
-      expect(tools[0].function.name).toBe('echo');
+      expect(tools[0].function.name).toBe('calculator');
+      expect(tools[0].function.description).toContain('ONLY');
     });
   });
 });
