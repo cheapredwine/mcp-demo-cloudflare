@@ -114,3 +114,35 @@ jobs:
           echo "📡 MCP Server: https://mcp-demo-server.jsherron-test-account.workers.dev"
           echo "🌐 MCP Client: https://mcp-demo-client.jsherron-test-account.workers.dev"
           echo ""
+
+  deploy-ai-gateway:
+    runs-on: ubuntu-latest
+    name: Deploy AI Gateway
+    needs: [test, deploy-server]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Deploy AI Gateway
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: packages/ai-gateway
+          command: deploy
+      
+      - name: Post Deploy Info
+        run: |
+          echo "✅ AI Gateway deployed successfully!"
+          echo ""
+          echo "🛡️ AI Gateway: https://mcp-demo-ai-gateway.jsherron-test-account.workers.dev"
+          echo ""

@@ -4,7 +4,8 @@ A working MCP (Model Context Protocol) server and client running on Cloudflare W
 
 ## 🚀 Live Demo
 
-- **Web UI:** https://mcp-demo-client.jsherron-test-account.workers.dev/
+- **MCP Client:** https://mcp-demo-client.jsherron-test-account.workers.dev/
+- **AI Gateway:** https://mcp-demo-ai-gateway.jsherron-test-account.workers.dev/ 🆕
 - **MCP Server:** https://mcp-demo-server.jsherron-test-account.workers.dev/mcp
 
 Open the Web UI and click any test button to see the MCP protocol in action!
@@ -13,26 +14,42 @@ Open the Web UI and click any test button to see the MCP protocol in action!
 
 - **MCP Server**: Stateless server handling MCP protocol requests via Streamable HTTP transport
 - **MCP Client**: Web UI that connects to the server using Cloudflare Service Bindings
-- **Both run on Cloudflare Workers**: Serverless, globally distributed, pay-per-request
+- **AI Gateway** 🆕: Worker AI with Firewall for AI protection, intelligently calling MCP tools
+- **All run on Cloudflare Workers**: Serverless, globally distributed, pay-per-request
 - **Key Innovation**: Uses Service Bindings instead of HTTP for worker-to-worker communication (avoids Cloudflare's 1042 error)
 
 ## Architecture
 
 ```
-┌─────────────────────┐
-│   MCP Client        │  Web UI + API proxy
-│   (Cloudflare       │  Serves HTML demo page
-│    Worker)          │  Uses Service Binding to call server
-└──────────┬──────────┘
-           │ Service Binding (internal)
-           │ No HTTP, no 1042 errors!
-           ▼
-┌─────────────────────┐
-│   MCP Server        │  Handles MCP protocol
-│   (Cloudflare       │  Exposes 5 demo tools:
-│    Worker)          │  - echo, calculator, weather
-│                     │  - random_fact, traffic_log
-└─────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  AI Gateway (NEW)                                           │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │ Firewall for AI                                       │  │
+│  │ • Block prompt injection attacks                      │  │
+│  │ • Rate limiting                                       │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                          ↓                                  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │ Worker AI + Tools                                     │  │
+│  │ • Natural language understanding                      │  │
+│  │ • Intelligent tool selection                          │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                          ↓                                  │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ Service Binding
+┌──────────────────────────┴──────────────────────────────────┐
+│  MCP Client                                                 │
+│  • Web UI + API proxy                                       │
+│  • Service Binding to MCP Server                            │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ Service Binding
+┌──────────────────────────┴──────────────────────────────────┐
+│  MCP Server                                                 │
+│  • Handles MCP protocol                                     │
+│  • Exposes 5 demo tools:                                    │
+│    - echo, calculator, weather                              │
+│    - random_fact, traffic_log                               │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Why Service Bindings?
@@ -74,7 +91,16 @@ npm run dev
 # Client runs on http://localhost:8788
 ```
 
-**Open browser:** `http://localhost:8788`
+**Terminal 3 - Start AI Gateway (optional):**
+```bash
+cd packages/ai-gateway
+npm run dev
+# AI Gateway runs on http://localhost:8789
+```
+
+**Open browser:** 
+- MCP Client: `http://localhost:8788`
+- AI Gateway: `http://localhost:8789`
 
 ## Available Tools
 
@@ -107,6 +133,20 @@ The MCP server exposes these tools:
 | `/test-weather` | Test weather tool |
 | `/test-fact` | Test random fact tool |
 | `/test-all` | Run all tool tests |
+
+### AI Gateway (http://localhost:8789)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | AI Gateway Web UI |
+| `/api/ask` | POST | Ask the AI (with Firewall for AI protection) |
+| `/health` | GET | Health check |
+
+**AI Gateway Features:**
+- 🛡️ **Firewall for AI**: Detects and blocks prompt injection attacks
+- 🤖 **Worker AI**: Natural language processing with tool calling
+- 🔧 **MCP Tool Integration**: AI intelligently decides which tools to call
+- 🎮 **Attack Mode**: Toggle to test prompt injection detection
 
 ## Example Tool Call
 
@@ -160,14 +200,28 @@ cd packages/workers-client
 wrangler deploy
 ```
 
-**Configure Service Binding (one-time):**
+**Deploy AI Gateway:**
+```bash
+cd packages/ai-gateway
+wrangler deploy
+```
+
+**Configure Service Bindings (one-time):**
+
+For Client:
 ```bash
 cd packages/workers-client
 wrangler service bind MCP_SERVER --service=mcp-demo-server
 ```
 
+For AI Gateway:
+```bash
+cd packages/ai-gateway
+wrangler service bind MCP_SERVER --service=mcp-demo-server
+```
+
 Or via Cloudflare Dashboard:
-1. Go to Workers & Pages → mcp-demo-client
+1. Go to Workers & Pages → Select worker (mcp-demo-client or mcp-demo-ai-gateway)
 2. Settings → Service bindings
 3. Add: `MCP_SERVER` → `mcp-demo-server`
 
@@ -229,14 +283,20 @@ npm run typecheck
 packages/
 ├── mcp-server/          # MCP protocol server
 │   ├── src/index.ts     # Server implementation
-│   ├── src/__tests__/   # Tests
+│   ├── src/__tests__/   # Tests (40 tests)
 │   ├── wrangler.toml    # Worker config
 │   └── package.json
 │
-└── workers-client/      # Web UI + API client
-    ├── src/index.ts     # Client with Service Binding
-    ├── src/__tests__/   # Tests
-    ├── wrangler.toml    # Worker config (with service binding)
+├── workers-client/      # Web UI + API client
+│   ├── src/index.ts     # Client with Service Binding
+│   ├── src/__tests__/   # Tests (16 tests)
+│   ├── wrangler.toml    # Worker config (with service binding)
+│   └── package.json
+│
+└── ai-gateway/          # 🆕 AI Gateway with Firewall for AI
+    ├── src/index.ts     # Worker AI + Firewall + MCP integration
+    ├── src/__tests__/   # Tests (20 tests)
+    ├── wrangler.toml    # Worker config (AI binding + service binding)
     └── package.json
 ```
 
@@ -246,15 +306,27 @@ packages/
 - **WebStandardStreamableHTTPServerTransport**: HTTP transport for Workers
 - **Cloudflare Workers**: Serverless edge platform
 - **Cloudflare Service Bindings**: Internal worker-to-worker communication
+- **Cloudflare Worker AI**: AI inference at the edge
+- **Cloudflare Firewall for AI**: Prompt injection detection and protection
 - **Wrangler**: CLI for Workers deployment
 - **Vitest**: Testing framework
 
 ## How It Works
 
+### MCP Client Flow
 1. **Client receives HTTP request** from browser
 2. **Client uses Service Binding** to call server (`env.MCP_SERVER.fetch()`)
 3. **Server processes MCP protocol** and returns result
 4. **Client returns result** to browser as JSON
+
+### AI Gateway Flow
+1. **AI Gateway receives prompt** from browser
+2. **Firewall for AI** checks for prompt injection attacks
+3. **Worker AI** processes the prompt with tool definitions
+4. **AI decides which tools to call** (if any)
+5. **Service Binding** calls MCP server for each tool
+6. **Results returned to AI** for natural language response
+7. **Formatted response** returned to browser
 
 The MCP protocol flow:
 1. Initialize connection
@@ -267,6 +339,8 @@ The MCP protocol flow:
 - **MCP Protocol**: https://modelcontextprotocol.io/
 - **Cloudflare Workers**: https://workers.cloudflare.com/
 - **Service Bindings**: https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/
+- **Cloudflare Worker AI**: https://developers.cloudflare.com/workers-ai/
+- **Cloudflare Firewall for AI**: https://developers.cloudflare.com/firewall-for-ai/
 - **MCP SDK**: https://github.com/modelcontextprotocol/typescript-sdk
 
 ## License

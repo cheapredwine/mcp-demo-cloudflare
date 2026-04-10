@@ -6,10 +6,13 @@
   "scripts": {
     "dev:server": "cd packages/mcp-server && wrangler dev",
     "dev:client": "cd packages/workers-client && wrangler dev",
+    "dev:ai": "cd packages/ai-gateway && wrangler dev",
     "deploy:server": "cd packages/mcp-server && wrangler deploy",
     "deploy:client": "cd packages/workers-client && wrangler deploy",
+    "deploy:ai": "cd packages/ai-gateway && wrangler deploy",
     "tail:server": "cd packages/mcp-server && wrangler tail",
     "tail:client": "cd packages/workers-client && wrangler tail",
+    "tail:ai": "cd packages/ai-gateway && wrangler tail",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

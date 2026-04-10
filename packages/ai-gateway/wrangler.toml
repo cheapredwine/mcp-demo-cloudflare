@@ -1,0 +1,12 @@
+name = "mcp-demo-ai-gateway"
+main = "src/index.ts"
+compatibility_date = "2024-03-20"
+compatibility_flags = ["nodejs_compat"]
+
+# Service binding to MCP server
+[[services]]
+binding = "MCP_SERVER"
+service = "mcp-demo-server"
+
+[ai]
+binding = "AI"
