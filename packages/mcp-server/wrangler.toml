@@ -3,6 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2025-03-21"
 compatibility_flags = ["nodejs_compat"]
 
+# Disable public workers.dev route - only accessible via Service Binding
+workers_dev = false
+
 # Account ID is set via CLOUDFLARE_ACCOUNT_ID environment variable or secret
 # Enable observability for logging
 [observability]
@@ -10,3 +13,4 @@ enabled = true
 
 # This is a STATELESS server running on regular Workers
 # No Durable Objects needed!
+# NO routes = private - only accessible via Service Binding from AI Orchestrator
