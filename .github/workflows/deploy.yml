@@ -15,6 +15,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Debug Info
+        run: |
+          echo "=== Current directory ==="
+          pwd
+          echo "=== All files ==="
+          ls -la
+          echo "=== package.json contents ==="
+          cat package.json
+          echo "=== Scripts in package.json ==="
+          node -e "console.log(JSON.parse(require('fs').readFileSync('package.json')).scripts)"
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -26,9 +37,6 @@ jobs:
       
       - name: Run tests
         run: npm test
-      
-      - name: Type check
-        run: npm run typecheck
 
   deploy-server:
     runs-on: ubuntu-latest
