@@ -256,7 +256,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       padding: 20px;
     }
     .container {
-      max-width: 900px;
+      max-width: 1400px;
       margin: 0 auto;
     }
     h1 {
@@ -515,6 +515,48 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     .http-log-container.open {
       display: block;
     }
+    /* Three panel layout */
+    .results-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border: 1px solid #E5E5E5;
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #F48120;
+    }
+    .panel h3 {
+      color: #1E1E1E;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .panel-content {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 400px;
+    }
+    @media (max-width: 900px) {
+      .results-container {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -551,22 +593,42 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           </div>
     </div>
 
-    <div class="card" id="result-card" style="display: none;">
-      <h2>📊 Results <span id="mcp-status" class="mcp-status not-used" style="display: none;"></span></h2>
-      
-      <div class="result-section">
-        <h3>Your Prompt</h3>
-        <div id="request-box" class="result-box request"></div>
+    <div class="results-container" id="results-container" style="display: none;">
+      <!-- Left Panel: Prompt -->
+      <div class="panel" id="prompt-panel">
+        <div class="panel-header">
+          <h3>💬 Your Prompt</h3>
+        </div>
+        <div class="panel-content">
+          <div id="request-box" class="result-box prompt">
+            <div class="empty-state">Enter a prompt above and click "Send to AI"</div>
+          </div>
+        </div>
       </div>
 
-      <div class="result-section" id="tools-section" style="display: none;">
-        <h3>🔧 MCP Server Interaction</h3>
-        <div id="tools-box" class="result-box response"></div>
+      <!-- Center Panel: MCP Interaction -->
+      <div class="panel" id="mcp-panel">
+        <div class="panel-header">
+          <h3>🔧 MCP Server</h3>
+          <span id="mcp-status" class="mcp-status" style="display: none;"></span>
+        </div>
+        <div class="panel-content">
+          <div id="tools-box" class="result-box">
+            <div class="empty-state">MCP interaction will appear here when tools are called</div>
+          </div>
+        </div>
       </div>
 
-      <div class="result-section" id="ai-section" style="display: none;">
-        <h3>🤖 AI Response</h3>
-        <div id="ai-box" class="result-box response"></div>
+      <!-- Right Panel: AI Response -->
+      <div class="panel" id="response-panel">
+        <div class="panel-header">
+          <h3>🤖 AI Response</h3>
+        </div>
+        <div class="panel-content">
+          <div id="ai-box" class="result-box response">
+            <div class="empty-state">AI response will appear here</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -600,21 +662,25 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       }
 
       const submitBtn = document.getElementById('submit-btn');
-      const resultCard = document.getElementById('result-card');
+      const resultsContainer = document.getElementById('results-container');
       const requestBox = document.getElementById('request-box');
-      const aiSection = document.getElementById('ai-section');
       const aiBox = document.getElementById('ai-box');
-      const toolsSection = document.getElementById('tools-section');
       const toolsBox = document.getElementById('tools-box');
       const mcpStatus = document.getElementById('mcp-status');
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Processing...';
-      resultCard.style.display = 'block';
-      mcpStatus.style.display = 'none';
+      resultsContainer.style.display = 'grid';
+      
+      // Show prompt immediately
       requestBox.textContent = prompt;
-      aiSection.style.display = 'none';
-      toolsSection.style.display = 'none';
+      requestBox.className = 'result-box prompt';
+      
+      // Reset other panels
+      aiBox.innerHTML = '<div class="loading">Waiting for AI response...</div>';
+      aiBox.className = 'result-box response';
+      toolsBox.innerHTML = '<div class="loading">Checking if MCP tools needed...</div>';
+      mcpStatus.style.display = 'none';
 
       try {
         const response = await fetch('/api/ask', {
@@ -648,11 +714,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         }
 
         if (data.error) {
-          aiSection.style.display = 'block';
           aiBox.className = 'result-box error';
           aiBox.textContent = 'Error: ' + data.error;
         } else {
-          aiSection.style.display = 'block';
           if (data.ai && data.ai.response) {
             aiBox.textContent = data.ai.response;
           } else if (data.ai && data.ai.error) {
@@ -660,36 +724,35 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
             aiBox.textContent = 'Error: ' + data.ai.error;
           }
 
+          // Show MCP status and tools
+          mcpStatus.style.display = 'inline-block';
           if (data.toolCalls && data.toolCalls.length > 0) {
             // MCP was used
-            mcpStatus.style.display = 'inline-block';
             mcpStatus.className = 'mcp-status used';
-            mcpStatus.textContent = 'MCP Server Used (' + data.toolCalls.length + ' tool call' + (data.toolCalls.length > 1 ? 's' : '') + ')';
+            mcpStatus.textContent = 'MCP Used (' + data.toolCalls.length + ')';
             
-            toolsSection.style.display = 'block';
-            let toolsHtml = '<div style="margin-bottom: 12px; color: #166534; font-weight: 500;">✅ The AI invoked the MCP server to retrieve data</div>';
+            let toolsHtml = '<div style="margin-bottom: 10px; color: #166534; font-weight: 500; font-size: 0.85rem;">✅ AI invoked MCP tools</div>';
             data.toolCalls.forEach(function(call, i) {
               toolsHtml += '<div class="tool-call">';
               toolsHtml += '<strong>Tool #' + (i + 1) + ':</strong> ' + call.tool + '<br>';
-              toolsHtml += '<strong>Arguments:</strong><br>' + JSON.stringify(call.arguments, null, 2);
+              toolsHtml += '<strong>Args:</strong> ' + JSON.stringify(call.arguments);
               toolsHtml += '</div>';
               
               if (call.result) {
                 toolsHtml += '<div class="tool-result">';
-                toolsHtml += '<strong>Result:</strong><br>' + JSON.stringify(call.result, null, 2);
+                toolsHtml += '<strong>Result:</strong> ' + JSON.stringify(call.result);
                 toolsHtml += '</div>';
               }
             });
             toolsBox.innerHTML = toolsHtml;
           } else {
             // MCP was not used
-            mcpStatus.style.display = 'inline-block';
             mcpStatus.className = 'mcp-status not-used';
             mcpStatus.textContent = 'MCP Not Used';
+            toolsBox.innerHTML = '<div style="color: #6B7280; font-style: italic; padding: 20px; text-align: center;">AI answered directly without using tools</div>';
           }
         }
       } catch (error) {
-        aiSection.style.display = 'block';
         aiBox.className = 'result-box error';
         aiBox.textContent = 'Error: ' + error.message;
       } finally {
