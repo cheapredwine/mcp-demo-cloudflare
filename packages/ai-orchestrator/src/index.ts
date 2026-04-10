@@ -213,11 +213,12 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Orchestrator + MCP</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23F48120'/%3E%3Ctext x='50' y='65' font-size='45' text-anchor='middle' fill='white'%3E🤖%3C/text%3E%3C/svg%3E">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #F48120 0%, #E06C1F 50%, #1E1E1E 100%);
       min-height: 100vh;
       padding: 20px;
     }
@@ -230,23 +231,27 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       text-align: center;
       margin-bottom: 10px;
       font-size: 2.5rem;
+      font-weight: 700;
     }
     .subtitle {
       color: rgba(255,255,255,0.9);
       text-align: center;
       margin-bottom: 30px;
+      font-size: 1.1rem;
     }
     .card {
       background: white;
-      border-radius: 12px;
+      border-radius: 8px;
       padding: 24px;
       margin-bottom: 20px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      border: 1px solid #E5E5E5;
     }
     .card h2 {
-      color: #333;
+      color: #1E1E1E;
       margin-bottom: 16px;
-      font-size: 1.25rem;
+      font-size: 1.5rem;
+      font-weight: 600;
     }
     .input-group {
       margin-bottom: 16px;
@@ -254,29 +259,32 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     .input-group label {
       display: block;
       margin-bottom: 8px;
-      color: #555;
-      font-weight: 500;
+      color: #333;
+      font-weight: 600;
+      font-size: 0.95rem;
     }
     textarea {
       width: 100%;
       min-height: 100px;
       padding: 12px;
-      border: 2px solid #e5e7eb;
-      border-radius: 8px;
+      border: 2px solid #E5E5E5;
+      border-radius: 6px;
       font-size: 1rem;
       resize: vertical;
       font-family: inherit;
+      transition: border-color 0.2s;
     }
     textarea:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: #F48120;
+      box-shadow: 0 0 0 3px rgba(244,129,32,0.1);
     }
     button {
-      background: #667eea;
+      background: #F48120;
       color: white;
       border: none;
       padding: 14px 28px;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
       font-size: 1rem;
       font-weight: 600;
@@ -284,128 +292,162 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       width: 100%;
     }
     button:hover {
-      background: #5a67d8;
+      background: #E06C1F;
       transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(244,129,32,0.3);
     }
     button:disabled {
       background: #ccc;
       cursor: not-allowed;
       transform: none;
+      box-shadow: none;
     }
     .example-prompts {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       margin-top: 12px;
+      align-items: center;
+    }
+    .example-prompts span {
+      color: #666;
+      font-weight: 500;
     }
     .example-btn {
-      background: #f3f4f6;
-      color: #374151;
-      border: 1px solid #e5e7eb;
-      padding: 8px 12px;
+      background: #FFF5EB;
+      color: #E06C1F;
+      border: 1px solid #FFD4B3;
+      padding: 8px 14px;
       border-radius: 6px;
       font-size: 0.85rem;
       cursor: pointer;
       transition: all 0.2s;
+      font-weight: 500;
     }
     .example-btn:hover {
-      background: #e5e7eb;
+      background: #F48120;
+      color: white;
+      border-color: #F48120;
     }
     .result-section {
       margin-top: 20px;
     }
     .result-section h3 {
-      color: #667eea;
-      font-size: 0.9rem;
+      color: #F48120;
+      font-size: 0.85rem;
       margin-bottom: 8px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
+      font-weight: 700;
     }
     .result-box {
-      background: #f8f9fa;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
+      background: #FAFAFA;
+      border: 1px solid #E5E5E5;
+      border-radius: 6px;
       padding: 16px;
       white-space: pre-wrap;
-      font-family: 'Monaco', 'Menlo', monospace;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
       font-size: 0.85rem;
       max-height: 400px;
       overflow-y: auto;
       line-height: 1.5;
     }
     .result-box.request {
-      background: #f0f9ff;
-      border-color: #bae6fd;
+      background: #FFF8F3;
+      border-color: #FFD4B3;
+      border-left: 4px solid #F48120;
     }
     .result-box.response {
-      background: #f0fdf4;
-      border-color: #bbf7d0;
+      background: #F6FDF9;
+      border-color: #B8E5D0;
+      border-left: 4px solid #22C55E;
     }
     .result-box.error {
-      background: #fef2f2;
-      border-color: #fecaca;
-      color: #dc2626;
+      background: #FEF2F2;
+      border-color: #FECACA;
+      border-left: 4px solid #EF4444;
+      color: #DC2626;
     }
     .tool-call {
-      background: #eff6ff;
-      border-left: 3px solid #3b82f6;
+      background: #FFF8F3;
+      border-left: 4px solid #F48120;
       padding: 12px;
       margin: 8px 0;
-      border-radius: 0 8px 8px 0;
+      border-radius: 0 6px 6px 0;
     }
     .tool-result {
-      background: #f0fdf4;
-      border-left: 3px solid #22c55e;
+      background: #F6FDF9;
+      border-left: 4px solid #22C55E;
       padding: 12px;
       margin: 8px 0;
-      border-radius: 0 8px 8px 0;
+      border-radius: 0 6px 6px 0;
     }
     .mcp-status {
       display: inline-block;
-      padding: 6px 12px;
+      padding: 6px 14px;
       border-radius: 20px;
       font-size: 0.85rem;
       font-weight: 600;
       margin-bottom: 16px;
+      margin-left: 12px;
     }
     .mcp-status.used {
-      background: #dcfce7;
+      background: #DCFCE7;
       color: #166534;
-      border: 1px solid #86efac;
+      border: 1px solid #86EFAC;
     }
     .mcp-status.not-used {
-      background: #f3f4f6;
-      color: #6b7280;
-      border: 1px solid #e5e7eb;
+      background: #F3F4F6;
+      color: #6B7280;
+      border: 1px solid #E5E7EB;
     }
     .loading {
-      color: #667eea;
+      color: #F48120;
       font-style: italic;
     }
     .info-box {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
+      background: linear-gradient(135deg, #FFF8F3 0%, #FFF5EB 100%);
+      border: 1px solid #FFD4B3;
       border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
     }
     .info-box h4 {
-      color: #1e40af;
-      margin-bottom: 8px;
+      color: #E06C1F;
+      margin-bottom: 12px;
+      font-size: 1rem;
+      font-weight: 600;
     }
     .info-box ul {
       margin-left: 20px;
-      color: #1e40af;
+      color: #333;
     }
     .info-box li {
-      margin-bottom: 4px;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .info-box li strong {
+      color: #F48120;
+    }
+    .cloudflare-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #F48120;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🤖 AI Orchestrator + MCP</h1>
-    <p class="subtitle">Cloudflare Workers AI + AI Gateway + MCP Tools</p>
+    <h1>AI Orchestrator + MCP</h1>
+    <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + MCP Tools</p>
 
     <div class="card">
       <div class="info-box">
