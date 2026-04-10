@@ -78,12 +78,17 @@ jobs:
           workingDirectory: packages/workers-client
           command: deploy
       
+      - name: Update Client Environment Variable
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: packages/workers-client
+          command: vars put MCP_SERVER_URL https://mcp-demo-server.jsherron-test-account.workers.dev
+      
       - name: Post Deploy Info
         run: |
-          echo "✅ MCP Client deployed!"
+          echo "✅ MCP Demo deployed successfully!"
           echo ""
-          echo "⚠️  IMPORTANT: Update MCP_SERVER_URL secret to point to your server:"
-          echo "   1. Go to Cloudflare Dashboard > Workers & Pages"
-          echo "   2. Select 'mcp-demo-client'"
-          echo "   3. Settings > Variables > Add variable 'MCP_SERVER_URL'"
-          echo "   4. Value: https://mcp-demo-server.<your-account>.workers.dev"
+          echo "📡 MCP Server: https://mcp-demo-server.jsherron-test-account.workers.dev"
+          echo "🌐 MCP Client: https://mcp-demo-client.jsherron-test-account.workers.dev"
+          echo ""
