@@ -5,6 +5,11 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 const SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:8787';
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:8788';
 
+// Type for tool results
+interface ToolResult {
+  content: Array<{ type: string; text: string }>;
+}
+
 describe('Workers Client Live Integration', () => {
   let serverAvailable = false;
   let clientAvailable = false;
@@ -140,21 +145,21 @@ describe('End-to-End MCP Flow', () => {
     const echoResult = await client.callTool({
       name: "echo",
       arguments: { message: "Start test" },
-    });
+    }) as ToolResult;
     expect(echoResult.content[0].text).toContain('Echo:');
 
     // Calculate
     const calcResult = await client.callTool({
       name: "calculator",
       arguments: { operation: "add", a: 10, b: 20 },
-    });
+    }) as ToolResult;
     expect(calcResult.content[0].text).toContain('30');
 
     // Weather
     const weatherResult = await client.callTool({
       name: "get_weather",
       arguments: { location: "Test City" },
-    });
+    }) as ToolResult;
     const weatherText = weatherResult.content.map((c: {text: string}) => c.text).join(' ');
     expect(weatherText).toContain('Condition:');
 
@@ -162,7 +167,7 @@ describe('End-to-End MCP Flow', () => {
     const factResult = await client.callTool({
       name: "random_fact",
       arguments: { category: "science" },
-    });
+    }) as ToolResult;
     expect(factResult.content[0].text.length).toBeGreaterThan(0);
   });
 });

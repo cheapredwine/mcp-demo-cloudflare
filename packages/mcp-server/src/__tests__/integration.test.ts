@@ -4,6 +4,11 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 
 const SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:8787';
 
+// Type for tool results
+interface ToolResult {
+  content: Array<{ type: string; text: string }>;
+}
+
 describe('MCP Server Live Integration', () => {
   let client: Client;
   let transport: StreamableHTTPClientTransport;
@@ -48,7 +53,7 @@ describe('MCP Server Live Integration', () => {
       const result = await client.callTool({
         name: "echo",
         arguments: { message: "Hello MCP!" },
-      });
+      }) as ToolResult;
       
       expect(result).toBeDefined();
       expect(result.content).toBeDefined();
@@ -63,7 +68,7 @@ describe('MCP Server Live Integration', () => {
       const result = await client.callTool({
         name: "calculator",
         arguments: { operation: "add", a: 5, b: 3 },
-      });
+      }) as ToolResult;
       
       expect(result.content[0].text).toContain('8');
     });
@@ -73,7 +78,7 @@ describe('MCP Server Live Integration', () => {
       const result = await client.callTool({
         name: "calculator",
         arguments: { operation: "multiply", a: 6, b: 7 },
-      });
+      }) as ToolResult;
       
       expect(result.content[0].text).toContain('42');
     });
@@ -83,7 +88,7 @@ describe('MCP Server Live Integration', () => {
       const result = await client.callTool({
         name: "calculator",
         arguments: { operation: "divide", a: 10, b: 0 },
-      });
+      }) as ToolResult;
       
       expect(result.content[0].text).toContain('Error');
     });
@@ -95,7 +100,7 @@ describe('MCP Server Live Integration', () => {
       const result = await client.callTool({
         name: "get_weather",
         arguments: { location: "San Francisco", units: "celsius" },
-      });
+      }) as ToolResult;
       
       expect(result).toBeDefined();
       const allText = result.content.map((c: {text: string}) => c.text).join(' ');
@@ -107,7 +112,7 @@ describe('MCP Server Live Integration', () => {
       const result = await client.callTool({
         name: "get_weather",
         arguments: { location: "New York", units: "fahrenheit" },
-      });
+      }) as ToolResult;
       
       const allText = result.content.map((c: {text: string}) => c.text).join(' ');
       expect(allText).toContain('°F');
@@ -120,7 +125,7 @@ describe('MCP Server Live Integration', () => {
       const result = await client.callTool({
         name: "random_fact",
         arguments: { category: "technology" },
-      });
+      }) as ToolResult;
       
       expect(result).toBeDefined();
       expect(result.content[0].text.length).toBeGreaterThan(0);
@@ -131,7 +136,7 @@ describe('MCP Server Live Integration', () => {
       const result = await client.callTool({
         name: "random_fact",
         arguments: {},
-      });
+      }) as ToolResult;
       
       expect(result).toBeDefined();
       expect(result.content[0].text.length).toBeGreaterThan(0);
@@ -147,7 +152,7 @@ describe('MCP Server Live Integration', () => {
       const result = await client.callTool({
         name: "get_traffic_log",
         arguments: { limit: 5 },
-      });
+      }) as ToolResult;
       
       expect(result).toBeDefined();
       expect(result.content[0].type).toBe('text');
