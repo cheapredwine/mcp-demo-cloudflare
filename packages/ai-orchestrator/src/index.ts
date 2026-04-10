@@ -90,7 +90,7 @@ async function callWorkersAI(
 
   try {
     const response = await ai.run(
-      "@hf/mistral/mistral-7b-instruct-v0.2",
+      "@cf/mistralai/mistral-small-3.1-24b-instruct",
       body,
       {
         gateway: {
