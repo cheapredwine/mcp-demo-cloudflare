@@ -163,22 +163,10 @@ const HTML_TEMPLATE = `
 
   <script>
     const toolRequests = {
-      'echo': {
-        name: 'echo',
-        arguments: { message: 'Hello from MCP!' }
-      },
-      'calculator': {
-        name: 'calculator',
-        arguments: { operation: 'multiply', a: 42, b: 100 }
-      },
-      'weather': {
-        name: 'get_weather',
-        arguments: { location: 'San Francisco', units: 'celsius' }
-      },
-      'fact': {
-        name: 'random_fact',
-        arguments: { category: 'technology' }
-      },
+      'echo': { name: 'echo', arguments: { message: 'Hello from MCP!' } },
+      'calculator': { name: 'calculator', arguments: { operation: 'multiply', a: 42, b: 100 } },
+      'weather': { name: 'get_weather', arguments: { location: 'San Francisco', units: 'celsius' } },
+      'fact': { name: 'random_fact', arguments: { category: 'technology' } },
       'all': 'Run all 5 tool tests'
     };
 
@@ -194,7 +182,6 @@ const HTML_TEMPLATE = `
         'all': '/test-all'
       };
       
-      // Show request
       if (tool === 'all') {
         requestBox.textContent = toolRequests[tool];
       } else {
@@ -206,12 +193,9 @@ const HTML_TEMPLATE = `
       
       try {
         const response = await fetch(endpoints[tool]);
-        if (!response.ok) {
-          throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-        }
         const data = await response.json();
         responseBox.textContent = JSON.stringify(data, null, 2);
-        responseBox.className = 'result-box response';
+        responseBox.className = response.ok ? 'result-box response' : 'result-box error';
       } catch (error) {
         responseBox.textContent = 'Error: ' + error.message;
         responseBox.className = 'result-box error';
@@ -222,113 +206,79 @@ const HTML_TEMPLATE = `
 </html>
 `;
 
-// Simple MCP client using service binding
-async function callMCPTool(
+// Call MCP tool via service binding using proper protocol
+async function callMCPToolViaBinding(
   service: Fetcher,
   toolName: string,
   args: Record<string, unknown>
 ): Promise<unknown> {
-  // First initialize
+  // Initialize first
+  const initBody = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'initialize',
+    params: {
+      protocolVersion: '2024-11-05',
+      capabilities: {},
+      clientInfo: { name: 'mcp-demo-client', version: '1.0.0' },
+    },
+  };
+
   const initResponse = await service.fetch('http://mcp-server/mcp', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json, text/event-stream',
+      'Accept': 'application/json',
     },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'initialize',
-      params: {
-        protocolVersion: '2024-11-05',
-        capabilities: {},
-        clientInfo: { name: 'mcp-demo-client', version: '1.0.0' },
-      },
-    }),
+    body: JSON.stringify(initBody),
   });
 
   if (!initResponse.ok) {
-    const error = await initResponse.text();
-    throw new Error(`MCP init error: ${initResponse.status} - ${error}`);
+    const errorText = await initResponse.text();
+    throw new Error(`Init failed: ${initResponse.status} - ${errorText}`);
   }
 
-  // Then call the tool
+  // Get session ID from response headers
+  const sessionId = initResponse.headers.get('mcp-session-id');
+
+  // Call tool
+  const toolBody = {
+    jsonrpc: '2.0',
+    id: 2,
+    method: 'tools/call',
+    params: {
+      name: toolName,
+      arguments: args,
+    },
+  };
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Mcp-Protocol-Version': '2024-11-05',
+  };
+  
+  if (sessionId) {
+    headers['Mcp-Session-Id'] = sessionId;
+  }
+
   const response = await service.fetch('http://mcp-server/mcp', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json, text/event-stream',
-      'Mcp-Protocol-Version': '2024-11-05',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 2,
-      method: 'tools/call',
-      params: {
-        name: toolName,
-        arguments: args,
-      },
-    }),
+    headers,
+    body: JSON.stringify(toolBody),
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`MCP error: ${response.status} - ${error}`);
+    const errorText = await response.text();
+    throw new Error(`Tool call failed: ${response.status} - ${errorText}`);
   }
 
-  const data = await response.json() as { result: unknown };
-  return data.result;
-}
-
-async function getServerInfo(service: Fetcher): Promise<unknown> {
-  // First initialize
-  const initResponse = await service.fetch('http://mcp-server/mcp', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json, text/event-stream',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'initialize',
-      params: {
-        protocolVersion: '2024-11-05',
-        capabilities: {},
-        clientInfo: { name: 'mcp-demo-client', version: '1.0.0' },
-      },
-    }),
-  });
-
-  if (!initResponse.ok) {
-    const error = await initResponse.text();
-    throw new Error(`MCP init error: ${initResponse.status} - ${error}`);
+  const data = await response.json() as { result?: unknown; error?: { message: string } };
+  
+  if (data.error) {
+    throw new Error(data.error.message);
   }
-
-  // Then read resource
-  const response = await service.fetch('http://mcp-server/mcp', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json, text/event-stream',
-      'Mcp-Protocol-Version': '2024-11-05',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 2,
-      method: 'resources/read',
-      params: {
-        uri: 'mcp://resources/server-info',
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`MCP error: ${response.status} - ${error}`);
-  }
-
-  const data = await response.json() as { result: unknown };
+  
   return data.result;
 }
 
@@ -340,7 +290,7 @@ async function testTool(
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   try {
-    const result = await callMCPTool(service, toolName, args);
+    const result = await callMCPToolViaBinding(service, toolName, args);
     return new Response(
       JSON.stringify({ tool: toolName, result }, null, 2),
       { headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -358,7 +308,6 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     
-    // CORS headers
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -369,36 +318,49 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Serve the web UI on root
+    // Web UI
     if (url.pathname === "/") {
       return new Response(HTML_TEMPLATE, {
-        headers: { 
-          "Content-Type": "text/html",
-          ...corsHeaders 
-        },
+        headers: { "Content-Type": "text/html", ...corsHeaders },
       });
     }
 
-    // Status check
+    // Status
     if (url.pathname === "/status") {
       try {
-        const serverInfo = await getServerInfo(env.MCP_SERVER);
-        return new Response(
-          JSON.stringify({ status: "connected", server: serverInfo }, null, 2),
-          { headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
+        // Quick health check - just try to initialize
+        const response = await env.MCP_SERVER.fetch('http://mcp-server/mcp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'initialize',
+            params: {
+              protocolVersion: '2024-11-05',
+              capabilities: {},
+              clientInfo: { name: 'mcp-demo-client', version: '1.0.0' },
+            },
+          }),
+        });
+        
+        if (response.ok) {
+          return new Response(
+            JSON.stringify({ status: "connected", message: "Server is healthy" }, null, 2),
+            { headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        } else {
+          throw new Error(`Server returned ${response.status}`);
+        }
       } catch (error) {
         return new Response(
-          JSON.stringify({ 
-            status: "error", 
-            error: error instanceof Error ? error.message : String(error) 
-          }, null, 2),
+          JSON.stringify({ status: "error", error: String(error) }, null, 2),
           { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
     }
 
-    // Test endpoints using MCP tools via service binding
+    // Test endpoints
     if (url.pathname === "/test-echo") {
       return testTool(env.MCP_SERVER, "echo", { message: "Hello from MCP!" }, corsHeaders);
     }
@@ -419,11 +381,11 @@ export default {
       try {
         const results: Record<string, unknown> = {};
         
-        results.echo = await callMCPTool(env.MCP_SERVER, "echo", { message: "Test echo" });
-        results.calculator = await callMCPTool(env.MCP_SERVER, "calculator", { operation: "add", a: 10, b: 20 });
-        results.weather = await callMCPTool(env.MCP_SERVER, "get_weather", { location: "Tokyo" });
-        results.fact = await callMCPTool(env.MCP_SERVER, "random_fact", { category: "space" });
-        results.traffic = await callMCPTool(env.MCP_SERVER, "get_traffic_log", { limit: 5 });
+        results.echo = await callMCPToolViaBinding(env.MCP_SERVER, "echo", { message: "Test echo" });
+        results.calculator = await callMCPToolViaBinding(env.MCP_SERVER, "calculator", { operation: "add", a: 10, b: 20 });
+        results.weather = await callMCPToolViaBinding(env.MCP_SERVER, "get_weather", { location: "Tokyo" });
+        results.fact = await callMCPToolViaBinding(env.MCP_SERVER, "random_fact", { category: "space" });
+        results.traffic = await callMCPToolViaBinding(env.MCP_SERVER, "get_traffic_log", { limit: 5 });
         
         return new Response(
           JSON.stringify({ tests: results }, null, 2),
