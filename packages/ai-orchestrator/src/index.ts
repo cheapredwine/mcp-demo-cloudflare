@@ -12,7 +12,7 @@ interface Env {
   MCP_SERVER: Fetcher;
 }
 
-// AI Gateway endpoint
+// AI Gateway endpoint (OpenAI-compatible)
 const AI_GATEWAY_URL = "https://gateway.ai.cloudflare.com/v1/1ddebf6f9507d3fc9052158be9d42dee/mcp-demo/compat/chat/completions";
 
 // Tool definition interface
@@ -77,7 +77,7 @@ async function callAIGateway(
   error?: string;
 }> {
   const body: Record<string, unknown> = {
-    model: "@cf/mistral/mistral-small-24b-instruct-2409",
+    model: "workers-ai/@cf/mistral/mistral-small-24b-instruct-2409",
     messages,
   };
   
