@@ -154,56 +154,56 @@ function drawBadge(x, y, w, h, text, bgColor) {
 ctx.font = 'bold 36px Arial';
 ctx.fillStyle = DARK;
 ctx.textAlign = 'center';
-ctx.fillText('MCP Demo Architecture', width/2, 50);
+ctx.fillText('MCP Demo Architecture', width/2, 45);
 
 ctx.font = '18px Arial';
 ctx.fillStyle = '#444';
-ctx.fillText('Cloudflare Workers + Workers AI + AI Gateway + MCP', width/2, 78);
+ctx.fillText('Cloudflare Workers + Workers AI + AI Gateway + MCP', width/2, 72);
 
-// User (top)
+// User (top) - moved down to avoid overlap
 ctx.beginPath();
-ctx.arc(width/2, 110, 35, 0, Math.PI * 2);
+ctx.arc(width/2, 130, 35, 0, Math.PI * 2);
 ctx.fillStyle = '#4CAF50';
 ctx.fill();
 ctx.font = 'bold 24px Arial';
 ctx.fillStyle = WHITE;
 ctx.textAlign = 'center';
-ctx.fillText('👤', width/2, 118);
+ctx.fillText('👤', width/2, 138);
 ctx.font = 'bold 14px Arial';
 ctx.fillStyle = DARK;
-ctx.fillText('User', width/2, 160);
+ctx.fillText('User', width/2, 180);
 
 // Web browser label to the side
 ctx.font = '12px Arial';
 ctx.fillStyle = '#666';
 ctx.textAlign = 'left';
-ctx.fillText('🌐 Web browser with 3-Panel UI', width/2 + 60, 140);
+ctx.fillText('🌐 Web browser with 3-Panel UI', width/2 + 60, 160);
 
-// AI Orchestrator (below user)
-drawBox(350, 210, 700, 180, 'AI Orchestrator (Worker)', 'mcp-demo.jsherron.com', '🤖', ORANGE);
+// AI Orchestrator (below user) - moved down
+drawBox(350, 230, 700, 180, 'AI Orchestrator (Worker)', 'mcp-demo.jsherron.com', '🤖', ORANGE);
 
 // 3-Panel Web UI inside AI Orchestrator
-drawComponentBox(370, 270, 660, 110, '3-Panel Web UI', [
+drawComponentBox(370, 290, 660, 110, '3-Panel Web UI', [
   '• Prompt | MCP Status | AI Response',
   '• Enter to submit, Shift+Enter for newline',
   '• HTTP Log panel shows all internal calls'
 ], GREEN);
 
 // Arrow: User -> AI Orchestrator
-drawArrow(width/2, 165, width/2, 210, DARK, 'HTTP');
+drawArrow(width/2, 185, width/2, 230, DARK, 'HTTP');
 
-// Arrow: AI Orchestrator -> Cloudflare AI Platform
-drawArrow(width/2, 380, width/2, 420, PURPLE, 'Workers AI Binding', 'left');
+// Arrow: AI Orchestrator -> Cloudflare AI Platform - moved to avoid overlap
+drawArrow(width/2, 410, width/2, 450, PURPLE, 'Workers AI Binding', 'right');
 
-// Cloudflare AI Platform (middle layer)
-drawRoundedRect(200, 430, 1000, 240, 12, '#E8F4FD');
+// Cloudflare AI Platform (middle layer) - moved down
+drawRoundedRect(200, 460, 1000, 240, 12, '#E8F4FD');
 ctx.font = 'bold 16px Arial';
 ctx.fillStyle = DARK;
 ctx.textAlign = 'center';
-ctx.fillText('Cloudflare AI Platform', width/2, 458);
+ctx.fillText('Cloudflare AI Platform', width/2, 488);
 
 // Workers AI box (left side of platform)
-drawComponentBox(240, 480, 440, 170, 'Workers AI', [
+drawComponentBox(240, 510, 440, 170, 'Workers AI', [
   '• Workers AI LLM model instance',
   '• Natural language understanding',
   '• Intelligent tool selection',
@@ -211,7 +211,7 @@ drawComponentBox(240, 480, 440, 170, 'Workers AI', [
 ], PURPLE);
 
 // AI Gateway box (right side of platform)
-drawComponentBox(720, 480, 460, 170, 'AI Gateway', [
+drawComponentBox(720, 510, 460, 170, 'AI Gateway', [
   '• Caching + Analytics',
   '• Rate limiting',
   '• Guardrails (prompt injection protection)',
@@ -219,27 +219,27 @@ drawComponentBox(720, 480, 460, 170, 'AI Gateway', [
 ], '#FF6B35');
 
 // Badges for AI Gateway
-drawBadge(900, 575, 110, 24, '🛡️ Guardrails', RED);
-drawBadge(1020, 575, 140, 24, '🔥 Firewall for AI', BLUE);
+drawBadge(900, 605, 110, 24, '🛡️ Guardrails', RED);
+drawBadge(1020, 605, 140, 24, '🔥 Firewall for AI', BLUE);
 
 // Bidirectional arrow between Workers AI and AI Gateway
-drawArrow(680, 565, 720, 565, '#666', '', '');
-drawArrow(720, 585, 680, 585, '#666', '', '');
+drawArrow(680, 595, 720, 595, '#666', '', '');
+drawArrow(720, 615, 680, 615, '#666', '', '');
 
-// Arrow: Cloudflare AI Platform -> MCP Server
-drawArrow(width/2, 640, width/2, 700, BLUE, 'Service Binding', 'left');
+// Arrow: Cloudflare AI Platform -> MCP Server - moved to avoid overlap
+drawArrow(width/2, 700, width/2, 760, BLUE, 'Service Binding', 'right');
 
-// MCP Server (bottom)
-drawBox(400, 700, 600, 160, 'MCP Server (Worker)', 'Private - No Public URL', '🔧', BLUE);
+// MCP Server (bottom) - moved down
+drawBox(400, 760, 600, 160, 'MCP Server (Worker)', 'Private - No Public URL', '🔧', BLUE);
 
 // MCP Server content
-drawComponentBox(420, 760, 560, 90, 'MCP Protocol Handler', [
+drawComponentBox(420, 820, 560, 90, 'MCP Protocol Handler', [
   '• Exposes 2 tools: calculator, get_weather',
   '• Only accessible via Service Binding (secure)'
 ], BLUE);
 
-// Legend (bottom left)
-let legendY = 920;
+// Legend (bottom left) - moved down
+let legendY = 980;
 ctx.font = 'bold 16px Arial';
 ctx.fillStyle = DARK;
 ctx.textAlign = 'left';
@@ -269,12 +269,12 @@ legendItems.forEach((item, i) => {
   }
 });
 
-// Note (bottom)
+// Note (bottom) - moved down
 ctx.font = '13px Arial';
 ctx.fillStyle = '#666';
 ctx.textAlign = 'left';
-ctx.fillText('Note: Workers AI is a platform service. In this demo we use the Workers AI binding.', 50, 1050);
-ctx.fillText('You can also access it via the REST API from any worker or external service.', 50, 1070);
+ctx.fillText('Note: Workers AI is a platform service. In this demo we use the Workers AI binding.', 50, 1080);
+ctx.fillText('You can also access it via the REST API from any worker or external service.', 50, 1100);
 
 // Save
 const buffer = canvas.toBuffer('image/png');
