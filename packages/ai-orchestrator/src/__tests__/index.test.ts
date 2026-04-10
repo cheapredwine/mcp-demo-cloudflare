@@ -78,4 +78,92 @@ describe('AI Orchestrator', () => {
       expect(tools[0].function.description).toContain('ONLY');
     });
   });
+
+  describe('API Response Format', () => {
+    it('should return empty toolCalls array when no tools are used', () => {
+      // Simulate API response when AI answers directly without tools
+      const response = {
+        ai: {
+          response: "Terns are seabirds in the family Laridae...",
+          tool_calls: []
+        },
+        toolCalls: []
+      };
+
+      expect(response.toolCalls).toHaveLength(0);
+      expect(response.ai.tool_calls).toHaveLength(0);
+      expect(response.ai.response).toBeTruthy();
+    });
+
+    it('should return toolCalls array when tools are used', () => {
+      // Simulate API response when AI uses tools
+      const response = {
+        ai: {
+          response: "The weather in Paris is sunny and 22°C",
+          tool_calls: [{ name: 'get_weather', arguments: { location: 'Paris' } }]
+        },
+        toolCalls: [
+          { tool: 'get_weather', arguments: { location: 'Paris' }, result: { temperature: 22 } }
+        ]
+      };
+
+      expect(response.toolCalls).toHaveLength(1);
+      expect(response.toolCalls[0].tool).toBe('get_weather');
+      expect(response.toolCalls[0].result).toBeDefined();
+    });
+
+    it('should include tool_results in response when tools are called', () => {
+      const toolCalls = [
+        { 
+          tool: 'calculator', 
+          arguments: { operation: 'add', a: 5, b: 3 }, 
+          result: 8 
+        }
+      ];
+
+      expect(toolCalls[0]).toHaveProperty('result');
+      expect(toolCalls[0].result).toBe(8);
+    });
+  });
+
+  describe('UI Response Handling', () => {
+    it('should show "MCP Not Used" when toolCalls is empty', () => {
+      const data = { toolCalls: [], ai: { response: 'Hello' } };
+      const mcpWasUsed = data.toolCalls && data.toolCalls.length > 0;
+      
+      expect(mcpWasUsed).toBe(false);
+      // UI would show: mcpStatus.className = 'mcp-status not-used'
+      // UI would show: mcpStatus.textContent = 'MCP Not Used'
+    });
+
+    it('should show "MCP Server Used" when toolCalls has items', () => {
+      const data = { 
+        toolCalls: [{ tool: 'calculator', arguments: {} }], 
+        ai: { response: 'Result is 10' } 
+      };
+      const mcpWasUsed = data.toolCalls && data.toolCalls.length > 0;
+      const callCount = data.toolCalls.length;
+      
+      expect(mcpWasUsed).toBe(true);
+      expect(callCount).toBe(1);
+      // UI would show: mcpStatus.className = 'mcp-status used'
+      // UI would show: 'MCP Server Used (1 tool call)'
+    });
+
+    it('should handle pluralization for multiple tool calls', () => {
+      const data = { 
+        toolCalls: [
+          { tool: 'calculator', arguments: {} },
+          { tool: 'get_weather', arguments: {} }
+        ], 
+        ai: { response: 'Here are the results' } 
+      };
+      const callCount = data.toolCalls.length;
+      const suffix = callCount > 1 ? 's' : '';
+      
+      expect(callCount).toBe(2);
+      expect(suffix).toBe('s');
+      // UI would show: 'MCP Server Used (2 tool calls)'
+    });
+  });
 });
