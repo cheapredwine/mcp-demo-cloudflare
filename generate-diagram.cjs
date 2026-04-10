@@ -3,7 +3,7 @@ const fs = require('fs');
 
 // Canvas setup
 const width = 1200;
-const height = 800;
+const height = 900;
 const canvas = createCanvas(width, height);
 const ctx = canvas.getContext('2d');
 
@@ -13,6 +13,9 @@ const ORANGE_LIGHT = '#FFAA5C';
 const DARK = '#1E1E1E';
 const WHITE = '#FFFFFF';
 const GRAY = '#F5F5F5';
+const PURPLE = '#9C27B0';
+const BLUE = '#2196F3';
+const GREEN = '#22C55E';
 
 // Fill background with gradient
 const gradient = ctx.createLinearGradient(0, 0, width, height);
@@ -48,7 +51,7 @@ function drawRoundedRect(x, y, w, h, r, color) {
 }
 
 // Helper to draw arrow
-function drawArrow(fromX, fromY, toX, toY, color) {
+function drawArrow(fromX, fromY, toX, toY, color, label) {
   ctx.beginPath();
   ctx.moveTo(fromX, fromY);
   ctx.lineTo(toX, toY);
@@ -66,6 +69,16 @@ function drawArrow(fromX, fromY, toX, toY, color) {
   ctx.closePath();
   ctx.fillStyle = color;
   ctx.fill();
+  
+  // Label
+  if (label) {
+    ctx.font = '11px Arial';
+    ctx.fillStyle = '#666';
+    ctx.textAlign = 'center';
+    const midX = (fromX + toX) / 2;
+    const midY = (fromY + toY) / 2;
+    ctx.fillText(label, midX, midY - 5);
+  }
 }
 
 // Draw box helper
@@ -91,9 +104,29 @@ function drawBox(x, y, w, h, title, subtitle, icon, color) {
   ctx.fillText(title, x + 70, y + 32);
   
   // Subtitle
-  ctx.font = '14px Arial';
+  ctx.font = '12px Arial';
   ctx.fillStyle = '#666';
   ctx.fillText(subtitle, x + 70, y + 52);
+}
+
+// Draw inner box for nested components
+function drawInnerBox(x, y, w, h, title, subtitle, color) {
+  ctx.fillStyle = '#f8f9fa';
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, w, h);
+  
+  // Title
+  ctx.font = 'bold 14px Arial';
+  ctx.fillStyle = DARK;
+  ctx.textAlign = 'left';
+  ctx.fillText(title, x + 10, y + 22);
+  
+  // Subtitle
+  ctx.font = '11px Arial';
+  ctx.fillStyle = '#666';
+  ctx.fillText(subtitle, x + 10, y + 38);
 }
 
 // Title
@@ -104,57 +137,65 @@ ctx.fillText('MCP Demo Architecture', width/2, 45);
 
 ctx.font = '16px Arial';
 ctx.fillStyle = '#444';
-ctx.fillText('3-Panel UI: Prompt | MCP Server | AI Response', width/2, 70);
+ctx.fillText('Cloudflare Workers + Workers AI + AI Gateway + MCP', width/2, 70);
 
-// User/Browser
+// User/Browser with 3-Panel UI
 ctx.beginPath();
-ctx.arc(100, 200, 40, 0, Math.PI * 2);
+ctx.arc(100, 180, 40, 0, Math.PI * 2);
 ctx.fillStyle = '#4CAF50';
 ctx.fill();
 ctx.font = '30px Arial';
 ctx.fillStyle = WHITE;
 ctx.textAlign = 'center';
-ctx.fillText('👤', 100, 210);
+ctx.fillText('👤', 100, 190);
 ctx.font = 'bold 14px Arial';
 ctx.fillStyle = DARK;
-ctx.fillText('User', 100, 260);
+ctx.fillText('User', 100, 240);
 
-// Browser
-ctx.font = '14px Arial';
-ctx.fillStyle = '#666';
-ctx.fillText('Web Browser', 100, 150);
-
-// AI Orchestrator Worker (center)
-drawBox(400, 160, 320, 200, 'AI Orchestrator', 'Workers AI + AI Gateway', '🤖', ORANGE);
-
-// MCP Server (right)
-drawBox(780, 160, 320, 200, 'MCP Server', 'MCP Protocol Server', '🔧', '#2196F3');
-
-// AI Gateway (below orchestrator)
-drawBox(400, 420, 320, 130, 'AI Gateway', 'Caching + Analytics + Rate Limiting', '⚡', '#9C27B0');
-
-// Workers AI Models (below AI Gateway)
-drawBox(400, 600, 320, 100, 'Workers AI', '@cf/mistralai/mistral-small-3.1', '🧠', '#FF6B35');
-
-// Service Binding label
-drawRoundedRect(750, 220, 160, 40, 6, '#E3F2FD');
+// 3-Panel UI label
 ctx.font = '12px Arial';
-ctx.fillStyle = '#1565C0';
+ctx.fillStyle = '#666';
+ctx.fillText('3-Panel Web UI', 100, 260);
+
+// AI Orchestrator Worker (main box)
+drawBox(350, 120, 500, 400, 'AI Orchestrator (Worker)', 'mcp-demo.jsherron.com', '🤖', ORANGE);
+
+// Workers AI inside AI Orchestrator
+drawInnerBox(370, 180, 200, 100, 'Workers AI', '@cf/mistralai/mistral-small-3.1', PURPLE);
+
+// AI Gateway inside AI Orchestrator
+drawInnerBox(590, 180, 240, 120, 'AI Gateway', 'Caching + Analytics + Rate Limiting', '#FF6B35');
+
+// Guardrails badge inside AI Gateway
+ctx.fillStyle = '#DC2626';
+ctx.fillRect(600, 235, 100, 22);
+ctx.font = 'bold 10px Arial';
+ctx.fillStyle = WHITE;
 ctx.textAlign = 'center';
-ctx.fillText('Service Binding', 830, 245);
+ctx.fillText('🛡️ Guardrails', 650, 250);
 
-// Draw arrows
-// User -> Orchestrator
-drawArrow(140, 200, 390, 240, DARK);
+// Firewall for AI badge inside AI Gateway
+ctx.fillStyle = '#2563EB';
+ctx.fillRect(710, 235, 110, 22);
+ctx.font = 'bold 10px Arial';
+ctx.fillStyle = WHITE;
+ctx.textAlign = 'center';
+ctx.fillText('🔥 Firewall for AI', 765, 250);
 
-// Orchestrator -> MCP
-drawArrow(720, 240, 770, 240, '#1565C0');
+// 3-Panel UI inside AI Orchestrator
+drawInnerBox(370, 300, 460, 200, '3-Panel Web UI', 'Prompt | MCP Status | AI Response', GREEN);
 
-// Orchestrator -> AI Gateway
-drawArrow(560, 360, 560, 415, DARK);
+// Arrow: Workers AI -> AI Gateway
+drawArrow(570, 230, 590, 230, PURPLE, '');
 
-// AI Gateway -> Workers AI
-drawArrow(560, 550, 560, 595, '#9C27B0');
+// MCP Server (private, right side)
+drawBox(900, 250, 260, 150, 'MCP Server (Worker)', 'Private - No Public URL', '🔧', BLUE);
+
+// Arrow: AI Orchestrator -> MCP Server (Service Binding)
+drawArrow(850, 325, 900, 325, BLUE, 'Service Binding');
+
+// HTTP Log Panel (bottom)
+drawInnerBox(350, 540, 500, 80, 'HTTP Call Log', 'Workers AI calls + MCP interactions', DARK);
 
 // Legend
 ctx.font = 'bold 14px Arial';
@@ -163,47 +204,51 @@ ctx.textAlign = 'left';
 ctx.fillText('Legend:', 50, 700);
 
 // Legend items
-const legendY = 730;
-drawRoundedRect(50, legendY, 20, 20, 4, ORANGE);
+let legendY = 725;
+
+ctx.fillStyle = ORANGE;
+ctx.fillRect(50, legendY, 20, 20);
 ctx.font = '12px Arial';
 ctx.fillStyle = DARK;
 ctx.fillText('Cloudflare Workers', 80, legendY + 14);
 
-drawRoundedRect(250, legendY, 20, 20, 4, '#2196F3');
-ctx.fillText('MCP Server', 280, legendY + 14);
+ctx.fillStyle = PURPLE;
+ctx.fillRect(250, legendY, 20, 20);
+ctx.fillText('Workers AI', 280, legendY + 14);
 
-drawRoundedRect(400, legendY, 20, 20, 4, '#9C27B0');
+ctx.fillStyle = '#FF6B35';
+ctx.fillRect(400, legendY, 20, 20);
 ctx.fillText('AI Gateway', 430, legendY + 14);
 
-// MCP Not Used indicator
-ctx.beginPath();
-ctx.arc(600, legendY + 10, 10, 0, Math.PI * 2);
-ctx.fillStyle = '#6B7280';
-ctx.fill();
-ctx.fillStyle = DARK;
-ctx.fillText('= MCP Not Used', 620, legendY + 14);
+ctx.fillStyle = BLUE;
+ctx.fillRect(550, legendY, 20, 20);
+ctx.fillText('MCP Server (Private)', 580, legendY + 14);
 
-ctx.beginPath();
-ctx.arc(750, legendY + 10, 10, 0, Math.PI * 2);
-ctx.fillStyle = '#22C55E';
-ctx.fill();
-ctx.fillStyle = DARK;
-ctx.fillText('= MCP Used', 770, legendY + 14);
+ctx.fillStyle = GREEN;
+ctx.fillRect(750, legendY, 20, 20);
+ctx.fillText('3-Panel UI', 780, legendY + 14);
 
-// Flow description box
-drawRoundedRect(50, 480, 280, 140, 8, WHITE);
+ctx.fillStyle = '#DC2626';
+ctx.fillRect(900, legendY, 20, 20);
+ctx.fillText('Guardrails', 930, legendY + 14);
+
+ctx.fillStyle = '#2563EB';
+ctx.fillRect(1050, legendY, 20, 20);
+ctx.fillText('Firewall for AI', 1080, legendY + 14);
+
+// Features box
 ctx.font = 'bold 14px Arial';
 ctx.fillStyle = DARK;
-ctx.fillText('Flow:', 70, 505);
+ctx.fillText('Key Features:', 50, 760);
+
 ctx.font = '11px Arial';
-ctx.fillStyle = '#666';
-ctx.fillText('1. User sends prompt', 70, 525);
-ctx.fillText('2. AI decides: tool or direct?', 70, 545);
-ctx.fillText('3. If tool: call MCP server', 70, 565);
-ctx.fillText('4. Return response + status', 70, 585);
-ctx.fillText('5. UI shows MCP used/not used', 70, 605);
+ctx.fillStyle = '#444';
+ctx.fillText('• Enter to submit, Shift+Enter for newline', 50, 780);
+ctx.fillText('• HTTP Log shows all internal API calls', 50, 795);
+ctx.fillText('• MCP Server accessible only via Service Binding (secure)', 50, 810);
+ctx.fillText('• AI Gateway provides caching, analytics, rate limiting', 50, 825);
 
 // Save
 const buffer = canvas.toBuffer('image/png');
 fs.writeFileSync('mcp-demo-architecture.png', buffer);
-console.log('✅ Diagram saved to mcp-demo-architecture.png');
+console.log('✅ Architecture diagram saved to mcp-demo-architecture.png');
