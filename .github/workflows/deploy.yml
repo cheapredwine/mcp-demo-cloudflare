@@ -115,9 +115,9 @@ jobs:
           echo "🌐 MCP Client: https://mcp-demo-client.jsherron-test-account.workers.dev"
           echo ""
 
-  deploy-ai-gateway:
+  deploy-ai-orchestrator:
     runs-on: ubuntu-latest
-    name: Deploy AI Gateway
+    name: Deploy AI Orchestrator
     needs: [test, deploy-server]
     if: github.ref == 'refs/heads/main'
     steps:
@@ -132,17 +132,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Deploy AI Gateway
+      - name: Deploy AI Orchestrator
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: packages/ai-gateway
+          workingDirectory: packages/ai-orchestrator
           command: deploy
       
       - name: Post Deploy Info
         run: |
-          echo "✅ AI Gateway deployed successfully!"
+          echo "✅ AI Orchestrator deployed successfully!"
           echo ""
-          echo "🛡️ AI Gateway: https://mcp-demo-ai-gateway.jsherron-test-account.workers.dev"
+          echo "🤖 AI Orchestrator: https://mcp-demo-ai-orchestrator.jsherron-test-account.workers.dev"
           echo ""

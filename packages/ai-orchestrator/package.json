@@ -1,7 +1,7 @@
 {
-  "name": "@mcp-demo/ai-gateway",
+  "name": "@mcp-demo/ai-orchestrator",
   "version": "1.0.0",
-  "description": "AI Gateway with Firewall for AI and MCP tool calling",
+  "description": "AI Orchestrator using Worker AI with MCP tool calling",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
