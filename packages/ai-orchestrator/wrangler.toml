@@ -10,5 +10,5 @@ binding = "MCP_SERVER"
 service = "mcp-demo-server"
 
 # Workers AI binding with AI Gateway integration
-[[ai]]
+[ai]
 binding = "AI"
