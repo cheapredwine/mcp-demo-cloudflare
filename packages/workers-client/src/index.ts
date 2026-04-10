@@ -228,16 +228,41 @@ async function callMCPTool(
   toolName: string,
   args: Record<string, unknown>
 ): Promise<unknown> {
-  // Call the server directly via service binding
-  const response = await service.fetch('http://mcp-server/mcp', {
+  // First initialize
+  const initResponse = await service.fetch('http://mcp-server/mcp', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      'Accept': 'application/json, text/event-stream',
     },
     body: JSON.stringify({
       jsonrpc: '2.0',
       id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2024-11-05',
+        capabilities: {},
+        clientInfo: { name: 'mcp-demo-client', version: '1.0.0' },
+      },
+    }),
+  });
+
+  if (!initResponse.ok) {
+    const error = await initResponse.text();
+    throw new Error(`MCP init error: ${initResponse.status} - ${error}`);
+  }
+
+  // Then call the tool
+  const response = await service.fetch('http://mcp-server/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream',
+      'Mcp-Protocol-Version': '2024-11-05',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 2,
       method: 'tools/call',
       params: {
         name: toolName,
@@ -247,7 +272,8 @@ async function callMCPTool(
   });
 
   if (!response.ok) {
-    throw new Error(`MCP error: ${response.status}`);
+    const error = await response.text();
+    throw new Error(`MCP error: ${response.status} - ${error}`);
   }
 
   const data = await response.json() as { result: unknown };
@@ -255,15 +281,41 @@ async function callMCPTool(
 }
 
 async function getServerInfo(service: Fetcher): Promise<unknown> {
-  const response = await service.fetch('http://mcp-server/mcp', {
+  // First initialize
+  const initResponse = await service.fetch('http://mcp-server/mcp', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      'Accept': 'application/json, text/event-stream',
     },
     body: JSON.stringify({
       jsonrpc: '2.0',
       id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2024-11-05',
+        capabilities: {},
+        clientInfo: { name: 'mcp-demo-client', version: '1.0.0' },
+      },
+    }),
+  });
+
+  if (!initResponse.ok) {
+    const error = await initResponse.text();
+    throw new Error(`MCP init error: ${initResponse.status} - ${error}`);
+  }
+
+  // Then read resource
+  const response = await service.fetch('http://mcp-server/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream',
+      'Mcp-Protocol-Version': '2024-11-05',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 2,
       method: 'resources/read',
       params: {
         uri: 'mcp://resources/server-info',
@@ -272,7 +324,8 @@ async function getServerInfo(service: Fetcher): Promise<unknown> {
   });
 
   if (!response.ok) {
-    throw new Error(`MCP error: ${response.status}`);
+    const error = await response.text();
+    throw new Error(`MCP error: ${response.status} - ${error}`);
   }
 
   const data = await response.json() as { result: unknown };
