@@ -1,0 +1,86 @@
+name: Deploy MCP Demo
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Type check
+        run: npm run typecheck
+
+  deploy-server:
+    runs-on: ubuntu-latest
+    name: Deploy MCP Server
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Deploy MCP Server
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: packages/mcp-server
+          command: deploy
+
+  deploy-client:
+    runs-on: ubuntu-latest
+    name: Deploy MCP Client
+    needs: [test, deploy-server]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Update server URL
+        run: |
+          # Update the MCP_SERVER_URL in wrangler.toml to point to deployed server
+          # This assumes the server is deployed at mcp-demo-server.<account>.workers.dev
+          # You'll need to customize this based on your actual deployment
+          echo "MCP_SERVER_URL will be updated after deployment"
+      
+      - name: Deploy MCP Client
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: packages/workers-client
+          command: deploy

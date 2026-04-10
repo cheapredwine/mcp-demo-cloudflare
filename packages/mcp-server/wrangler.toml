@@ -1,0 +1,11 @@
+name = "mcp-demo-server"
+main = "src/index.ts"
+compatibility_date = "2025-03-21"
+compatibility_flags = ["nodejs_compat"]
+
+# Enable observability for logging
+[observability]
+enabled = true
+
+# This is a STATELESS server running on regular Workers
+# No Durable Objects needed!

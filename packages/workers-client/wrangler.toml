@@ -1,0 +1,18 @@
+name = "mcp-demo-client"
+main = "src/index.ts"
+compatibility_date = "2025-03-21"
+compatibility_flags = ["nodejs_compat"]
+
+# Enable observability for logging
+[observability]
+enabled = true
+
+# Environment variables
+[vars]
+# Set this to your deployed MCP server URL or local dev URL
+# For local dev: http://localhost:8787
+# For deployed: https://mcp-demo-server.your-account.workers.dev
+MCP_SERVER_URL = "http://localhost:8787"
+
+# For production, set via secrets:
+# wrangler secret put MCP_SERVER_URL --env production

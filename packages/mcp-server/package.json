@@ -1,0 +1,21 @@
+{
+  "name": "@mcp-demo/server",
+  "version": "1.0.0",
+  "description": "Stateless MCP server with Code Mode demo tools - runs on regular Cloudflare Workers (no Durable Objects needed)",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250321.0",
+    "typescript": "^5.4.0",
+    "wrangler": "^4.0.0"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@mcp-demo/client",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers MCP client that connects to the demo server",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250321.0",
+    "typescript": "^5.4.0",
+    "wrangler": "^4.0.0"
+  }
+}
