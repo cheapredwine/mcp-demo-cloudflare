@@ -220,7 +220,7 @@ async function callMCPToolViaBinding(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    'Accept': 'application/json, text/event-stream',
     'Mcp-Protocol-Version': '2024-11-05',
   };
   
