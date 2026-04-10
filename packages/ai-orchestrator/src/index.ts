@@ -2,16 +2,18 @@
  * AI Orchestrator - Uses Cloudflare AI Gateway with MCP Tool Calling
  * 
  * Demonstrates:
- * - Cloudflare AI Gateway via Workers AI binding (caching, analytics, rate limiting)
+ * - Cloudflare AI Gateway via HTTP API (caching, analytics, rate limiting)
  * - Worker AI with structured tool calling
  * - Service Binding to MCP server for tool execution
  */
 
 interface Env {
-  AI: Ai;
-  AI_GATEWAY_ID: string;  // e.g., "my-gateway" - the name of your AI Gateway
+  CF_AIG_TOKEN: string;  // Cloudflare API token for AI Gateway
   MCP_SERVER: Fetcher;
 }
+
+// AI Gateway endpoint
+const AI_GATEWAY_URL = "https://gateway.ai.cloudflare.com/v1/1ddebf6f9507d3fc9052158be9d42dee/mcp-demo/compat/chat/completions";
 
 // Tool definition interface
 interface ToolDefinition {
@@ -91,6 +93,85 @@ const AI_TOOLS: ToolDefinition[] = [
     }
   }
 ];
+
+// Call AI Gateway endpoint
+async function callAIGateway(
+  token: string,
+  messages: Array<{ role: string; content: string }>,
+  tools?: ToolDefinition[]
+): Promise<{
+  response?: string;
+  tool_calls?: Array<{ name: string; arguments: Record<string, unknown> }>;
+  error?: string;
+}> {
+  const body: Record<string, unknown> = {
+    model: "workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    messages,
+  };
+  
+  if (tools && tools.length > 0) {
+    body.tools = tools.map(tool => ({
+      type: "function",
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters,
+      }
+    }));
+  }
+
+  const response = await fetch(AI_GATEWAY_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    return { error: `AI Gateway error: ${response.status} - ${errorText}` };
+  }
+
+  const data = await response.json() as {
+    choices?: Array<{
+      message?: {
+        content?: string;
+        tool_calls?: Array<{
+          function?: {
+            name?: string;
+            arguments?: string;
+          };
+        }>;
+      };
+    }>;
+  };
+
+  const choice = data.choices?.[0];
+  const message = choice?.message;
+  
+  const result: {
+    response?: string;
+    tool_calls?: Array<{ name: string; arguments: Record<string, unknown> }>;
+    error?: string;
+  } = {};
+
+  if (message?.content) {
+    result.response = message.content;
+  }
+
+  if (message?.tool_calls && message.tool_calls.length > 0) {
+    result.tool_calls = message.tool_calls
+      .filter(tc => tc.function?.name)
+      .map(tc => ({
+        name: tc.function!.name!,
+        arguments: tc.function?.arguments ? JSON.parse(tc.function.arguments) : {},
+      }));
+  }
+
+  return result;
+}
 
 // Call MCP tool via service binding
 async function callMCPToolViaBinding(
@@ -370,7 +451,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         <h4>How it works:</h4>
         <ul>
           <li><strong>Browser</strong> sends prompt to AI Orchestrator (Worker)</li>
-          <li><strong>AI Orchestrator</strong> calls Workers AI via AI Gateway binding</li>
+          <li><strong>AI Orchestrator</strong> calls AI Gateway HTTP API</li>
           <li><strong>AI Gateway</strong> provides caching, analytics, and rate limiting</li>
           <li><strong>Workers AI</strong> processes prompt and decides which tools to call</li>
           <li><strong>Service Binding</strong> securely connects to MCP server</li>
@@ -401,11 +482,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       <div class="result-section">
         <h3>Your Prompt</h3>
         <div id="request-box" class="result-box request"></div>
-      </div>
-
-      <div class="result-section" id="thinking-section" style="display: none;">
-        <h3>🤔 AI Thinking</h3>
-        <div id="thinking-box" class="result-box response"></div>
       </div>
 
       <div class="result-section" id="tools-section" style="display: none;">
@@ -456,30 +532,36 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 
         const data = await response.json();
 
-        aiSection.style.display = 'block';
-        if (data.ai && data.ai.response) {
-          aiBox.textContent = data.ai.response;
-        } else if (data.ai && data.ai.error) {
+        if (data.error) {
+          aiSection.style.display = 'block';
           aiBox.className = 'result-box error';
-          aiBox.textContent = 'Error: ' + data.ai.error;
-        }
+          aiBox.textContent = 'Error: ' + data.error;
+        } else {
+          aiSection.style.display = 'block';
+          if (data.ai && data.ai.response) {
+            aiBox.textContent = data.ai.response;
+          } else if (data.ai && data.ai.error) {
+            aiBox.className = 'result-box error';
+            aiBox.textContent = 'Error: ' + data.ai.error;
+          }
 
-        if (data.toolCalls && data.toolCalls.length > 0) {
-          toolsSection.style.display = 'block';
-          let toolsHtml = '';
-          data.toolCalls.forEach(function(call, i) {
-            toolsHtml += '<div class="tool-call">';
-            toolsHtml += '<strong>Tool #' + (i + 1) + ':</strong> ' + call.tool + '<br>';
-            toolsHtml += '<strong>Arguments:</strong><br>' + JSON.stringify(call.arguments, null, 2);
-            toolsHtml += '</div>';
-            
-            if (call.result) {
-              toolsHtml += '<div class="tool-result">';
-              toolsHtml += '<strong>Result:</strong><br>' + JSON.stringify(call.result, null, 2);
+          if (data.toolCalls && data.toolCalls.length > 0) {
+            toolsSection.style.display = 'block';
+            let toolsHtml = '';
+            data.toolCalls.forEach(function(call, i) {
+              toolsHtml += '<div class="tool-call">';
+              toolsHtml += '<strong>Tool #' + (i + 1) + ':</strong> ' + call.tool + '<br>';
+              toolsHtml += '<strong>Arguments:</strong><br>' + JSON.stringify(call.arguments, null, 2);
               toolsHtml += '</div>';
-            }
-          });
-          toolsBox.innerHTML = toolsHtml;
+              
+              if (call.result) {
+                toolsHtml += '<div class="tool-result">';
+                toolsHtml += '<strong>Result:</strong><br>' + JSON.stringify(call.result, null, 2);
+                toolsHtml += '</div>';
+              }
+            });
+            toolsBox.innerHTML = toolsHtml;
+          }
         }
       } catch (error) {
         aiSection.style.display = 'block';
@@ -522,48 +604,41 @@ export default {
         const body = await request.json() as { prompt: string };
         const prompt = body.prompt || "";
 
-        // Check if AI Gateway ID is configured
-        if (!env.AI_GATEWAY_ID) {
+        // Check if AI Gateway token is configured
+        if (!env.CF_AIG_TOKEN) {
           return new Response(
             JSON.stringify({ 
-              error: "AI Gateway not configured. Please set AI_GATEWAY_ID secret." 
+              error: "AI Gateway token not configured. Please set CF_AIG_TOKEN secret." 
             }, null, 2),
             { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         }
 
-        // Call Workers AI with AI Gateway via binding
+        // Step 1: Call AI Gateway to decide which tools to call
         let aiResponse;
         try {
-          aiResponse = await env.AI.run(
-            "@cf/meta/llama-2-7b-chat-int8",
-            {
-              messages: [
-                { 
-                  role: 'system', 
-                  content: 'You are a helpful assistant with access to tools. When you need to use a tool, indicate it clearly.'
-                },
-                { role: 'user', content: prompt }
-              ],
-              tools: AI_TOOLS,
-            },
-            {
-              gateway: {
-                id: env.AI_GATEWAY_ID,
-                skipCache: false,
-                cacheTtl: 3360, // 1 hour cache
+          aiResponse = await callAIGateway(
+            env.CF_AIG_TOKEN,
+            [
+              { 
+                role: 'system', 
+                content: 'You are a helpful assistant with access to tools. When you need to use a tool, indicate it clearly.'
               },
-            }
-          ) as {
-            response?: string;
-            tool_calls?: Array<{ name: string; arguments: Record<string, unknown> }>;
-          };
+              { role: 'user', content: prompt }
+            ],
+            AI_TOOLS
+          );
         } catch (error) {
           return new Response(
-            JSON.stringify({
-              ai: { error: String(error) },
-            }, null, 2),
-            { headers: { "Content-Type": "application/json", ...corsHeaders } }
+            JSON.stringify({ error: String(error) }, null, 2),
+            { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+
+        if (aiResponse.error) {
+          return new Response(
+            JSON.stringify({ error: aiResponse.error }, null, 2),
+            { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         }
 
@@ -572,7 +647,7 @@ export default {
         let finalResponse = aiResponse.response || "";
         
         if (aiResponse.tool_calls && aiResponse.tool_calls.length > 0) {
-          // Execute the tool calls
+          // Execute the tool calls via service binding
           const results = await processToolCalls(env.MCP_SERVER, aiResponse.tool_calls);
           
           for (let i = 0; i < aiResponse.tool_calls.length; i++) {
@@ -583,39 +658,32 @@ export default {
             });
           }
 
-          // Build conversation history with tool results
-          const toolResultsMessage = toolCalls.map((tc, i) => 
+          // Build conversation with tool results for final AI response
+          const toolResultsMessage = toolCalls.map(tc => 
             `Tool: ${tc.tool}\nArguments: ${JSON.stringify(tc.arguments)}\nResult: ${JSON.stringify(tc.result)}`
           ).join('\n\n');
 
-          // Call AI again with tool results to get final response
+          // Step 2: Call AI Gateway again with tool results to get final response
           try {
-            const finalAiResponse = await env.AI.run(
-              "@cf/meta/llama-2-7b-chat-int8",
-              {
-                messages: [
-                  { 
-                    role: 'system', 
-                    content: 'You are a helpful assistant. Based on the tool results provided, give a clear and helpful response to the user.'
-                  },
-                  { role: 'user', content: prompt },
-                  { role: 'assistant', content: `I need to use tools to answer this. Let me call: ${aiResponse.tool_calls.map(tc => tc.name).join(', ')}` },
-                  { role: 'user', content: `Here are the tool results:\n\n${toolResultsMessage}\n\nPlease provide a helpful response based on these results.` }
-                ],
-              },
-              {
-                gateway: {
-                  id: env.AI_GATEWAY_ID,
-                  skipCache: false,
-                  cacheTtl: 3360,
+            const finalAiResponse = await callAIGateway(
+              env.CF_AIG_TOKEN,
+              [
+                { 
+                  role: 'system', 
+                  content: 'You are a helpful assistant. Based on the tool results provided, give a clear and helpful response to the user.'
                 },
-              }
-            ) as { response?: string };
+                { role: 'user', content: prompt },
+                { role: 'assistant', content: `I need to use tools to answer this. Let me call: ${aiResponse.tool_calls.map(tc => tc.name).join(', ')}` },
+                { role: 'user', content: `Here are the tool results:\n\n${toolResultsMessage}\n\nPlease provide a helpful response based on these results.` }
+              ]
+            );
 
-            finalResponse = finalAiResponse.response || finalResponse;
+            if (!finalAiResponse.error && finalAiResponse.response) {
+              finalResponse = finalAiResponse.response;
+            }
           } catch (error) {
-            // If second AI call fails, use the tool results as the response
-            finalResponse = `I called the following tools:\n\n${toolResultsMessage}`;
+            // If second AI call fails, use a formatted response with tool results
+            finalResponse = `I found the following information:\n\n${toolResultsMessage}`;
           }
         }
 
