@@ -244,6 +244,76 @@ Or via Cloudflare Dashboard:
 2. Settings → Service bindings
 3. Add: `MCP_SERVER` → `mcp-demo-server`
 
+## Security Configuration
+
+After deployment, configure these security measures to protect your AI endpoints:
+
+### Rate Limiting (WAF)
+
+Prevent abuse of the AI endpoint with rate limiting:
+
+**Via Cloudflare Dashboard:**
+1. Go to: https://dash.cloudflare.com → **Security** → **WAF** → **Rate Limiting**
+2. Create a new rule:
+   - **If**: URL contains `/api/ask`
+   - **Rate**: 10 requests per minute per IP
+   - **Action**: Block
+   - **Duration**: 1 hour
+
+**Via API:**
+```bash
+curl -X POST "https://api.cloudflare.com/client/v4/zones/{zone_id}/rate_limits" \
+  -H "Authorization: Bearer {api_token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "threshold": 10,
+    "period": 60,
+    "match": {
+      "request": {
+        "url": "*ai-orchestrator*/api/ask*"
+      }
+    },
+    "action": {
+      "mode": "block",
+      "timeout": 3600
+    }
+  }'
+```
+
+### AI Gateway Security
+
+Enable prompt validation in your AI Gateway:
+
+1. Go to: https://dash.cloudflare.com → **AI** → **AI Gateway** → **mcp-demo**
+2. Navigate to **Security** tab
+3. Enable:
+   - ✅ **Prompt Validation**: Block prompt injection attempts
+   - ✅ **Content Filtering**: Filter inappropriate content
+   - ✅ **Logging**: Keep request logs for 7 days
+
+### Additional Security Measures
+
+| Measure | How to Enable | Why |
+|---------|--------------|-----|
+| **HTTPS Only** | Workers enforce HTTPS by default | Prevents MITM attacks |
+| **CORS Headers** | Already configured in code | Blocks unauthorized origins |
+| **Input Validation** | MCP server validates tool args | Prevents malformed requests |
+| **Token Scope** | Create token with minimal permissions | Limits blast radius |
+
+### API Token Best Practices
+
+When creating your `CLOUDFLARE_API_TOKEN`:
+
+```
+Account: Workers Scripts:Edit
+Account: Workers Routes:Edit
+Account: Cloudflare Pages:Edit
+Account: Account Settings:Read
+Zone: None (unless using WAF rules)
+```
+
+**Never** use your Global API Key in CI/CD pipelines.
+
 ## Troubleshooting
 
 ### Error 1042 (Worker-to-Worker HTTP Blocked)
