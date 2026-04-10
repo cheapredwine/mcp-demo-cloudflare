@@ -12,7 +12,7 @@ enabled = true
 # Set this to your deployed MCP server URL or local dev URL
 # For local dev: http://localhost:8787
 # For deployed: https://mcp-demo-server.your-account.workers.dev
-MCP_SERVER_URL = "http://localhost:8787"
+MCP_SERVER_URL = "https://mcp-demo-server.jsherron-test-account.workers.dev"
 
 # For production, set via secrets:
 # wrangler secret put MCP_SERVER_URL --env production
