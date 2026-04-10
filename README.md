@@ -4,15 +4,18 @@ A working MCP (Model Context Protocol) server and client running on Cloudflare W
 
 ## 🚀 Live Demo
 
-- **AI Orchestrator:** https://mcp-demo-ai-orchestrator.jsherron-test-account.workers.dev/
-- **MCP Server:** https://mcp-demo-server.jsherron-test-account.workers.dev/mcp
+- **AI Orchestrator:** https://mcp-demo.jsherron.com/ (or https://mcp-demo-ai-orchestrator.jsherron-test-account.workers.dev/)
+- **MCP Server:** Private (accessible only via Service Binding from AI Orchestrator)
 
 Open the AI Orchestrator Web UI and type a message to see the MCP protocol in action!
 
 ## What This Is
 
-- **MCP Server**: Stateless server handling MCP protocol requests via Streamable HTTP transport
-- **AI Orchestrator**: Worker AI that intelligently calls MCP tools via Service Bindings
+- **MCP Server**: Private stateless server handling MCP protocol (no public URL)
+- **AI Orchestrator**: Workers AI + AI Gateway + Web UI
+  - Uses `@cf/mistralai/mistral-small-3.1-24b-instruct` model
+  - AI Gateway provides caching, analytics, and rate limiting
+  - Calls MCP tools via Service Bindings
 - **All run on Cloudflare Workers**: Serverless, globally distributed, pay-per-request
 - **Key Innovation**: Uses Service Bindings instead of HTTP for worker-to-worker communication (avoids Cloudflare's 1042 error)
 
@@ -25,20 +28,26 @@ Open the AI Orchestrator Web UI and type a message to see the MCP protocol in ac
 └──────────────────────────┬──────────────────────────────────┘
                            │ HTTP
 ┌──────────────────────────┴──────────────────────────────────┐
-│  AI Orchestrator                                            │
+│  AI Orchestrator (Worker)                                   │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │ Worker AI                                             │  │
-│  │ • Natural language understanding                      │  │
+│  │ Workers AI / AI Gateway                               │  │
+│  │ • @cf/mistralai/mistral-small-3.1-24b-instruct       │  │
 │  │ • Intelligent tool selection                          │  │
-│  └───────────────────────────────────────────────────────┘  │
+│  │ • Caching + Analytics                                 │  │
+│  └───────────────────────┬───────────────────────────────┘  │
+│                          │                                  │
+│              ┌───────────┴───────────┐                     │
+│              │ Service Binding        │                     │
+│              │ (internal, secure)     │                     │
+│              └───────────┬───────────┘                     │
 │                          ↓                                  │
 └──────────────────────────┬──────────────────────────────────┘
                            │ Service Binding
 ┌──────────────────────────┴──────────────────────────────────┐
-│  MCP Server                                                 │
+│  MCP Server (Worker)                                        │
 │  • Handles MCP protocol                                     │
-│  • Exposes 2 demo tools:                                    │
-│    - calculator, get_weather                                │
+│  • Exposes 2 tools: calculator, get_weather                 │
+│  • Private (no public URL)                                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -293,9 +302,10 @@ Zone: None (unless using WAF rules)
 ### Client shows 500 errors
 
 **Check:**
-1. Is the server deployed? `curl https://your-server.workers.dev/mcp`
-2. Is the service binding configured? Check Cloudflare Dashboard
-3. Check server logs: `wrangler tail --name mcp-demo-server`
+1. Is the AI Orchestrator deployed? Check the live demo URL
+2. Is the MCP server deployed? (It has no public URL - check via Cloudflare Dashboard)
+3. Is the service binding configured? Check Cloudflare Dashboard → Workers → Service Bindings
+4. Check server logs: `wrangler tail --name mcp-demo-server`
 
 ### GitHub Actions deployment fails
 
