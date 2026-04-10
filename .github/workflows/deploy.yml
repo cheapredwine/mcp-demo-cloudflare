@@ -55,6 +55,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Check wrangler config
+        run: |
+          cd packages/mcp-server
+          echo "=== wrangler.toml ==="
+          cat wrangler.toml
+          echo "=== src/index.ts exists? ==="
+          ls -la src/index.ts
+      
       - name: Deploy MCP Server
         uses: cloudflare/wrangler-action@v3
         with:
