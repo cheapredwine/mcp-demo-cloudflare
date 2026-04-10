@@ -624,7 +624,7 @@ export default {
             [
               { 
                 role: 'system', 
-                content: 'You are a helpful assistant. You have access to tools but should ONLY use them when the user explicitly asks for calculations or weather. For general questions, greetings, or conversations, respond directly without using any tools.'
+                content: 'You are a helpful assistant. Answer questions directly using your knowledge. Only use tools if the user specifically asks for: (1) mathematical calculations like "what is 5+3" or "calculate 25*47", or (2) weather information like "what is the weather in Tokyo".'
               },
               { role: 'user', content: prompt }
             ],
