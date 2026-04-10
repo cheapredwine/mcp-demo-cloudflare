@@ -644,15 +644,19 @@ export default {
           );
         }
 
-        // Process tool calls if any (only for valid tools)
+        // Standard tool calling flow:
+        // 1. If AI returned content and no tool_calls -> use content directly
+        // 2. If AI returned tool_calls -> execute tools -> get final response
         const VALID_TOOLS = ['calculator', 'get_weather'];
         const toolCalls: Array<{ tool: string; arguments: Record<string, unknown>; result?: unknown }> = [];
-        let finalResponse = aiResponse.response || "";
         
         // Filter out invalid tool calls (AI sometimes hallucinates tools)
         const validToolCalls = (aiResponse.tool_calls || []).filter(
           tc => VALID_TOOLS.includes(tc.name)
         );
+        
+        // Start with direct response if AI provided one
+        let finalResponse = aiResponse.response || "";
         
         if (validToolCalls.length > 0) {
           // Execute the tool calls via service binding
@@ -671,7 +675,7 @@ export default {
             `Tool: ${tc.tool}\nArguments: ${JSON.stringify(tc.arguments)}\nResult: ${JSON.stringify(tc.result)}`
           ).join('\n\n');
 
-          // Step 2: Call AI Gateway again with tool results to get final response
+          // Call AI again with tool results to get final response
           try {
             const finalAiResponse = await callAIGateway(
               env.CF_AIG_TOKEN,
@@ -690,8 +694,10 @@ export default {
               finalResponse = finalAiResponse.response;
             }
           } catch (error) {
-            // If second AI call fails, use a formatted response with tool results
-            finalResponse = `I found the following information:\n\n${toolResultsMessage}`;
+            // If second AI call fails, append tool results to any existing response
+            finalResponse = finalResponse 
+              ? `${finalResponse}\n\nTool Results:\n${toolResultsMessage}`
+              : `Tool Results:\n${toolResultsMessage}`;
           }
         }
 
