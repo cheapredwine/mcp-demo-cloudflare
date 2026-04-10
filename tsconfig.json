@@ -11,5 +11,5 @@
     "types": ["@cloudflare/workers-types", "@types/node"]
   },
   "include": ["packages/*/src/**/*"],
-  "exclude": ["node_modules", "**/node_modules", "**/build", "**/dist"]
+  "exclude": ["node_modules", "**/node_modules", "**/build", "**/dist", "**/__tests__/**", "**/*.test.ts"]
 }
