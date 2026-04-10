@@ -644,18 +644,24 @@ export default {
           );
         }
 
-        // Process tool calls if any
+        // Process tool calls if any (only for valid tools)
+        const VALID_TOOLS = ['calculator', 'get_weather'];
         const toolCalls: Array<{ tool: string; arguments: Record<string, unknown>; result?: unknown }> = [];
         let finalResponse = aiResponse.response || "";
         
-        if (aiResponse.tool_calls && aiResponse.tool_calls.length > 0) {
+        // Filter out invalid tool calls (AI sometimes hallucinates tools)
+        const validToolCalls = (aiResponse.tool_calls || []).filter(
+          tc => VALID_TOOLS.includes(tc.name)
+        );
+        
+        if (validToolCalls.length > 0) {
           // Execute the tool calls via service binding
-          const results = await processToolCalls(env.MCP_SERVER, aiResponse.tool_calls);
+          const results = await processToolCalls(env.MCP_SERVER, validToolCalls);
           
-          for (let i = 0; i < aiResponse.tool_calls.length; i++) {
+          for (let i = 0; i < validToolCalls.length; i++) {
             toolCalls.push({
-              tool: aiResponse.tool_calls[i].name,
-              arguments: aiResponse.tool_calls[i].arguments,
+              tool: validToolCalls[i].name,
+              arguments: validToolCalls[i].arguments,
               result: results[i]?.result,
             });
           }
@@ -675,7 +681,7 @@ export default {
                   content: 'You are a helpful assistant. Based on the tool results provided, give a clear and helpful response to the user.'
                 },
                 { role: 'user', content: prompt },
-                { role: 'assistant', content: `I need to use tools to answer this. Let me call: ${aiResponse.tool_calls.map(tc => tc.name).join(', ')}` },
+                { role: 'assistant', content: `I need to use tools to answer this. Let me call: ${validToolCalls.map(tc => tc.name).join(', ')}` },
                 { role: 'user', content: `Here are the tool results:\n\n${toolResultsMessage}\n\nPlease provide a helpful response based on these results.` }
               ]
             );
