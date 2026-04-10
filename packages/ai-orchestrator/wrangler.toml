@@ -2,11 +2,13 @@ name = "mcp-demo-ai-orchestrator"
 main = "src/index.ts"
 compatibility_date = "2024-03-20"
 compatibility_flags = ["nodejs_compat"]
+account_id = "1ddebf6f9507d3fc9052158be9d42dee"
 
 # Service binding to MCP server
 [[services]]
 binding = "MCP_SERVER"
 service = "mcp-demo-server"
 
-[ai]
-binding = "AI"
+# Note: CF_AIG_TOKEN secret must be set via:
+#   wrangler secret put CF_AIG_TOKEN
+# Or in the Cloudflare Dashboard: Workers & Pages > mcp-demo-ai-orchestrator > Settings > Variables and Secrets
