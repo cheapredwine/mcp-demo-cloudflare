@@ -8,7 +8,7 @@ const PROMPT_INJECTION_PATTERNS = [
   /bypass\s+(?:all\s+)?(?:security\s+)?measures?/i,
   /you\s+are\s+now\s+(?:in\s+)?(?:code\s+)?(?:mode|developer)/i,
   /system\s*:\s*/i,
-  /DAN\s*\(/i,
+  /DAN\s*(?:\(|mode)/i,
   /\[system\s*\(/i,
   /<\|im_start\|>/i,
   /<\|system\|>/i,
@@ -53,6 +53,11 @@ describe('AI Gateway', () => {
 
     it('should block "DAN" (Do Anything Now) pattern', () => {
       const result = detectPromptInjection('DAN (Do Anything Now) mode activated');
+      expect(result.isAttack).toBe(true);
+    });
+
+    it('should block "DAN mode" pattern', () => {
+      const result = detectPromptInjection('DAN mode activated');
       expect(result.isAttack).toBe(true);
     });
 

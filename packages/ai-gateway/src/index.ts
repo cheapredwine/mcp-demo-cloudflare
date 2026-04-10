@@ -99,7 +99,7 @@ const PROMPT_INJECTION_PATTERNS = [
   /bypass\s+(?:all\s+)?(?:security\s+)?measures?/i,
   /you\s+are\s+now\s+(?:in\s+)?(?:code\s+)?(?:mode|developer)/i,
   /system\s*:\s*/i,
-  /DAN\s*\(/i,
+  /DAN\s*(?:\(|mode)/i,
   /\[system\s*\(/i,
   /<\|im_start\|>/i,
   /<\|system\|>/i,
