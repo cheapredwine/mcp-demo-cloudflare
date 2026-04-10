@@ -4,9 +4,9 @@ compatibility_date = "2024-03-20"
 compatibility_flags = ["nodejs_compat"]
 account_id = "1ddebf6f9507d3fc9052158be9d42dee"
 
-# Custom domain route
+# Custom domain
 routes = [
-  { pattern = "jsherron.com/mcp-demo/*", custom_domain = true }
+  { pattern = "mcp-demo.jsherron.com", custom_domain = true }
 ]
 
 # Service binding to MCP server
