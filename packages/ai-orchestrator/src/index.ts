@@ -515,6 +515,18 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     .http-log-container.open {
       display: block;
     }
+    .empty-state {
+      color: #999;
+      font-style: italic;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .loading {
+      color: #F48120;
+      font-style: italic;
+      text-align: center;
+      padding: 20px;
+    }
     /* Three panel layout */
     .results-container {
       display: grid;
@@ -593,7 +605,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           </div>
     </div>
 
-    <div class="results-container" id="results-container" style="display: none;">
+    <div class="results-container" id="results-container">
       <!-- Left Panel: Prompt -->
       <div class="panel" id="prompt-panel">
         <div class="panel-header">
@@ -662,7 +674,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       }
 
       const submitBtn = document.getElementById('submit-btn');
-      const resultsContainer = document.getElementById('results-container');
       const requestBox = document.getElementById('request-box');
       const aiBox = document.getElementById('ai-box');
       const toolsBox = document.getElementById('tools-box');
@@ -670,7 +681,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Processing...';
-      resultsContainer.style.display = 'grid';
       
       // Show prompt immediately
       requestBox.textContent = prompt;
