@@ -15,6 +15,7 @@ Open the AI Orchestrator Web UI and type a message to see the MCP protocol in ac
 - **AI Orchestrator**: Workers AI + AI Gateway + Web UI
   - Uses Workers AI LLM model instance
   - AI Gateway provides caching, analytics, and rate limiting
+  - **Security**: Firewall for AI blocks prompt injection, PII detection protects sensitive data
   - Calls MCP tools via Service Bindings
 - **All run on Cloudflare Workers**: Serverless, globally distributed, pay-per-request
 - **Key Innovation**: Uses Service Bindings instead of HTTP for worker-to-worker communication (avoids Cloudflare's 1042 error)
@@ -269,6 +270,42 @@ Enable guardrails in your AI Gateway for prompt injection protection:
 - Detects injection patterns: `"Ignore previous instructions"`, `"System: You are now..."`, etc.
 - Blocks or sanitizes suspicious prompts
 - Logs attempts for security review
+
+### Firewall for AI (WAF)
+
+With a **custom domain**, Cloudflare WAF provides additional AI-specific protections:
+
+**PII Detection & Blocking:**
+1. Go to: https://dash.cloudflare.com → **jsherron.com** → **Security** → **WAF** → **Custom Rules**
+2. Create or edit the PII detection rule
+3. Use expression: `cf.llm.prompt.pii_detected` (or `cf.llm.prompt.pii_score > 50` if available)
+4. **Action**: Block
+
+**What gets blocked:**
+- Email addresses, phone numbers, SSNs
+- Credit card numbers
+- Physical addresses and locations
+- Other personally identifiable information
+
+**Tuning PII sensitivity:**
+The default rules may be too sensitive for legitimate queries like "weather in Tokyo" (location PII). To allow these:
+
+1. **Option A** - Lower threshold for AI endpoint:
+   ```
+   (http.request.uri.path contains "/api/ask" and cf.llm.prompt.pii_score > 75) 
+   or (http.request.uri.path !contains "/api/ask" and cf.llm.prompt.pii_detected)
+   ```
+   This uses strict blocking (score > 75) only for the AI endpoint.
+
+2. **Option B** - Custom topics allowlist:
+   Add "weather" and other legitimate topics to allowed patterns.
+
+**Prompt Injection Protection:**
+WAF works alongside AI Gateway Guardrails to block:
+- "Ignore previous instructions"
+- "System: You are now..."
+- "Disregard all prior prompts"
+- Jailbreak attempts and role-playing attacks
 
 ### Additional Security Measures
 

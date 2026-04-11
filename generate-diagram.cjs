@@ -211,11 +211,11 @@ drawComponentBox(240, 510, 440, 170, 'Workers AI', [
 ], PURPLE);
 
 // AI Gateway box (right side of platform)
-drawComponentBox(720, 510, 460, 170, 'AI Gateway', [
-  '• Caching + Analytics',
-  '• Rate limiting',
-  '• Guardrails (prompt injection protection)',
-  '• Firewall for AI (content filtering)'
+drawComponentBox(720, 510, 460, 170, 'AI Gateway + Security', [
+  '• Caching + Analytics + Rate limiting',
+  '• Guardrails: Blocks prompt injection attacks',
+  '• Firewall for AI: PII detection & blocking',
+  '• Content filtering for safe responses'
 ], '#FF6B35');
 
 // Badges for AI Gateway
@@ -250,9 +250,9 @@ const legendItems = [
   { color: ORANGE, text: 'Cloudflare Workers' },
   { color: GREEN, text: 'Web UI' },
   { color: PURPLE, text: 'Workers AI' },
-  { color: '#FF6B35', text: 'AI Gateway' },
+  { color: '#FF6B35', text: 'AI Gateway + WAF' },
   { color: BLUE, text: 'MCP Server (Private)' },
-  { color: RED, text: 'Guardrails' }
+  { color: RED, text: 'Guardrails + PII' }
 ];
 
 let legendX = 50;
@@ -273,8 +273,9 @@ legendItems.forEach((item, i) => {
 ctx.font = '13px Arial';
 ctx.fillStyle = '#666';
 ctx.textAlign = 'left';
-ctx.fillText('Note: Workers AI is a platform service. In this demo we use the Workers AI binding.', 50, 1080);
-ctx.fillText('You can also access it via the REST API from any worker or external service.', 50, 1100);
+ctx.fillText('Security: Firewall for AI blocks prompt injection. PII detection protects sensitive data.', 50, 1060);
+ctx.fillText('Guardrails provide additional content filtering. Custom domain enables WAF rules.', 50, 1080);
+ctx.fillText('Note: Workers AI is a platform service. In this demo we use the Workers AI binding.', 50, 1100);
 
 // Save
 const buffer = canvas.toBuffer('image/png');
