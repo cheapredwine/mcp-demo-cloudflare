@@ -290,18 +290,16 @@ With a **custom domain**, Cloudflare WAF provides additional AI-specific protect
 **Tuning PII sensitivity:**
 The default rules may be too sensitive for legitimate queries like "weather in Tokyo" (location PII). To allow these:
 
-**Option A** - Skip PII check for AI endpoint:
-Create an exception rule that skips PII detection when URI contains `/api/ask`:
-```
-http.request.uri.path contains "/api/ask"
-```
-**Action**: Skip → PII Detection
+**Solution: Custom Topics**
 
-**Option B** - Custom topics allowlist:
-Use WAF Custom Topics to explicitly allow "weather" and other legitimate patterns.
+Use WAF Custom Topics to explicitly allow "weather" and other legitimate patterns that may contain location data:
 
-**Option C** - Disable location PII only:
-If your WAF supports granular PII categories, disable only "Location/Address" detection while keeping email/phone/SSN blocking.
+1. Dashboard → **jsherron.com** → **Security** → **WAF** → **Custom Topics**
+2. Create a new allowed topic:
+   - **Name**: Weather Queries
+   - **Pattern**: `weather.*in.*`
+   - **Action**: Allow
+3. This permits "weather in Tokyo", "weather in Paris", etc. without disabling PII protection for actual sensitive data.
 
 **Prompt Injection Protection:**
 WAF works alongside AI Gateway Guardrails to block:
