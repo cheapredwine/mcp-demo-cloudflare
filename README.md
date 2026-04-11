@@ -35,14 +35,14 @@ Open the AI Orchestrator Web UI and type a message to see the MCP protocol in ac
 │  │ • Prompt | MCP Status | AI Response                  │  │
 │  └───────────────────────────────────────────────────────┘  │
 └──────────────────────────┬──────────────────────────────────┘
-                           │ Workers AI Binding¹
+                            │ Workers AI Binding¹
 ┌──────────────────────────┴──────────────────────────────────┐
 │  Cloudflare AI Platform                                     │
 │  ┌───────────────────┐  ┌───────────────────────────────┐  │
-│  │ Workers AI        │  │ AI Gateway                    │  │
+│  │ Workers AI        │  │ AI Gateway + WAF²             │  │
 │  │ • LLM model inst. │←─┤ • Caching + Analytics         │  │
-│  │ • Tool calling    │  │ • Guardrails                  │  │
-│  └───────────────────┘  │ • Firewall for AI             │  │
+│  │ • Tool calling    │  │ • Guardrails (prompt inj.)    │  │
+│  └───────────────────┘  │ • Firewall for AI (PII)       │  │
 │                         └───────────────────────────────┘  │
 └──────────────────────────┬──────────────────────────────────┘
                            │ Service Binding
@@ -278,7 +278,7 @@ With a **custom domain**, Cloudflare WAF provides additional AI-specific protect
 **PII Detection & Blocking:**
 1. Go to: https://dash.cloudflare.com → **jsherron.com** → **Security** → **WAF** → **Custom Rules**
 2. Create or edit the PII detection rule
-3. Use expression: `cf.llm.prompt.pii_detected` (or `cf.llm.prompt.pii_score > 50` if available)
+3. Use expression: `cf.llm.prompt.pii_detected`
 4. **Action**: Block
 
 **What gets blocked:**
@@ -290,15 +290,18 @@ With a **custom domain**, Cloudflare WAF provides additional AI-specific protect
 **Tuning PII sensitivity:**
 The default rules may be too sensitive for legitimate queries like "weather in Tokyo" (location PII). To allow these:
 
-1. **Option A** - Lower threshold for AI endpoint:
-   ```
-   (http.request.uri.path contains "/api/ask" and cf.llm.prompt.pii_score > 75) 
-   or (http.request.uri.path !contains "/api/ask" and cf.llm.prompt.pii_detected)
-   ```
-   This uses strict blocking (score > 75) only for the AI endpoint.
+**Option A** - Skip PII check for AI endpoint:
+Create an exception rule that skips PII detection when URI contains `/api/ask`:
+```
+http.request.uri.path contains "/api/ask"
+```
+**Action**: Skip → PII Detection
 
-2. **Option B** - Custom topics allowlist:
-   Add "weather" and other legitimate topics to allowed patterns.
+**Option B** - Custom topics allowlist:
+Use WAF Custom Topics to explicitly allow "weather" and other legitimate patterns.
+
+**Option C** - Disable location PII only:
+If your WAF supports granular PII categories, disable only "Location/Address" detection while keeping email/phone/SSN blocking.
 
 **Prompt Injection Protection:**
 WAF works alongside AI Gateway Guardrails to block:
