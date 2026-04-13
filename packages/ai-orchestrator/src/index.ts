@@ -869,13 +869,8 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 
       // Use streaming for chat action
       if (action === 'chat') {
-        try {
-          await sendPromptStream(prompt, action);
-          return;
-        } catch (streamError) {
-          console.error('Streaming failed, falling back to regular:', streamError);
-          // Continue to regular flow below
-        }
+        await sendPromptStream(prompt, action);
+        return;
       }
 
       // Regular non-streaming flow for other actions
@@ -979,7 +974,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let buffer = '';
         let fullText = '';
         
         aiBox.innerHTML = '';
@@ -988,54 +982,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           const { done, value } = await reader.read();
           if (done) break;
           
-          buffer += decoder.decode(value, { stream: true });
-          
-          // Parse SSE format - split on \r\n or \n
-          const lines = buffer.split(/\r?\n/);
-          buffer = lines.pop() || ''; // Keep incomplete line in buffer
-          
-          let currentEvent = '';
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              currentEvent = line.slice(6);
-            } else if (line === '' && currentEvent) {
-              // Empty line means end of event
-              if (currentEvent === '[DONE]') {
-                currentEvent = '';
-                continue;
-              }
-              
-              try {
-                const parsed = JSON.parse(currentEvent);
-                if (parsed.response) {
-                  fullText += parsed.response;
-                  aiBox.textContent = fullText;
-                }
-              } catch (e) {
-                // Invalid JSON, skip
-              }
-              currentEvent = '';
-            }
-          }
-          
-          // If there's a partial data line in buffer, prepend it for next iteration
-          if (buffer.startsWith('data: ')) {
-            currentEvent = buffer.slice(6);
-            buffer = '';
-          }
-          
-          // Process any remaining currentEvent at end of stream
-          if (currentEvent && currentEvent !== '[DONE]') {
-            try {
-              const parsed = JSON.parse(currentEvent);
-              if (parsed.response) {
-                fullText += parsed.response;
-                aiBox.textContent = fullText;
-              }
-            } catch (e) {
-              // Invalid JSON, skip
-            }
-          }
+          const chunk = decoder.decode(value, { stream: true });
+          fullText += chunk;
+          aiBox.textContent = fullText;
         }
       } catch (error) {
         aiBox.className = 'result-box error';
