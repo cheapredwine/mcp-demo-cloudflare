@@ -648,9 +648,10 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" style="position: relative;">
     <h1>AI Orchestrator + MCP</h1>
     <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + Firewall for AI + MCP Tools</p>
+    <span style="position: absolute; top: 0; right: 0; font-size: 0.7rem; color: rgba(255,255,255,0.5); font-family: monospace;">2024-04-12</span>
 
     <div class="card">
       <div class="info-box">
