@@ -1066,9 +1066,13 @@ export default {
               }
               
               // Get final response with tool results
-              const toolResultsMessage = toolCalls.map(tc => 
-                `Tool: ${tc.tool}\nArguments: ${JSON.stringify(tc.arguments)}\nResult: ${JSON.stringify(tc.result)}`
-              ).join('\n\n');
+              const toolResultsMessage = toolCalls.map(tc => {
+                // Extract readable text from MCP result format
+                const resultText = typeof tc.result === 'object' && tc.result !== null && 'content' in tc.result
+                  ? (tc.result as { content: Array<{ text: string }> }).content.map(c => c.text).join(', ')
+                  : JSON.stringify(tc.result);
+                return `Tool: ${tc.tool}\nArguments: ${JSON.stringify(tc.arguments)}\nResult: ${resultText}`;
+              }).join('\n\n');
               
               aiResponse = await callWorkersAI(
                 env.AI,
