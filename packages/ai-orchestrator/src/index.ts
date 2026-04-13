@@ -1002,6 +1002,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         aiBox.className = 'result-box error';
         aiBox.textContent = 'Streaming error: ' + error.message;
       } finally {
+        // Show "No MCP used" chip for streaming (chat doesn't use tools)
+        toolsBox.innerHTML = '<div style="display: inline-block; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: #F3F4F6; color: #6B7280; border: 1px solid #E5E7EB; margin: 10px;">No MCP used</div>';
+        
         // Re-enable all buttons
         document.getElementById('chat-btn').disabled = false;
         document.getElementById('calc-btn').disabled = false;
