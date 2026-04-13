@@ -611,27 +611,32 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       <div class="info-box">
         <h4>How it works:</h4>
         <ul>
-          <li><strong>Browser</strong> sends prompt to AI Orchestrator (Worker)</li>
+          <li><strong>Choose an action</strong> - Chat directly with AI, Calculate, or get Weather</li>
           <li><strong>Firewall for AI</strong> protects against prompt injection & PII leaks</li>
-          <li><strong>Workers AI</strong> processes prompt and decides which tools to call</li>
+          <li><strong>Workers AI</strong> processes your request</li>
           <li><strong>AI Gateway</strong> provides caching, analytics, and rate limiting</li>
-          <li><strong>Service Binding</strong> securely connects to MCP server</li>
+          <li><strong>Service Binding</strong> securely connects to MCP server for tools</li>
         </ul>
       </div>
 
       <div class="input-row">
         <div class="input-group">
           <label for="prompt">Your prompt:</label>
-          <textarea id="prompt" placeholder="Try: 'What is the weather in Tokyo?'"></textarea>
+          <textarea id="prompt" placeholder="Try: 'Tell me about tabby cats' or 'What is 25 * 47?' or 'Weather in Tokyo'"></textarea>
         </div>
-        <button id="submit-btn" onclick="sendPrompt()">Send</button>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 12px;">
+        <button id="chat-btn" onclick="sendPrompt('chat')" style="flex: 1; background: #F48120;">💬 Chat with AI</button>
+        <button id="calc-btn" onclick="sendPrompt('calculate')" style="flex: 1; background: #22C55E;">🔢 Calculate</button>
+        <button id="weather-btn" onclick="sendPrompt('weather')" style="flex: 1; background: #3B82F6;">🌤️ Weather</button>
       </div>
 
       <div class="example-prompts">
-        <button class="example-btn" onclick="setPromptAndSubmit('What is the weather in Paris?')">Weather</button>
-        <button class="example-btn" onclick="setPromptAndSubmit('Calculate 25 * 47')">Calculator</button>
-        <button class="example-btn" onclick="setPromptAndSubmit('Tell me about tabby cats')">No MCP</button>
-        <button class="example-btn" onclick="setPromptAndSubmit('If apples cost $3 each and I have $45, how many can I buy?')">Multi-step</button>
+        <button class="example-btn" onclick="setPrompt('What is the weather in Paris?'); document.getElementById('weather-btn').click()">Weather example</button>
+        <button class="example-btn" onclick="setPrompt('Calculate 25 * 47'); document.getElementById('calc-btn').click()">Calculator example</button>
+        <button class="example-btn" onclick="setPrompt('Tell me about tabby cats'); document.getElementById('chat-btn').click()">Chat example</button>
+        <button class="example-btn" onclick="setPrompt('Explain quantum computing'); document.getElementById('chat-btn').click()">AI knowledge example</button>
       </div>
     </div>
 
@@ -680,53 +685,56 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       document.getElementById('prompt').value = text;
     }
     
-    function setPromptAndSubmit(text) {
+    function setPromptAndSubmit(text, action) {
       setPrompt(text);
-      sendPrompt();
+      sendPrompt(action);
     }
     
-    // Enter to submit, Shift+Enter for newline
+    // Enter to submit chat mode
     document.addEventListener('DOMContentLoaded', function() {
       const textarea = document.getElementById('prompt');
       textarea.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          sendPrompt();
+          sendPrompt('chat');
         }
       });
     });
 
-    async function sendPrompt() {
+    async function sendPrompt(action) {
       const prompt = document.getElementById('prompt').value.trim();
       if (!prompt) {
         alert('Please enter a prompt');
         return;
       }
 
-      const submitBtn = document.getElementById('submit-btn');
+      // Disable all buttons
+      document.getElementById('chat-btn').disabled = true;
+      document.getElementById('calc-btn').disabled = true;
+      document.getElementById('weather-btn').disabled = true;
+      
       const requestBox = document.getElementById('request-box');
       const aiBox = document.getElementById('ai-box');
       const toolsBox = document.getElementById('tools-box');
       const mcpStatus = document.getElementById('mcp-status');
 
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Processing...';
-      
       // Show prompt immediately
-      requestBox.textContent = prompt;
+      requestBox.textContent = '[' + action.toUpperCase() + '] ' + prompt;
       requestBox.className = 'result-box prompt';
       
       // Reset other panels
-      aiBox.innerHTML = '<div class="loading">Waiting for AI response...</div>';
+      aiBox.innerHTML = '<div class="loading">Processing...</div>';
       aiBox.className = 'result-box response';
-      toolsBox.innerHTML = '<div class="loading">Checking if MCP tools needed...</div>';
+      toolsBox.innerHTML = action === 'chat' 
+        ? '<div style="color: #6B7280; font-style: italic; padding: 20px; text-align: center;">Direct AI response - no tools used</div>'
+        : '<div class="loading">Calling MCP tool...</div>';
       mcpStatus.style.display = 'none';
 
       try {
         const response = await fetch('/api/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt })
+          body: JSON.stringify({ prompt, action })
         });
 
         const data = await response.json();
@@ -796,8 +804,10 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         aiBox.className = 'result-box error';
         aiBox.textContent = 'Error: ' + error.message;
       } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Send to AI';
+        // Re-enable all buttons
+        document.getElementById('chat-btn').disabled = false;
+        document.getElementById('calc-btn').disabled = false;
+        document.getElementById('weather-btn').disabled = false;
       }
     }
   </script>
@@ -838,43 +848,101 @@ export default {
       const { logs, log } = createCallLogger();
       
       try {
-        const body = await request.json() as { prompt: string };
+        const body = await request.json() as { prompt: string; action: string };
         const prompt = body.prompt || "";
+        const action = body.action || 'chat';
         
-        // Detect if we need tools based on prompt content
-        const needsCalculator = /\d+\s*[\+\-\*\/\^]\s*\d+|\d+\s+(plus|minus|times?|divided?|add|subtract|multiply)\s+\d+|calculate|math|sum\s+of/i.test(prompt);
-        const needsWeather = /weather|temperature|forecast|is it (hot|cold|rainy|sunny)/i.test(prompt);
-        const needsTools = needsCalculator || needsWeather;
-        
-        log('ai', 'Workers AI /ai/run', undefined, needsTools ? 'Calling AI with tools' : 'Calling AI for direct answer', 'POST');
+        log('ai', 'Workers AI /ai/run', undefined, 'Action: ' + action, 'POST');
 
-        // Call Workers AI - with tools only if needed
+        // Route based on user-selected action
         let aiResponse;
+        let toolCalls: Array<{ tool: string; arguments: Record<string, unknown>; result?: unknown }> = [];
+        
         try {
-          if (needsTools) {
+          if (action === 'chat') {
+            // Direct AI chat - no tools
             aiResponse = await callWorkersAI(
               env.AI,
               [
                 { 
                   role: 'system', 
-                  content: 'You are a helpful assistant. Use the available tools when needed.'
+                  content: 'You are a helpful assistant. Answer directly and concisely.'
                 },
                 { role: 'user', content: prompt }
-              ],
-              AI_TOOLS
+              ]
             );
-          } else {
+          } else if (action === 'calculate') {
+            // Direct to calculator tool
+            log('mcp-tool', 'Service Binding: calculator', undefined, 'Direct tool call', 'POST');
+            
+            // Extract expression from prompt
+            const expression = prompt.replace(/calculate|compute|what is|math/gi, '').trim();
+            
+            // Try to parse simple expressions like "25 * 47" or "25 times 47"
+            let operation = 'add';
+            let a = 0, b = 0;
+            
+            // Simple parsing for demo
+            const match = expression.match(/(\d+(?:\.\d+)?)\s*([\+\-\*\/]|plus|minus|times?|divided?)\s*(\d+(?:\.\d+)?)/);
+            if (match) {
+              a = parseFloat(match[1]);
+              b = parseFloat(match[3]);
+              const opStr = match[2].toLowerCase();
+              if (opStr === '+' || opStr === 'plus') operation = 'add';
+              else if (opStr === '-' || opStr === 'minus') operation = 'subtract';
+              else if (opStr === '*' || opStr === 'x' || opStr === 'times') operation = 'multiply';
+              else if (opStr === '/' || opStr === 'divide') operation = 'divide';
+            }
+            
+            const result = await callMCPToolWithSession(
+              env.MCP_SERVER, 
+              null, 
+              'calculator', 
+              { operation, a, b }
+            );
+            
+            toolCalls = [{ tool: 'calculator', arguments: { operation, a, b }, result }];
+            
+            // Get AI to format the result
             aiResponse = await callWorkersAI(
               env.AI,
               [
                 { 
                   role: 'system', 
-                  content: 'You are a helpful assistant. Answer the user\'s question directly and concisely using your knowledge.'
+                  content: 'You are a helpful assistant. The calculator computed: ' + a + ' ' + operation + ' ' + b + ' = ' + result + '. Present this result clearly.'
+                },
+                { role: 'user', content: prompt }
+              ]
+            );
+          } else if (action === 'weather') {
+            // Direct to weather tool
+            log('mcp-tool', 'Service Binding: get_weather', undefined, 'Direct tool call', 'POST');
+            
+            // Extract location from prompt
+            const location = prompt.replace(/weather|temperature|in|forecast/gi, '').trim();
+            
+            const result = await callMCPToolWithSession(
+              env.MCP_SERVER, 
+              null, 
+              'get_weather', 
+              { location, units: 'celsius' }
+            );
+            
+            toolCalls = [{ tool: 'get_weather', arguments: { location, units: 'celsius' }, result }];
+            
+            // Get AI to format the result
+            aiResponse = await callWorkersAI(
+              env.AI,
+              [
+                { 
+                  role: 'system', 
+                  content: 'You are a helpful assistant. Weather data for ' + location + ': ' + JSON.stringify(result) + '. Present this clearly to the user.'
                 },
                 { role: 'user', content: prompt }
               ]
             );
           }
+          
           log('ai', 'Workers AI /ai/run', 200, 'AI responded', 'POST');
         } catch (error) {
           log('ai', 'Workers AI /ai/run', 500, 'Error: ' + String(error), 'POST');
@@ -884,80 +952,21 @@ export default {
           );
         }
 
-        if (aiResponse.error) {
-          log('ai', 'Workers AI', 500, 'AI error: ' + aiResponse.error);
+        if (!aiResponse || aiResponse.error) {
           return new Response(
-            JSON.stringify({ error: aiResponse.error, callLogs: logs }, null, 2),
+            JSON.stringify({ error: aiResponse?.error || 'No response', callLogs: logs }, null, 2),
             { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
           );
         }
 
-        // Standard tool calling flow:
-        // 1. If AI returned content and no tool_calls -> use content directly
-        // 2. If AI returned tool_calls -> execute tools -> get final response
-        const VALID_TOOLS = ['calculator', 'get_weather'];
-        const toolCalls: Array<{ tool: string; arguments: Record<string, unknown>; result?: unknown }> = [];
-        
-        // Filter out invalid tool calls (AI sometimes hallucinates tools)
-        const validToolCalls = (aiResponse.tool_calls || []).filter(
-          tc => VALID_TOOLS.includes(tc.name)
-        );
-        
-        // Start with direct response if AI provided one
+        // Simple response - tool calls already handled above
         let finalResponse = aiResponse.response || "";
-        
-        if (validToolCalls.length > 0) {
-          // Execute the tool calls via service binding
-          log('mcp-init', 'Service Binding: Starting tool execution', undefined, 'Executing ' + validToolCalls.length + ' tool call(s)', 'POST');
-          const results = await processToolCalls(env.MCP_SERVER, validToolCalls, log);
-          
-          for (let i = 0; i < validToolCalls.length; i++) {
-            toolCalls.push({
-              tool: validToolCalls[i].name,
-              arguments: validToolCalls[i].arguments,
-              result: results[i]?.result,
-            });
-          }
-
-          // Build conversation with tool results for final AI response
-          const toolResultsMessage = toolCalls.map(tc => 
-            `Tool: ${tc.tool}\nArguments: ${JSON.stringify(tc.arguments)}\nResult: ${JSON.stringify(tc.result)}`
-          ).join('\n\n');
-
-          // Call AI again with tool results to get final response
-          try {
-            log('ai', 'Workers AI /ai/run', undefined, 'Second AI call with tool results', 'POST');
-            const finalAiResponse = await callWorkersAI(
-              env.AI,
-              [
-                { 
-                  role: 'system', 
-                  content: 'You are a helpful assistant. Based on the tool results provided, give a clear and helpful response to the user.'
-                },
-                { role: 'user', content: prompt },
-                { role: 'assistant', content: 'I need to use tools to answer this. Let me call: ' + validToolCalls.map(tc => tc.name).join(', ') },
-                { role: 'user', content: 'Here are the tool results:\n\n' + toolResultsMessage + '\n\nPlease provide a helpful response based on these results.' }
-              ]
-            );
-            log('ai', 'Workers AI /ai/run', 200, 'Final response received', 'POST');
-
-            if (!finalAiResponse.error && finalAiResponse.response) {
-              finalResponse = finalAiResponse.response;
-            }
-          } catch (error) {
-            log('ai', 'Workers AI /ai/run', 500, 'Second AI call failed: ' + String(error), 'POST');
-            // If second AI call fails, append tool results to any existing response
-            finalResponse = finalResponse 
-              ? finalResponse + '\n\nTool Results:\n' + toolResultsMessage
-              : 'Tool Results:\n' + toolResultsMessage;
-          }
-        }
 
         return new Response(
           JSON.stringify({
             ai: { 
               response: finalResponse,
-              tool_calls: aiResponse.tool_calls || [],
+              tool_calls: [],
             },
             toolCalls: toolCalls,
             callLogs: logs,
