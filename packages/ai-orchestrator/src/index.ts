@@ -657,10 +657,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         <h4>Request Flow:</h4>
         <div class="flow-steps">
           <div class="flow-step always">1. <strong>Firewall for AI</strong> - All requests</div>
-          <div class="flow-step chat multistep">2. <strong>AI Gateway</strong> - Chat & Multistep only</div>
-          <div class="flow-step chat multistep">3. <strong>Workers AI (LLM)</strong> - Chat & Multistep only</div>
-          <div class="flow-step calc weather multistep">4. <strong>Service Binding</strong> - Tools only</div>
-          <div class="flow-step calc weather multistep">5. <strong>MCP Server</strong> - Tools only</div>
+          <div class="flow-step chat multistep">2. <strong>AI Gateway + LLM</strong> - Chat & Multistep (decide)</div>
+          <div class="flow-step calc weather multistep">3. <strong>Service Binding → MCP</strong> - Tools only (execute)</div>
+          <div class="flow-step multistep">4. <strong>LLM again</strong> - Multistep only (format results)</div>
         </div>
         <div class="flow-legend">
           <span class="badge always">● All</span>
