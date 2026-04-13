@@ -168,21 +168,18 @@ async function callWorkersAIStream(
           cacheTtl: 86400,
         },
       }
-    );
+    ) as ReadableStream | { status?: number; [key: string]: unknown };
 
-    // Check if response is an error (has status property like 403)
-    if (response && typeof response === 'object' && 'status' in response) {
-      // This is an error response, not a stream
-      return null;
-    }
-
-    // Check if response is a stream using getReader
-    if (response && typeof response === 'object' && 'getReader' in response) {
+    // Check if it's a ReadableStream by testing for getReader
+    if (response && typeof response === 'object' && 'getReader' in response && typeof response.getReader === 'function') {
       return response as ReadableStream;
     }
     
+    // Response was an error object or unexpected format
+    console.error('Unexpected Workers AI response format:', response);
     return null;
   } catch (error) {
+    console.error('Streaming error:', error);
     return null;
   }
 }
@@ -765,16 +762,34 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       sendPrompt(action);
     }
     
+    const MATH_PROBLEMS = [
+      { a: 25, b: 47 },
+      { a: 13, b: 89 },
+      { a: 56, b: 34 },
+      { a: 72, b: 18 },
+      { a: 91, b: 23 },
+      { a: 44, b: 67 },
+      { a: 38, b: 52 },
+      { a: 61, b: 79 },
+      { a: 85, b: 41 },
+      { a: 19, b: 63 }
+    ];
+    let calcIndex = 0;
+    let shuffledCalcs = [...MATH_PROBLEMS].sort(() => Math.random() - 0.5);
+    
     function randomCalc() {
-      // Generate two random numbers between 10 and 99
-      const a = Math.floor(Math.random() * 90) + 10;
-      const b = Math.floor(Math.random() * 90) + 10;
+      // Get current problem from shuffled order
+      const problem = shuffledCalcs[calcIndex];
       
-      // Update the button label
-      document.getElementById('calc-label').textContent = a + ' × ' + b;
+      // Move to next problem
+      calcIndex = (calcIndex + 1) % shuffledCalcs.length;
       
-      // Submit with the new numbers
-      autoSubmit('Calculate ' + a + ' * ' + b, 'calculate');
+      // Update button label to show NEXT problem
+      const nextProblem = shuffledCalcs[calcIndex];
+      document.getElementById('calc-label').textContent = nextProblem.a + ' × ' + nextProblem.b;
+      
+      // Submit with CURRENT problem
+      autoSubmit('Calculate ' + problem.a + ' * ' + problem.b, 'calculate');
     }
     
     const CITIES = ['Paris', 'Tokyo', 'London', 'New York', 'Sydney', 'Berlin', 'Toronto', 'Dubai', 'Singapore', 'Barcelona'];
