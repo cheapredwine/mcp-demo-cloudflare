@@ -6,7 +6,10 @@
  * - MCP Tool Calling via Workers AI
  * - Service Binding to MCP server for tool execution
  * - Optimized for performance: parallel tool calls, session reuse
+ * - Cloudflare Access JWT authentication (toggleable via REQUIRE_AUTH)
  */
+
+import { handleCloudflareAccess, CloudflareIdentity } from './auth';
 
 // Build timestamp - set at deployment time
 const BUILD_TIME = 'UNKNOWN'; // Injected by CI/CD with: sed -i "s/BUILD_TIME = 'UNKNOWN'/BUILD_TIME = '...'/g"
@@ -14,16 +17,21 @@ const BUILD_TIME = 'UNKNOWN'; // Injected by CI/CD with: sed -i "s/BUILD_TIME = 
 interface Env {
   AI: Ai;
   MCP_SERVER: Fetcher;
+  // Auth configuration (toggle via REQUIRE_AUTH env var)
+  REQUIRE_AUTH?: string;  // "true" = enabled, "false" or unset = disabled
+  TEAM_DOMAIN?: string;   // Optional: Cloudflare Access team domain
+  POLICY_AUD?: string;    // Optional: Application Audience (AUD) tag
 }
 
 // Call log tracking
 interface CallLog {
   timestamp: string;
-  type: 'ai' | 'mcp-init' | 'mcp-tool';
+  type: 'ai' | 'mcp-init' | 'mcp-tool' | 'auth';
   method?: string;
   endpoint: string;
   status?: number;
   details?: string;
+  user?: string;
 }
 
 function createCallLogger() {
