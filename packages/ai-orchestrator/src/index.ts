@@ -124,7 +124,7 @@ async function callWorkersAI(
         gateway: {
           id: "mcp-demo",
           skipCache: false,
-          cacheTtl: 3360,
+          cacheTtl: 86400,
         },
       }
     ) as {
@@ -162,7 +162,7 @@ async function callWorkersAIStream(
         gateway: {
           id: "mcp-demo",
           skipCache: false,
-          cacheTtl: 3360,
+          cacheTtl: 86400,
         },
       }
     );
@@ -174,7 +174,6 @@ async function callWorkersAIStream(
     
     return null;
   } catch (error) {
-    console.error('Streaming error:', error);
     return null;
   }
 }
@@ -501,10 +500,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       background: #F3F4F6;
       color: #6B7280;
       border: 1px solid #E5E7EB;
-    }
-    .loading {
-      color: #F48120;
-      font-style: italic;
     }
     .info-box {
       background: linear-gradient(135deg, #FFF8F3 0%, #FFF5EB 100%);
