@@ -869,8 +869,13 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 
       // Use streaming for chat action
       if (action === 'chat') {
-        await sendPromptStream(prompt, action);
-        return;
+        try {
+          await sendPromptStream(prompt, action);
+          return;
+        } catch (streamError) {
+          console.error('Streaming failed, falling back to regular:', streamError);
+          // Continue to regular flow below
+        }
       }
 
       // Regular non-streaming flow for other actions
