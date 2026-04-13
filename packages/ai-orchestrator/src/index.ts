@@ -1083,11 +1083,11 @@ export default {
                 [
                   { 
                     role: 'system', 
-                    content: 'You are a helpful assistant. Based on the tool results, provide a clear answer.'
+                    content: 'You are a helpful assistant answering the user\'s question. The tool results below were computed to help answer the question. Use them to provide a clear, direct answer.'
                   },
-                  { role: 'user', content: prompt },
-                  { role: 'assistant', content: 'I used tools to help answer this.' },
-                  { role: 'user', content: 'Here are the results:\n\n' + toolResultsMessage + '\n\nPlease provide a helpful response.' }
+                  { role: 'user', content: 'Question: ' + prompt },
+                  { role: 'assistant', content: 'Let me use tools to solve this.' },
+                  { role: 'user', content: 'Here are the tool results I computed:\n\n' + toolResultsMessage + '\n\nBased on these results, what is the answer to the question?' }
                 ]
               );
             } else {
