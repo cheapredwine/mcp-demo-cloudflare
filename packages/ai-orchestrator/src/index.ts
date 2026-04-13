@@ -9,7 +9,7 @@
  */
 
 // Build timestamp - set at deployment time
-const BUILD_TIME = '2026-04-13 08:00 UTC'; // Injected by CI/CD
+const BUILD_TIME = '2026-04-13 08:55 UTC'; // Injected by CI/CD
 
 interface Env {
   AI: Ai;
