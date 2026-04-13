@@ -629,8 +629,8 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           </ol>
           <ol start="4">
             <li><strong>AI Gateway</strong> - Caching, analytics, rate limiting</li>
-            <li><strong>Service Binding</strong> - Secure MCP tool calls</li>
-            <li><strong>Response</strong> - AI formats and returns result</li>
+            <li><strong>Service Binding</strong> - Calls MCP Server privately</li>
+            <li><strong>MCP Server</strong> - Executes calculator/weather tools</li>
           </ol>
         </div>
       </div>
