@@ -287,8 +287,8 @@ async function processToolCalls(
   return results;
 }
 
-// Build info - update this when deploying
-const BUILD_INFO = 'v1.1 2026-04-13';
+// Build timestamp - injected at build time
+const BUILD_TIMESTAMP = 'BUILD_TIMESTAMP';
 
 // HTML template for the web interface
 const HTML_TEMPLATE = `<!DOCTYPE html>
@@ -689,7 +689,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
   <div class="container" style="position: relative;">
     <h1>AI Orchestrator + MCP</h1>
     <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + Firewall for AI + MCP Tools</p>
-    <span style="position: absolute; top: 0; right: 0; font-size: 0.7rem; color: rgba(255,255,255,0.5); font-family: monospace;">${BUILD_INFO}</span>
+    <span style="position: absolute; top: 0; right: 0; font-size: 0.7rem; color: rgba(255,255,255,0.5); font-family: monospace;">${BUILD_TIMESTAMP}</span>
 
     <div class="card">
       <div class="info-box">
@@ -1026,9 +1026,9 @@ export default {
 
     // Web UI
     if (url.pathname === "/") {
-      // Inject VERSION into HTML template
-      const htmlWithVersion = HTML_TEMPLATE.replace('${VERSION}', VERSION);
-      return new Response(htmlWithVersion, {
+      // Inject BUILD_TIMESTAMP into HTML template
+      const htmlWithTimestamp = HTML_TEMPLATE.replace('${BUILD_TIMESTAMP}', BUILD_TIMESTAMP);
+      return new Response(htmlWithTimestamp, {
         headers: { "Content-Type": "text/html", ...corsHeaders },
       });
     }
