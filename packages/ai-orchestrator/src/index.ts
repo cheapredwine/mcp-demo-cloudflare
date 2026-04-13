@@ -602,6 +602,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         <h4>How it works:</h4>
         <ul>
           <li><strong>Browser</strong> sends prompt to AI Orchestrator (Worker)</li>
+          <li><strong>Firewall for AI</strong> protects against prompt injection & PII leaks</li>
           <li><strong>Workers AI</strong> processes prompt and decides which tools to call</li>
           <li><strong>AI Gateway</strong> provides caching, analytics, and rate limiting</li>
           <li><strong>Service Binding</strong> securely connects to MCP server</li>
