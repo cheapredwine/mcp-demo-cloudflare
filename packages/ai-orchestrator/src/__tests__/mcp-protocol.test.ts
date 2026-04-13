@@ -209,4 +209,190 @@ describe('MCP Protocol', () => {
       expect(weatherLines).toBe('Weather data unavailable');
     });
   });
+
+  describe('SSE Stream Parsing', () => {
+    it('should parse single SSE event', () => {
+      const sseData = 'data: {"response": "Hello"}\n\n';
+      
+      // Simulate parsing
+      const lines = sseData.split(/\r?\n/);
+      let fullText = '';
+      let currentEvent = '';
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          currentEvent = line.slice(6);
+        } else if (line === '' && currentEvent) {
+          if (currentEvent === '[DONE]') {
+            currentEvent = '';
+            continue;
+          }
+          try {
+            const parsed = JSON.parse(currentEvent);
+            if (parsed.response) {
+              fullText += parsed.response;
+            }
+          } catch (e) {
+            // Invalid JSON
+          }
+          currentEvent = '';
+        }
+      }
+      
+      expect(fullText).toBe('Hello');
+    });
+
+    it('should parse multiple SSE events', () => {
+      const sseData = 'data: {"response": "Tab"}\n\ndata: {"response": "by"}\n\ndata: {"response": " cats"}\n\n';
+      
+      const lines = sseData.split(/\r?\n/);
+      let fullText = '';
+      let currentEvent = '';
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          currentEvent = line.slice(6);
+        } else if (line === '' && currentEvent) {
+          if (currentEvent === '[DONE]') {
+            currentEvent = '';
+            continue;
+          }
+          try {
+            const parsed = JSON.parse(currentEvent);
+            if (parsed.response) {
+              fullText += parsed.response;
+            }
+          } catch (e) {
+            // Invalid JSON
+          }
+          currentEvent = '';
+        }
+      }
+      
+      expect(fullText).toBe('Tabby cats');
+    });
+
+    it('should ignore [DONE] event', () => {
+      const sseData = 'data: {"response": "Hello"}\n\ndata: [DONE]\n\n';
+      
+      const lines = sseData.split(/\r?\n/);
+      let fullText = '';
+      let currentEvent = '';
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          currentEvent = line.slice(6);
+        } else if (line === '' && currentEvent) {
+          if (currentEvent === '[DONE]') {
+            currentEvent = '';
+            continue;
+          }
+          try {
+            const parsed = JSON.parse(currentEvent);
+            if (parsed.response) {
+              fullText += parsed.response;
+            }
+          } catch (e) {
+            // Invalid JSON
+          }
+          currentEvent = '';
+        }
+      }
+      
+      expect(fullText).toBe('Hello');
+    });
+
+    it('should handle events with p field (Workers AI)', () => {
+      const sseData = 'data: {"response": "Test", "p": "abc123"}\n\n';
+      
+      const lines = sseData.split(/\r?\n/);
+      let fullText = '';
+      let currentEvent = '';
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          currentEvent = line.slice(6);
+        } else if (line === '' && currentEvent) {
+          if (currentEvent === '[DONE]') {
+            currentEvent = '';
+            continue;
+          }
+          try {
+            const parsed = JSON.parse(currentEvent);
+            if (parsed.response) {
+              fullText += parsed.response;
+            }
+          } catch (e) {
+            // Invalid JSON
+          }
+          currentEvent = '';
+        }
+      }
+      
+      expect(fullText).toBe('Test');
+    });
+
+    it('should handle CRLF line endings', () => {
+      const sseData = 'data: {"response": "Hello"}\r\n\r\ndata: {"response": " World"}\r\n\r\n';
+      
+      const lines = sseData.split(/\r?\n/);
+      let fullText = '';
+      let currentEvent = '';
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          currentEvent = line.slice(6);
+        } else if (line === '' && currentEvent) {
+          if (currentEvent === '[DONE]') {
+            currentEvent = '';
+            continue;
+          }
+          try {
+            const parsed = JSON.parse(currentEvent);
+            if (parsed.response) {
+              fullText += parsed.response;
+            }
+          } catch (e) {
+            // Invalid JSON
+          }
+          currentEvent = '';
+        }
+      }
+      
+      expect(fullText).toBe('Hello World');
+    });
+
+    it('should handle incomplete events in buffer', () => {
+      // First chunk has incomplete event
+      const chunk1 = 'data: {"response": "Hel';
+      const chunk2 = 'lo"}\n\n';
+      
+      let buffer = chunk1;
+      let fullText = '';
+      
+      // Process first chunk
+      buffer += chunk2;
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() || '';
+      
+      let currentEvent = '';
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          currentEvent = line.slice(6);
+        } else if (line === '' && currentEvent) {
+          try {
+            const parsed = JSON.parse(currentEvent);
+            if (parsed.response) {
+              fullText += parsed.response;
+            }
+          } catch (e) {
+            // Invalid JSON
+          }
+          currentEvent = '';
+        }
+      }
+      
+      expect(fullText).toBe('Hello');
+    });
+  });
 });
