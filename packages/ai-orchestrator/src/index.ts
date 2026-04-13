@@ -759,10 +759,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
   </div>
 
   <script>
-    function setPrompt(text) {
-      document.getElementById('prompt').value = text;
-    }
-    
     function autoSubmit(text, action) {
       document.getElementById('prompt').value = text;
       sendPrompt(action);
