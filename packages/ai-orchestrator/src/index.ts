@@ -974,6 +974,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = '';
         let fullText = '';
         
         aiBox.innerHTML = '';
@@ -982,9 +983,31 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           const { done, value } = await reader.read();
           if (done) break;
           
-          const chunk = decoder.decode(value, { stream: true });
-          fullText += chunk;
-          aiBox.textContent = fullText;
+          buffer += decoder.decode(value, { stream: true });
+          
+          // Process all complete lines in buffer
+          while (true) {
+            const newlineIndex = buffer.indexOf('\n');
+            if (newlineIndex === -1) break;
+            
+            const line = buffer.slice(0, newlineIndex).trim();
+            buffer = buffer.slice(newlineIndex + 1);
+            
+            if (line.startsWith('data: ')) {
+              const jsonStr = line.slice(6);
+              if (jsonStr === '[DONE]') continue;
+              
+              try {
+                const data = JSON.parse(jsonStr);
+                if (data.response) {
+                  fullText += data.response;
+                  aiBox.textContent = fullText;
+                }
+              } catch (err) {
+                // Invalid JSON, skip
+              }
+            }
+          }
         }
       } catch (error) {
         aiBox.className = 'result-box error';
