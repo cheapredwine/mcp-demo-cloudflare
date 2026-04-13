@@ -627,9 +627,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       </div>
 
       <div style="display: flex; gap: 8px; margin-top: 12px;">
-        <button id="chat-btn" onclick="autoSubmit('Tell me about tabby cats', 'chat')" style="flex: 1; background: #F48120; font-size: 0.85rem;">💬 Tabby Cats</button>
         <button id="calc-btn" onclick="autoSubmit('Calculate 25 * 47', 'calculate')" style="flex: 1; background: #22C55E; font-size: 0.85rem;">🔢 25 × 47</button>
         <button id="weather-btn" onclick="autoSubmit('What is the weather in Paris?', 'weather')" style="flex: 1; background: #3B82F6; font-size: 0.85rem;">🌤️ Paris Weather</button>
+        <button id="chat-btn" onclick="autoSubmit('Tell me about tabby cats', 'chat')" style="flex: 1; background: #F48120; font-size: 0.85rem;">💬 Tabby Cats</button>
         <button id="multistep-btn" onclick="autoSubmit('If apples cost $3 each and I have $45, how many can I buy?', 'multistep')" style="flex: 1; background: #8B5CF6; font-size: 0.85rem;">🔄 Multi-step</button>
       </div>
     </div>
