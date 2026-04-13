@@ -626,5 +626,81 @@ describe('MCP Protocol', () => {
       
       expect(fullText).toBe('The quick brown fox jumps over the lazy dog');
     });
+
+    it('should handle actual Workers AI SSE format with usage field', () => {
+      // Real Workers AI response includes usage at the end
+      const chunks = [
+        'data: {"response": "Tab","p":"abc123"}\n\n',
+        'data: {"response": "by cats","p":"def456"}\n\n',
+        'data: {"response": " are","p":"ghi789"}\n\n',
+        'data: {"response": " great","p":"jkl012"}\n\n',
+        'data: {"response": "!","p":"mno345","usage":{"prompt_tokens":10,"completion_tokens":5}}\n\n',
+        'data: [DONE]\n\n'
+      ];
+      
+      let buffer = '';
+      let fullText = '';
+      
+      for (const chunk of chunks) {
+        buffer += chunk;
+        
+        // Process events separated by double newlines
+        let eventEnd;
+        while ((eventEnd = buffer.indexOf('\n\n')) !== -1) {
+          const event = buffer.slice(0, eventEnd);
+          buffer = buffer.slice(eventEnd + 2);
+          
+          const lines = event.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const jsonStr = line.slice(6);
+              if (jsonStr === '[DONE]') continue;
+              
+              try {
+                const data = JSON.parse(jsonStr);
+                if (data.response) fullText += data.response;
+              } catch (err) {}
+            }
+          }
+        }
+      }
+      
+      expect(fullText).toBe('Tabby cats are great!');
+    });
+
+    it('should stream text character by character', () => {
+      // Simulate streaming where each chunk is one character
+      const chars = 'Hello'.split('');
+      let buffer = '';
+      let fullText = '';
+      const outputs: string[] = [];
+      
+      for (const char of chars) {
+        buffer += `data: {"response": "${char}","p":"x"}\n\n`;
+        
+        let eventEnd;
+        while ((eventEnd = buffer.indexOf('\n\n')) !== -1) {
+          const event = buffer.slice(0, eventEnd);
+          buffer = buffer.slice(eventEnd + 2);
+          
+          const lines = event.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const jsonStr = line.slice(6);
+              try {
+                const data = JSON.parse(jsonStr);
+                if (data.response) {
+                  fullText += data.response;
+                  outputs.push(fullText);
+                }
+              } catch (err) {}
+            }
+          }
+        }
+      }
+      
+      expect(outputs).toEqual(['H', 'He', 'Hel', 'Hell', 'Hello']);
+      expect(fullText).toBe('Hello');
+    });
   });
 });
