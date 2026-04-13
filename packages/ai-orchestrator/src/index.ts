@@ -5,6 +5,7 @@
  * - Workers AI binding with AI Gateway integration (caching, analytics)
  * - MCP Tool Calling via Workers AI
  * - Service Binding to MCP server for tool execution
+ * - Optimized for performance: parallel tool calls, session reuse
  */
 
 interface Env {
@@ -117,7 +118,7 @@ async function callWorkersAI(
 
   try {
     const response = await ai.run(
-      "@hf/nousresearch/hermes-2-pro-mistral-7b",
+      "@cf/meta/llama-3.1-8b-instruct-fast",
       body,
       {
         gateway: {
@@ -143,16 +144,10 @@ async function callWorkersAI(
   }
 }
 
-// Call MCP tool via service binding
-async function callMCPToolViaBinding(
-  service: Fetcher,
-  toolName: string,
-  args: Record<string, unknown>,
-  log?: (type: CallLog['type'], endpoint: string, status?: number, details?: string, method?: string) => void
-): Promise<unknown> {
-  // Initialize MCP session
-  if (log) log('mcp-init', 'Service Binding: MCP initialize', undefined, 'MCP protocol initialization', 'POST');
-  
+// Initialize MCP session once for multiple tool calls
+async function initMCP(
+  service: Fetcher
+): Promise<string | null> {
   const initBody = {
     jsonrpc: '2.0',
     id: 1,
@@ -178,9 +173,16 @@ async function callMCPToolViaBinding(
     throw new Error(`MCP init failed: ${initResponse.status} - ${errorText}`);
   }
 
-  const sessionId = initResponse.headers.get('mcp-session-id');
+  return initResponse.headers.get('mcp-session-id');
+}
 
-  // Call the tool
+// Call MCP tool using existing session
+async function callMCPToolWithSession(
+  service: Fetcher,
+  sessionId: string | null,
+  toolName: string,
+  args: Record<string, unknown>
+): Promise<unknown> {
   const toolBody = {
     jsonrpc: '2.0',
     id: 2,
@@ -224,20 +226,28 @@ async function callMCPToolViaBinding(
   return data.result;
 }
 
-// Process AI response with tool calls
+// Process AI response with tool calls - optimized: single session init, parallel tool calls
 async function processToolCalls(
   service: Fetcher,
   toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>,
   log?: (type: CallLog['type'], endpoint: string, status?: number, details?: string, method?: string) => void
 ): Promise<Array<{ tool: string; result: unknown }>> {
-  const results = [];
+  // Initialize MCP session once for all tools
+  if (log) log('mcp-init', 'Service Binding: MCP initialize', undefined, 'Single session init for ' + toolCalls.length + ' tool(s)', 'POST');
+  const sessionId = await initMCP(service);
+  if (log) log('mcp-init', 'Service Binding: MCP initialize', 200, 'Session established', 'POST');
   
-  for (const call of toolCalls) {
-    if (log) log('mcp-tool', 'Service Binding: tools/call - ' + call.name, undefined, 'Calling tool: ' + call.name, 'POST');
-    const result = await callMCPToolViaBinding(service, call.name, call.arguments, log);
-    if (log) log('mcp-tool', 'Service Binding: tools/call - ' + call.name, 200, 'Tool completed', 'POST');
-    results.push({ tool: call.name, result });
-  }
+  // Call all tools in parallel
+  if (log) log('mcp-tool', 'Service Binding: tools/call', undefined, 'Executing ' + toolCalls.length + ' tool call(s) in parallel', 'POST');
+  
+  const toolPromises = toolCalls.map(async (call) => {
+    const result = await callMCPToolWithSession(service, sessionId, call.name, call.arguments);
+    return { tool: call.name, result };
+  });
+  
+  const results = await Promise.all(toolPromises);
+  
+  if (log) log('mcp-tool', 'Service Binding: tools/call', 200, 'All tools completed', 'POST');
   
   return results;
 }
