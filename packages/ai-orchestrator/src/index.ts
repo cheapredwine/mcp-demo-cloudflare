@@ -628,9 +628,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 
       <div style="display: flex; gap: 8px; margin-top: 12px;">
         <button id="calc-btn" onclick="randomCalc()" style="flex: 1; background: #22C55E; font-size: 0.85rem;">🔢 <span id="calc-label">25 × 47</span></button>
-        <button id="weather-btn" onclick="autoSubmit('What is the weather in Paris?', 'weather')" style="flex: 1; background: #3B82F6; font-size: 0.85rem;">🌤️ Paris Weather</button>
+        <button id="weather-btn" onclick="randomWeather()" style="flex: 1; background: #3B82F6; font-size: 0.85rem;">🌤️ <span id="weather-label">Paris Weather</span></button>
         <button id="chat-btn" onclick="autoSubmit('Tell me about tabby cats', 'chat')" style="flex: 1; background: #F48120; font-size: 0.85rem;">💬 Tabby Cats</button>
-        <button id="multistep-btn" onclick="autoSubmit('If apples cost $3 each and I have $45, how many can I buy?', 'multistep')" style="flex: 1; background: #8B5CF6; font-size: 0.85rem;">🔄 Multi-step</button>
+        <button id="multistep-btn" onclick="randomMultistep()" style="flex: 1; background: #8B5CF6; font-size: 0.85rem;">🔄 <span id="multistep-label">Apples Problem</span></button>
       </div>
     </div>
 
@@ -694,6 +694,39 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       
       // Submit with the new numbers
       autoSubmit('Calculate ' + a + ' * ' + b, 'calculate');
+    }
+    
+    const CITIES = ['Paris', 'Tokyo', 'London', 'New York', 'Sydney', 'Berlin', 'Toronto', 'Dubai', 'Singapore', 'Barcelona'];
+    
+    function randomWeather() {
+      // Pick random city
+      const city = CITIES[Math.floor(Math.random() * CITIES.length)];
+      
+      // Update the button label
+      document.getElementById('weather-label').textContent = city + ' Weather';
+      
+      // Submit with the city
+      autoSubmit('What is the weather in ' + city + '?', 'weather');
+    }
+    
+    const MULTISTEP_QUESTIONS = [
+      { label: 'Apples Problem', prompt: 'If apples cost $3 each and I have $45, how many can I buy?' },
+      { label: 'Book Store', prompt: 'A book costs $12. If I have $60 and buy 3 books, how much money do I have left?' },
+      { label: 'Cookie Baking', prompt: 'I want to bake 48 cookies. Each batch makes 12 cookies. How many batches do I need?' },
+      { label: 'Gas Mileage', prompt: 'My car gets 25 miles per gallon. How many gallons do I need for a 300 mile trip?' },
+      { label: 'Pizza Party', prompt: 'Pizza costs $15 each. If 8 people want 2 slices each and each pizza has 8 slices, how much will it cost?' },
+      { label: 'Garden Fence', prompt: 'My garden is 20 feet by 15 feet. How many feet of fencing do I need to surround it?' },
+    ];
+    
+    function randomMultistep() {
+      // Pick random question
+      const question = MULTISTEP_QUESTIONS[Math.floor(Math.random() * MULTISTEP_QUESTIONS.length)];
+      
+      // Update the button label
+      document.getElementById('multistep-label').textContent = question.label;
+      
+      // Submit with the prompt
+      autoSubmit(question.prompt, 'multistep');
     }
     
     // Enter to submit chat mode
@@ -929,8 +962,9 @@ export default {
             // Direct to weather tool
             log('mcp-tool', 'Service Binding: get_weather', undefined, 'Direct tool call', 'POST');
             
-            // Extract location from prompt
-            const location = prompt.replace(/weather|temperature|in|forecast/gi, '').trim();
+            // Extract location - handles "What is the weather in Paris?" → "Paris"
+            const locationMatch = prompt.match(/(?:weather|temperature)(?:\s+in|\s+at|\s+for)?\s+([^?]+)/i);
+            const location = locationMatch ? locationMatch[1].trim() : 'Unknown';
             
             const result = await callMCPToolWithSession(
               env.MCP_SERVER, 
