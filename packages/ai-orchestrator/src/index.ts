@@ -627,7 +627,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       </div>
 
       <div style="display: flex; gap: 8px; margin-top: 12px;">
-        <button id="calc-btn" onclick="autoSubmit('Calculate 25 * 47', 'calculate')" style="flex: 1; background: #22C55E; font-size: 0.85rem;">🔢 25 × 47</button>
+        <button id="calc-btn" onclick="randomCalc()" style="flex: 1; background: #22C55E; font-size: 0.85rem;">🔢 <span id="calc-label">25 × 47</span></button>
         <button id="weather-btn" onclick="autoSubmit('What is the weather in Paris?', 'weather')" style="flex: 1; background: #3B82F6; font-size: 0.85rem;">🌤️ Paris Weather</button>
         <button id="chat-btn" onclick="autoSubmit('Tell me about tabby cats', 'chat')" style="flex: 1; background: #F48120; font-size: 0.85rem;">💬 Tabby Cats</button>
         <button id="multistep-btn" onclick="autoSubmit('If apples cost $3 each and I have $45, how many can I buy?', 'multistep')" style="flex: 1; background: #8B5CF6; font-size: 0.85rem;">🔄 Multi-step</button>
@@ -682,6 +682,18 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     function autoSubmit(text, action) {
       document.getElementById('prompt').value = text;
       sendPrompt(action);
+    }
+    
+    function randomCalc() {
+      // Generate two random numbers between 10 and 99
+      const a = Math.floor(Math.random() * 90) + 10;
+      const b = Math.floor(Math.random() * 90) + 10;
+      
+      // Update the button label
+      document.getElementById('calc-label').textContent = a + ' × ' + b;
+      
+      // Submit with the new numbers
+      autoSubmit('Calculate ' + a + ' * ' + b, 'calculate');
     }
     
     // Enter to submit chat mode
