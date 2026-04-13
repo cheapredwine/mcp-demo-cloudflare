@@ -664,10 +664,11 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       </div>
 
       <div class="input-row">
-        <div class="input-group">
+        <div class="input-group" style="flex: 1;">
           <label for="prompt">Your prompt:</label>
           <textarea id="prompt" placeholder="Try: 'Tell me about tabby cats' or 'What is 25 * 47?' or 'Weather in Tokyo'"></textarea>
         </div>
+        <button id="submit-btn" onclick="sendPrompt('chat')" style="height: 40px; padding: 0 20px; font-size: 0.9rem; margin-top: 22px;">Send</button>
       </div>
 
       <div style="display: flex; gap: 8px; margin-top: 12px;">
@@ -802,6 +803,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       document.getElementById('calc-btn').disabled = true;
       document.getElementById('weather-btn').disabled = true;
       document.getElementById('multistep-btn').disabled = true;
+      document.getElementById('submit-btn').disabled = true;
       
       const requestBox = document.getElementById('request-box');
       const aiBox = document.getElementById('ai-box');
@@ -899,6 +901,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         document.getElementById('calc-btn').disabled = false;
         document.getElementById('weather-btn').disabled = false;
         document.getElementById('multistep-btn').disabled = false;
+        document.getElementById('submit-btn').disabled = false;
       }
     }
   </script>
