@@ -478,12 +478,18 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     }
     .info-box h4 {
       color: #E06C1F;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       font-size: 0.9rem;
       font-weight: 600;
     }
-    .info-box ul {
-      margin-left: 16px;
+    .info-box .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+    }
+    .info-box ol {
+      margin: 0;
+      padding-left: 20px;
       color: #333;
     }
     .info-box li {
@@ -492,6 +498,11 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     }
     .info-box li strong {
       color: #F48120;
+    }
+    @media (max-width: 600px) {
+      .info-box .two-col {
+        grid-template-columns: 1fr;
+      }
     }
     .cloudflare-badge {
       display: inline-flex;
@@ -610,13 +621,18 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     <div class="card">
       <div class="info-box">
         <h4>How it works:</h4>
-        <ul>
-          <li><strong>Choose an action</strong> - Chat directly with AI, Calculate, or get Weather</li>
-          <li><strong>Firewall for AI</strong> protects against prompt injection & PII leaks</li>
-          <li><strong>Workers AI</strong> processes your request</li>
-          <li><strong>AI Gateway</strong> provides caching, analytics, and rate limiting</li>
-          <li><strong>Service Binding</strong> securely connects to MCP server for tools</li>
-        </ul>
+        <div class="two-col">
+          <ol>
+            <li><strong>Choose action</strong> - Chat, Calculate, or Weather</li>
+            <li><strong>Firewall for AI</strong> - Blocks prompt injection & PII leaks</li>
+            <li><strong>Workers AI</strong> - Processes your request</li>
+          </ol>
+          <ol start="4">
+            <li><strong>AI Gateway</strong> - Caching, analytics, rate limiting</li>
+            <li><strong>Service Binding</strong> - Secure MCP tool calls</li>
+            <li><strong>Response</strong> - AI formats and returns result</li>
+          </ol>
+        </div>
       </div>
 
       <div class="input-row">
