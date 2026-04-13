@@ -144,6 +144,41 @@ async function callWorkersAI(
   }
 }
 
+// Call Workers AI with streaming support
+async function callWorkersAIStream(
+  ai: Ai,
+  messages: Array<{ role: string; content: string }>
+): Promise<ReadableStream | null> {
+  const body = {
+    messages,
+    stream: true,
+  };
+
+  try {
+    const response = await ai.run(
+      "@cf/meta/llama-3.1-8b-instruct-fast",
+      body,
+      {
+        gateway: {
+          id: "mcp-demo",
+          skipCache: false,
+          cacheTtl: 3360,
+        },
+      }
+    );
+
+    // Check if response is a stream
+    if (response && typeof response === 'object' && 'tee' in response) {
+      return response as ReadableStream;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Streaming error:', error);
+    return null;
+  }
+}
+
 // Initialize MCP session once for multiple tool calls
 async function initMCP(
   service: Fetcher
@@ -825,12 +860,20 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       requestBox.className = 'result-box prompt';
       
       // Reset other panels
-      aiBox.innerHTML = '<div class="loading">Processing...</div>';
+      aiBox.innerHTML = action === 'chat' ? '' : '<div class="loading">Processing...</div>';
       aiBox.className = 'result-box response';
       toolsBox.innerHTML = action === 'chat' 
         ? '<div style="color: #6B7280; font-style: italic; padding: 20px; text-align: center;">Direct AI response - no tools used</div>'
         : '<div class="loading">Calling MCP tool...</div>';
       mcpStatus.style.display = 'none';
+
+      // Use streaming for chat action
+      if (action === 'chat') {
+        await sendPromptStream(prompt, action);
+        return;
+      }
+
+      // Regular non-streaming flow for other actions
 
       try {
         const response = await fetch('/api/ask', {
@@ -914,6 +957,47 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         document.getElementById('submit-btn').disabled = false;
       }
     }
+    
+    async function sendPromptStream(prompt, action) {
+      const aiBox = document.getElementById('ai-box');
+      
+      try {
+        const response = await fetch('/api/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, action, stream: true })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Stream request failed: ' + response.status);
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+        
+        aiBox.innerHTML = '';
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          fullText += chunk;
+          aiBox.textContent = fullText;
+        }
+      } catch (error) {
+        aiBox.className = 'result-box error';
+        aiBox.textContent = 'Streaming error: ' + error.message;
+      } finally {
+        // Re-enable all buttons
+        document.getElementById('chat-btn').disabled = false;
+        document.getElementById('calc-btn').disabled = false;
+        document.getElementById('weather-btn').disabled = false;
+        document.getElementById('multistep-btn').disabled = false;
+        document.getElementById('submit-btn').disabled = false;
+      }
+    }
   </script>
   
   <button id="http-log-toggle" class="http-log-toggle" onclick="var c = document.getElementById('http-log-container'), t = document.getElementById('http-log-toggle'); c.classList.toggle('open'); t.textContent = c.classList.contains('open') ? '▼ HTTP Log' : '▶ HTTP Log';">▶ HTTP Log</button>
@@ -942,7 +1026,9 @@ export default {
 
     // Web UI
     if (url.pathname === "/") {
-      return new Response(HTML_TEMPLATE, {
+      // Inject VERSION into HTML template
+      const htmlWithVersion = HTML_TEMPLATE.replace('${VERSION}', VERSION);
+      return new Response(htmlWithVersion, {
         headers: { "Content-Type": "text/html", ...corsHeaders },
       });
     }
@@ -952,11 +1038,39 @@ export default {
       const { logs, log } = createCallLogger();
       
       try {
-        const body = await request.json() as { prompt: string; action: string };
+        const body = await request.json() as { prompt: string; action: string; stream?: boolean };
         const prompt = body.prompt || "";
         const action = body.action || 'chat';
+        const useStream = body.stream === true;
         
-        log('ai', 'Workers AI /ai/run', undefined, 'Action: ' + action, 'POST');
+        log('ai', 'Workers AI /ai/run', undefined, 'Action: ' + action + (useStream ? ' (stream)' : ''), 'POST');
+
+        // Streaming only supported for chat action
+        if (useStream && action === 'chat') {
+          const stream = await callWorkersAIStream(
+            env.AI,
+            [
+              { 
+                role: 'system', 
+                content: 'You are a helpful assistant. Answer directly and concisely.'
+              },
+              { role: 'user', content: prompt }
+            ]
+          );
+          
+          if (stream) {
+            return new Response(stream, {
+              headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                ...corsHeaders
+              }
+            });
+          }
+          
+          // Fallback if streaming fails
+          log('ai', 'Workers AI /ai/run', 500, 'Streaming failed, falling back');
+        }
 
         // Route based on user-selected action
         let aiResponse;
