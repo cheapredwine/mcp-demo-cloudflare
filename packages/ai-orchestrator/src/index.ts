@@ -118,7 +118,7 @@ async function callWorkersAI(
 
   try {
     const response = await ai.run(
-      "@cf/meta/llama-3.1-8b-instruct-fast",
+      "@cf/meta/llama-3.1-8b-instruct-fast" as keyof AiModels,
       body,
       {
         gateway: {
@@ -156,7 +156,7 @@ async function callWorkersAIStream(
 
   try {
     const response = await ai.run(
-      "@cf/meta/llama-3.1-8b-instruct-fast",
+      "@cf/meta/llama-3.1-8b-instruct-fast" as keyof AiModels,
       body,
       {
         gateway: {
@@ -974,6 +974,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = '';
         let fullText = '';
         
         aiBox.innerHTML = '';
@@ -982,9 +983,28 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           const { done, value } = await reader.read();
           if (done) break;
           
-          const chunk = decoder.decode(value, { stream: true });
-          fullText += chunk;
-          aiBox.textContent = fullText;
+          buffer += decoder.decode(value, { stream: true });
+          
+          // Parse SSE format
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.response) {
+                  fullText += parsed.response;
+                  aiBox.textContent = fullText;
+                }
+              } catch (e) {
+                // Skip invalid JSON
+              }
+            }
+          }
         }
       } catch (error) {
         aiBox.className = 'result-box error';
