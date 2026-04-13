@@ -699,6 +699,12 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     // Enter to submit chat mode
     document.addEventListener('DOMContentLoaded', function() {
       const textarea = document.getElementById('prompt');
+      
+      // Select all text on click (for easy replacement)
+      textarea.addEventListener('click', function() {
+        this.select();
+      });
+      
       textarea.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
