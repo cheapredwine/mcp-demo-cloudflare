@@ -985,16 +985,14 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           
           buffer += decoder.decode(value, { stream: true });
           
-          // Process all complete lines in buffer
-          while (true) {
-            const newlineIndex = buffer.indexOf('\n');
-            if (newlineIndex === -1) break;
-            
-            const line = buffer.slice(0, newlineIndex).trim();
-            buffer = buffer.slice(newlineIndex + 1);
-            
-            if (line.startsWith('data: ')) {
-              const jsonStr = line.slice(6);
+          // Process all complete lines in buffer (lines end with \n)
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+          
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data: ')) {
+              const jsonStr = trimmed.slice(6);
               if (jsonStr === '[DONE]') continue;
               
               try {
