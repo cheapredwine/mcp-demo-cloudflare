@@ -851,7 +851,7 @@ export default {
             [
               { 
                 role: 'system', 
-                content: 'You are a helpful assistant with access to tools. You have two tools available: calculator (for math) and get_weather (for weather). For questions about math or weather, use the appropriate tool. For all other general questions (like animals, facts, trivia, etc.), answer directly WITHOUT using any tools.'
+                content: 'You are a helpful assistant. You have access to tools but you should ONLY use them for math calculations (calculator) or weather queries (get_weather). For ALL other questions about animals, facts, history, science, or general knowledge, you MUST answer directly using your own knowledge. NEVER say you cannot answer or suggest searching online - just provide the information you know.'
               },
               { role: 'user', content: prompt }
             ],
