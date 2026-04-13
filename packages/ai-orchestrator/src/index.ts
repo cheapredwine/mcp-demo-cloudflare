@@ -9,7 +9,7 @@
  */
 
 // Build timestamp - set at deployment time
-const BUILD_TIME = '2026-04-13 08:55 UTC'; // Injected by CI/CD
+const BUILD_TIME = 'UNKNOWN'; // Injected by CI/CD with: sed -i "s/BUILD_TIME = 'UNKNOWN'/BUILD_TIME = '...'/g"
 
 interface Env {
   AI: Ai;
@@ -777,6 +777,12 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     let calcIndex = 0;
     let shuffledCalcs = [...MATH_PROBLEMS].sort(() => Math.random() - 0.5);
     
+    // Initialize calc button label on page load
+    (function initCalcButton() {
+      const firstProblem = shuffledCalcs[0];
+      document.getElementById('calc-label').textContent = firstProblem.a + ' × ' + firstProblem.b;
+    })();
+    
     function randomCalc() {
       // Get current problem from shuffled order
       const problem = shuffledCalcs[calcIndex];
@@ -795,6 +801,12 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     const CITIES = ['Paris', 'Tokyo', 'London', 'New York', 'Sydney', 'Berlin', 'Toronto', 'Dubai', 'Singapore', 'Barcelona'];
     let cityIndex = 0;
     let shuffledCities = [...CITIES].sort(() => Math.random() - 0.5);
+    
+    // Initialize weather button label on page load
+    (function initWeatherButton() {
+      const firstCity = shuffledCities[0];
+      document.getElementById('weather-label').textContent = firstCity + ' Weather';
+    })();
     
     function randomWeather() {
       // Get current city from shuffled order
@@ -1474,6 +1486,18 @@ export default {
         </div>
         <div class="cache-item pending">
           <span>🔢 Calc: 13 × 89</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🔢 Calc: 56 × 34</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🔢 Calc: 72 × 18</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🔢 Calc: 91 × 23</span>
           <span class="status miss">Not Cached</span>
         </div>
         <div class="cache-item pending">
