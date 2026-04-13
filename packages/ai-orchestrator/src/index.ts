@@ -626,17 +626,15 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         </div>
       </div>
 
-      <div style="display: flex; gap: 10px; margin-top: 12px;">
-        <button id="chat-btn" onclick="sendPrompt('chat')" style="flex: 1; background: #F48120;">💬 Chat with AI</button>
-        <button id="calc-btn" onclick="sendPrompt('calculate')" style="flex: 1; background: #22C55E;">🔢 Calculate</button>
-        <button id="weather-btn" onclick="sendPrompt('weather')" style="flex: 1; background: #3B82F6;">🌤️ Weather</button>
+      <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <button id="chat-btn" onclick="autoSubmit('Tell me about tabby cats', 'chat')" style="flex: 1; background: #F48120; font-size: 0.85rem;">💬 Tabby Cats</button>
+        <button id="calc-btn" onclick="autoSubmit('Calculate 25 * 47', 'calculate')" style="flex: 1; background: #22C55E; font-size: 0.85rem;">🔢 25 × 47</button>
+        <button id="weather-btn" onclick="autoSubmit('What is the weather in Paris?', 'weather')" style="flex: 1; background: #3B82F6; font-size: 0.85rem;">🌤️ Paris Weather</button>
+        <button id="multistep-btn" onclick="autoSubmit('If apples cost $3 each and I have $45, how many can I buy?', 'multistep')" style="flex: 1; background: #8B5CF6; font-size: 0.85rem;">🔄 Multi-step</button>
       </div>
 
-      <div class="example-prompts">
-        <button class="example-btn" onclick="setPrompt('What is the weather in Paris?'); document.getElementById('weather-btn').click()">Weather example</button>
-        <button class="example-btn" onclick="setPrompt('Calculate 25 * 47'); document.getElementById('calc-btn').click()">Calculator example</button>
-        <button class="example-btn" onclick="setPrompt('Tell me about tabby cats'); document.getElementById('chat-btn').click()">Chat example</button>
-        <button class="example-btn" onclick="setPrompt('Explain quantum computing'); document.getElementById('chat-btn').click()">AI knowledge example</button>
+      <div class="example-prompts" style="margin-top: 8px;">
+        <div style="color: #666; font-size: 0.75rem; text-align: center; padding: 4px;">Click any button above to auto-run an example</div>
       </div>
     </div>
 
@@ -685,8 +683,8 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       document.getElementById('prompt').value = text;
     }
     
-    function setPromptAndSubmit(text, action) {
-      setPrompt(text);
+    function autoSubmit(text, action) {
+      document.getElementById('prompt').value = text;
       sendPrompt(action);
     }
     
@@ -712,6 +710,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       document.getElementById('chat-btn').disabled = true;
       document.getElementById('calc-btn').disabled = true;
       document.getElementById('weather-btn').disabled = true;
+      document.getElementById('multistep-btn').disabled = true;
       
       const requestBox = document.getElementById('request-box');
       const aiBox = document.getElementById('ai-box');
@@ -808,6 +807,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         document.getElementById('chat-btn').disabled = false;
         document.getElementById('calc-btn').disabled = false;
         document.getElementById('weather-btn').disabled = false;
+        document.getElementById('multistep-btn').disabled = false;
       }
     }
   </script>
@@ -941,6 +941,63 @@ export default {
                 { role: 'user', content: prompt }
               ]
             );
+          } else if (action === 'multistep') {
+            // Multi-step: AI decides which tools to use
+            log('ai', 'Workers AI /ai/run', undefined, 'Multi-step: AI with tools', 'POST');
+            
+            // First call with tools to see what AI wants to do
+            const initialResponse = await callWorkersAI(
+              env.AI,
+              [
+                { 
+                  role: 'system', 
+                  content: 'You are a helpful assistant. Use the calculator or weather tools as needed to answer the question.'
+                },
+                { role: 'user', content: prompt }
+              ],
+              AI_TOOLS
+            );
+            
+            if (initialResponse.tool_calls && initialResponse.tool_calls.length > 0) {
+              // AI wants to use tools
+              const VALID_TOOLS = ['calculator', 'get_weather'];
+              const validToolCalls = initialResponse.tool_calls.filter(
+                tc => VALID_TOOLS.includes(tc.name)
+              );
+              
+              // Execute the tool calls
+              log('mcp-init', 'Service Binding: Starting tool execution', undefined, 'Executing ' + validToolCalls.length + ' tool call(s)', 'POST');
+              const results = await processToolCalls(env.MCP_SERVER, validToolCalls, log);
+              
+              for (let i = 0; i < validToolCalls.length; i++) {
+                toolCalls.push({
+                  tool: validToolCalls[i].name,
+                  arguments: validToolCalls[i].arguments,
+                  result: results[i]?.result,
+                });
+              }
+              
+              // Get final response with tool results
+              const toolResultsMessage = toolCalls.map(tc => 
+                `Tool: ${tc.tool}\nArguments: ${JSON.stringify(tc.arguments)}\nResult: ${JSON.stringify(tc.result)}`
+              ).join('\n\n');
+              
+              aiResponse = await callWorkersAI(
+                env.AI,
+                [
+                  { 
+                    role: 'system', 
+                    content: 'You are a helpful assistant. Based on the tool results, provide a clear answer.'
+                  },
+                  { role: 'user', content: prompt },
+                  { role: 'assistant', content: 'I used tools to help answer this.' },
+                  { role: 'user', content: 'Here are the results:\n\n' + toolResultsMessage + '\n\nPlease provide a helpful response.' }
+                ]
+              );
+            } else {
+              // AI answered directly
+              aiResponse = initialResponse;
+            }
           }
           
           log('ai', 'Workers AI /ai/run', 200, 'AI responded', 'POST');
