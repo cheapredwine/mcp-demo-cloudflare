@@ -877,6 +877,7 @@ export default {
             // Try to parse simple expressions like "25 * 47" or "25 times 47"
             let operation = 'add';
             let a = 0, b = 0;
+            let opSymbol = '+';
             
             // Simple parsing for demo
             const match = expression.match(/(\d+(?:\.\d+)?)\s*([\+\-\*\/]|plus|minus|times?|divided?)\s*(\d+(?:\.\d+)?)/);
@@ -884,10 +885,10 @@ export default {
               a = parseFloat(match[1]);
               b = parseFloat(match[3]);
               const opStr = match[2].toLowerCase();
-              if (opStr === '+' || opStr === 'plus') operation = 'add';
-              else if (opStr === '-' || opStr === 'minus') operation = 'subtract';
-              else if (opStr === '*' || opStr === 'x' || opStr === 'times') operation = 'multiply';
-              else if (opStr === '/' || opStr === 'divide') operation = 'divide';
+              if (opStr === '+' || opStr === 'plus') { operation = 'add'; opSymbol = '+'; }
+              else if (opStr === '-' || opStr === 'minus') { operation = 'subtract'; opSymbol = '-'; }
+              else if (opStr === '*' || opStr === 'x' || opStr === 'times') { operation = 'multiply'; opSymbol = '×'; }
+              else if (opStr === '/' || opStr === 'divide') { operation = 'divide'; opSymbol = '÷'; }
             }
             
             const result = await callMCPToolWithSession(
@@ -899,17 +900,10 @@ export default {
             
             toolCalls = [{ tool: 'calculator', arguments: { operation, a, b }, result }];
             
-            // Get AI to format the result
-            aiResponse = await callWorkersAI(
-              env.AI,
-              [
-                { 
-                  role: 'system', 
-                  content: 'You are a helpful assistant. The calculator computed: ' + a + ' ' + operation + ' ' + b + ' = ' + result + '. Present this result clearly.'
-                },
-                { role: 'user', content: prompt }
-              ]
-            );
+            // Format result directly (no AI call needed)
+            aiResponse = {
+              response: `${a} ${opSymbol} ${b} = ${result}`
+            };
           } else if (action === 'weather') {
             // Direct to weather tool
             log('mcp-tool', 'Service Binding: get_weather', undefined, 'Direct tool call', 'POST');
@@ -922,21 +916,14 @@ export default {
               null, 
               'get_weather', 
               { location, units: 'celsius' }
-            );
+            ) as { location: string; temperature: number; conditions: string; humidity: number };
             
             toolCalls = [{ tool: 'get_weather', arguments: { location, units: 'celsius' }, result }];
             
-            // Get AI to format the result
-            aiResponse = await callWorkersAI(
-              env.AI,
-              [
-                { 
-                  role: 'system', 
-                  content: 'You are a helpful assistant. Weather data for ' + location + ': ' + JSON.stringify(result) + '. Present this clearly to the user.'
-                },
-                { role: 'user', content: prompt }
-              ]
-            );
+            // Format result directly (no AI call needed)
+            aiResponse = {
+              response: `Weather in ${result.location}:\n• Temperature: ${result.temperature}°C\n• Conditions: ${result.conditions}\n• Humidity: ${result.humidity}%`
+            };
           } else if (action === 'multistep') {
             // Multi-step: AI decides which tools to use
             log('ai', 'Workers AI /ai/run', undefined, 'Multi-step: AI with tools', 'POST');
