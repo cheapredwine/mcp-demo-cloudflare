@@ -767,15 +767,21 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       { label: 'Garden Fence', prompt: 'My garden is 20 feet by 15 feet. How many feet of fencing do I need to surround it?' },
     ];
     
+    let multistepIndex = 0;
+    
     function randomMultistep() {
-      // Pick random question
-      const question = MULTISTEP_QUESTIONS[Math.floor(Math.random() * MULTISTEP_QUESTIONS.length)];
+      // Use current index question
+      const currentQuestion = MULTISTEP_QUESTIONS[multistepIndex];
       
-      // Update the button label
-      document.getElementById('multistep-label').textContent = question.label;
+      // Move to next index for the next click
+      multistepIndex = (multistepIndex + 1) % MULTISTEP_QUESTIONS.length;
       
-      // Submit with the prompt
-      autoSubmit(question.prompt, 'multistep');
+      // Update button label to show NEXT question
+      const nextQuestion = MULTISTEP_QUESTIONS[multistepIndex];
+      document.getElementById('multistep-label').textContent = nextQuestion.label;
+      
+      // Submit with CURRENT question
+      autoSubmit(currentQuestion.prompt, 'multistep');
     }
     
     // Enter to submit chat mode
