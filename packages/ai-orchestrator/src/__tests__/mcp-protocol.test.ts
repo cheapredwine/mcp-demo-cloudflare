@@ -394,5 +394,236 @@ describe('MCP Protocol', () => {
       
       expect(fullText).toBe('Hello');
     });
+
+    it('should parse SSE using split approach like production code', () => {
+      // This mirrors the actual implementation in index.ts
+      const chunks = [
+        'data: {"response": "Hello","p":"abc"}\n',
+        'data: {"response": " World","p":"def"}\n',
+        'data: {"response": "!","p":"ghi"}\n'
+      ];
+      
+      let buffer = '';
+      let fullText = '';
+      
+      for (const chunk of chunks) {
+        buffer += chunk;
+        
+        // Process all complete lines in buffer
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
+            const jsonStr = trimmed.slice(6);
+            if (jsonStr === '[DONE]') continue;
+            
+            try {
+              const data = JSON.parse(jsonStr);
+              if (data.response) {
+                fullText += data.response;
+              }
+            } catch (err) {
+              // Invalid JSON, skip
+            }
+          }
+        }
+      }
+      
+      expect(fullText).toBe('Hello World!');
+    });
+
+    it('should handle chunks that break mid-line', () => {
+      // First chunk ends mid-JSON, second completes it
+      const chunk1 = 'data: {"response": "Hel';
+      const chunk2 = 'lo","p":"abc"}\n';
+      const chunk3 = 'data: {"response": " World","p":"def"}\n';
+      
+      let buffer = '';
+      let fullText = '';
+      
+      // Process chunk 1
+      buffer += chunk1;
+      let lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      
+      // No complete lines yet
+      expect(fullText).toBe('');
+      
+      // Process chunk 2 - completes first event
+      buffer += chunk2;
+      lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('data: ')) {
+          const jsonStr = trimmed.slice(6);
+          try {
+            const data = JSON.parse(jsonStr);
+            if (data.response) fullText += data.response;
+          } catch (err) {}
+        }
+      }
+      
+      expect(fullText).toBe('Hello');
+      
+      // Process chunk 3
+      buffer += chunk3;
+      lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('data: ')) {
+          const jsonStr = trimmed.slice(6);
+          try {
+            const data = JSON.parse(jsonStr);
+            if (data.response) fullText += data.response;
+          } catch (err) {}
+        }
+      }
+      
+      expect(fullText).toBe('Hello World');
+    });
+
+    it('should ignore empty events and [DONE] markers', () => {
+      const input = 'data: {"response": "Hello"}\n\ndata: [DONE]\n\ndata: {"response": " World"}\n\n';
+      
+      let buffer = input;
+      let fullText = '';
+      
+      // Split on double newlines for events
+      const events = buffer.split('\n\n');
+      
+      for (const event of events) {
+        if (!event.trim()) continue;
+        
+        const lines = event.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+            
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.response) fullText += parsed.response;
+            } catch (e) {}
+          }
+        }
+      }
+      
+      expect(fullText).toBe('Hello World');
+      expect(fullText).not.toContain('[DONE]');
+    });
+
+    it('should handle only [DONE] events', () => {
+      const input = 'data: [DONE]\n\n';
+      
+      let buffer = input;
+      let fullText = '';
+      
+      const lines = buffer.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('data: ')) {
+          const data = trimmed.slice(6);
+          if (data === '[DONE]') continue;
+          
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.response) fullText += parsed.response;
+          } catch (e) {}
+        }
+      }
+      
+      expect(fullText).toBe('');
+    });
+
+    it('should handle events without p field', () => {
+      const input = 'data: {"response": "Hello"}\ndata: {"response": " World"}\n';
+      
+      let buffer = input;
+      let fullText = '';
+      
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('data: ')) {
+          const jsonStr = trimmed.slice(6);
+          if (jsonStr === '[DONE]') continue;
+          
+          try {
+            const data = JSON.parse(jsonStr);
+            if (data.response) fullText += data.response;
+          } catch (err) {}
+        }
+      }
+      
+      expect(fullText).toBe('Hello World');
+    });
+
+    it('should skip invalid JSON gracefully', () => {
+      const input = 'data: {"response": "Hello"}\ndata: invalid json here\ndata: {"response": " World"}\n';
+      
+      let buffer = input;
+      let fullText = '';
+      let errorCount = 0;
+      
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('data: ')) {
+          const jsonStr = trimmed.slice(6);
+          if (jsonStr === '[DONE]') continue;
+          
+          try {
+            const data = JSON.parse(jsonStr);
+            if (data.response) fullText += data.response;
+          } catch (err) {
+            errorCount++;
+          }
+        }
+      }
+      
+      expect(fullText).toBe('Hello World');
+      expect(errorCount).toBe(1);
+    });
+
+    it('should handle very long responses split across many chunks', () => {
+      // Simulate a long response coming in many small chunks
+      const words = ['The', ' quick', ' brown', ' fox', ' jumps', ' over', ' the', ' lazy', ' dog'];
+      let buffer = '';
+      let fullText = '';
+      
+      for (const word of words) {
+        // Each word comes in its own chunk
+        const chunk = `data: {"response": "${word}","p":"xyz"}\n`;
+        buffer += chunk;
+        
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
+            const jsonStr = trimmed.slice(6);
+            if (jsonStr === '[DONE]') continue;
+            
+            try {
+              const data = JSON.parse(jsonStr);
+              if (data.response) fullText += data.response;
+            } catch (err) {}
+          }
+        }
+      }
+      
+      expect(fullText).toBe('The quick brown fox jumps over the lazy dog');
+    });
   });
 });
