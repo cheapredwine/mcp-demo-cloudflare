@@ -1080,6 +1080,264 @@ export default {
       }
     }
 
+    // Admin control panel
+    if (url.pathname === "/admin") {
+      const ADMIN_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP Demo - Admin Control Panel</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1E1E1E 0%, #2D2D2D 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #fff;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #F48120;
+      margin-bottom: 10px;
+      font-size: 2rem;
+    }
+    .subtitle {
+      color: #888;
+      margin-bottom: 30px;
+    }
+    .card {
+      background: #333;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid #444;
+    }
+    .card h2 {
+      color: #F48120;
+      margin-bottom: 15px;
+      font-size: 1.2rem;
+    }
+    .cache-item {
+      background: #2a2a2a;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border-left: 3px solid #666;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cache-item.warmed {
+      border-left-color: #22C55E;
+    }
+    .cache-item.pending {
+      border-left-color: #F48120;
+    }
+    .cache-item.error {
+      border-left-color: #EF4444;
+    }
+    button {
+      background: #F48120;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    button:hover:not(:disabled) {
+      background: #E06C1F;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    .status {
+      font-size: 0.85rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .status.cached {
+      background: #22C55E;
+      color: white;
+    }
+    .status.miss {
+      background: #666;
+      color: #ccc;
+    }
+    .status.error {
+      background: #EF4444;
+      color: white;
+    }
+    .progress {
+      margin-top: 15px;
+      padding: 10px;
+      background: #2a2a2a;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .progress-line {
+      margin: 4px 0;
+      color: #aaa;
+    }
+    .progress-line.success {
+      color: #22C55E;
+    }
+    .progress-line.error {
+      color: #EF4444;
+    }
+    a.back-link {
+      color: #F48120;
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+    a.back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← Back to Demo</a>
+    <h1>🔧 Admin Control Panel</h1>
+    <p class="subtitle">AI Gateway Cache Management</p>
+
+    <div class="card">
+      <h2>Cache Pre-warming</h2>
+      <p style="margin-bottom: 15px; color: #aaa;">
+        Warm the AI Gateway cache by calling all multistep question variants.
+        This makes subsequent requests faster for demo users.
+      </p>
+      <button id="warm-btn" onclick="warmCache()">🚀 Pre-warm Cache</button>
+      <div id="progress" class="progress" style="display: none;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Cacheable Queries</h2>
+      <div id="query-list">
+        <div class="cache-item pending">
+          <span>🔄 Apples Problem</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🔄 Book Store</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🔄 Cookie Baking</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🔄 Gas Mileage</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🔄 Pizza Party</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🔄 Garden Fence</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const QUERIES = [
+      { name: 'Apples Problem', prompt: 'If apples cost $3 each and I have $45, how many can I buy?' },
+      { name: 'Book Store', prompt: 'A book costs $12. If I have $60 and buy 3 books, how much money do I have left?' },
+      { name: 'Cookie Baking', prompt: 'I want to bake 48 cookies. Each batch makes 12 cookies. How many batches do I need?' },
+      { name: 'Gas Mileage', prompt: 'My car gets 25 miles per gallon. How many gallons do I need for a 300 mile trip?' },
+      { name: 'Pizza Party', prompt: 'Pizza costs $15 each. If 8 people want 2 slices each and each pizza has 8 slices, how much will it cost?' },
+      { name: 'Garden Fence', prompt: 'My garden is 20 feet by 15 feet. How many feet of fencing do I need to surround it?' },
+    ];
+
+    function addProgress(message, type = 'normal') {
+      const progress = document.getElementById('progress');
+      const line = document.createElement('div');
+      line.className = 'progress-line ' + type;
+      line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + message;
+      progress.appendChild(line);
+      progress.scrollTop = progress.scrollHeight;
+    }
+
+    async function warmCache() {
+      const btn = document.getElementById('warm-btn');
+      const progress = document.getElementById('progress');
+      
+      btn.disabled = true;
+      btn.textContent = 'Warming...';
+      progress.style.display = 'block';
+      progress.innerHTML = '';
+      
+      addProgress('Starting cache pre-warm...', 'normal');
+      
+      for (let i = 0; i < QUERIES.length; i++) {
+        const query = QUERIES[i];
+        addProgress('Warming: ' + query.name + '...', 'normal');
+        
+        try {
+          const response = await fetch('/api/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: query.prompt, action: 'multistep' })
+          });
+          
+          if (response.ok) {
+            addProgress('✓ ' + query.name + ' warmed successfully', 'success');
+            updateQueryStatus(i, 'cached');
+          } else {
+            addProgress('✗ ' + query.name + ' failed: ' + response.status, 'error');
+            updateQueryStatus(i, 'error');
+          }
+        } catch (error) {
+          addProgress('✗ ' + query.name + ' error: ' + error.message, 'error');
+          updateQueryStatus(i, 'error');
+        }
+        
+        // Small delay to avoid overwhelming the API
+        if (i < QUERIES.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      
+      addProgress('Cache pre-warming complete!', 'success');
+      btn.disabled = false;
+      btn.textContent = '🚀 Pre-warm Cache Again';
+    }
+
+    function updateQueryStatus(index, status) {
+      const items = document.querySelectorAll('.cache-item');
+      const item = items[index];
+      const statusEl = item.querySelector('.status');
+      
+      item.classList.remove('pending', 'warmed', 'error');
+      item.classList.add(status === 'cached' ? 'warmed' : status);
+      
+      statusEl.className = 'status ' + status;
+      statusEl.textContent = status === 'cached' ? 'Cached' : status === 'error' ? 'Error' : 'Not Cached';
+    }
+  </script>
+</body>
+</html>`;
+      
+      return new Response(ADMIN_HTML, {
+        headers: { "Content-Type": "text/html", ...corsHeaders },
+      });
+    }
+
     // Health check
     if (url.pathname === "/health") {
       return new Response(
