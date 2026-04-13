@@ -713,7 +713,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       <div style="display: flex; gap: 8px; margin-top: 12px;">
         <button id="calc-btn" onclick="randomCalc()" style="flex: 1; background: #22C55E; font-size: 0.85rem;">🔢 <span id="calc-label">25 × 47</span></button>
         <button id="weather-btn" onclick="randomWeather()" style="flex: 1; background: #3B82F6; font-size: 0.85rem;">🌤️ <span id="weather-label">Paris Weather</span></button>
-        <button id="chat-btn" onclick="autoSubmit('Tell me about tabby cats', 'chat')" style="flex: 1; background: #F48120; font-size: 0.85rem;">💬 Tabby Cats</button>
+        <button id="chat-btn" onclick="autoSubmit('Tell me about tabby cats', 'chat')" style="flex: 1; background: #F48120; font-size: 0.85rem;">🐱 Tabby Cats</button>
         <button id="multistep-btn" onclick="randomMultistep()" style="flex: 1; background: #8B5CF6; font-size: 0.85rem;">🔄 <span id="multistep-label">Apples Problem</span></button>
       </div>
     </div>
