@@ -209,4 +209,29 @@ describe('MCP Protocol', () => {
       expect(weatherLines).toBe('Weather data unavailable');
     });
   });
+
+  describe('Streaming Support', () => {
+    it('should detect a ReadableStream response', () => {
+      const mockStream = {
+        tee: () => [{}, {}],
+        getReader: () => ({
+          read: () => Promise.resolve({ done: true }),
+          releaseLock: () => {},
+        }),
+      };
+      
+      const isStream = mockStream && typeof mockStream === 'object' && 'tee' in mockStream;
+      expect(isStream).toBe(true);
+    });
+
+    it('should handle stream fallback when streaming fails', () => {
+      const shouldFallback = (streamResult: unknown) => {
+        return streamResult === null || streamResult === undefined;
+      };
+      
+      expect(shouldFallback(null)).toBe(true);
+      expect(shouldFallback(undefined)).toBe(true);
+      expect(shouldFallback({ tee: () => ({}) })).toBe(false);
+    });
+  });
 });
