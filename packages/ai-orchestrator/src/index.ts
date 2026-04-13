@@ -840,7 +840,7 @@ export default {
             [
               { 
                 role: 'system', 
-                content: 'You are a helpful assistant. You have access to exactly TWO tools: (1) calculator - for math operations, (2) get_weather - for weather info. For general questions, answer directly without tools. Do not invent or use any other tools.'
+                content: 'You are a helpful assistant with access to tools. You have two tools available: calculator (for math) and get_weather (for weather). For questions about math or weather, use the appropriate tool. For all other general questions (like animals, facts, trivia, etc.), answer directly WITHOUT using any tools.'
               },
               { role: 'user', content: prompt }
             ],
