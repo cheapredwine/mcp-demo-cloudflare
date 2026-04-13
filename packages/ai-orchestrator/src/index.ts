@@ -951,6 +951,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     
     async function sendPromptStream(prompt, action) {
       const aiBox = document.getElementById('ai-box');
+      const toolsBox = document.getElementById('tools-box');
       
       try {
         const response = await fetch('/api/ask', {
