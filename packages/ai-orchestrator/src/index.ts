@@ -632,10 +632,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
         <button id="weather-btn" onclick="autoSubmit('What is the weather in Paris?', 'weather')" style="flex: 1; background: #3B82F6; font-size: 0.85rem;">🌤️ Paris Weather</button>
         <button id="multistep-btn" onclick="autoSubmit('If apples cost $3 each and I have $45, how many can I buy?', 'multistep')" style="flex: 1; background: #8B5CF6; font-size: 0.85rem;">🔄 Multi-step</button>
       </div>
-
-      <div class="example-prompts" style="margin-top: 8px;">
-        <div style="color: #666; font-size: 0.75rem; text-align: center; padding: 4px;">Click any button above to auto-run an example</div>
-      </div>
     </div>
 
     <div class="results-container" id="results-container">
