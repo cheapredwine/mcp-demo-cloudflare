@@ -841,22 +841,40 @@ export default {
         const body = await request.json() as { prompt: string };
         const prompt = body.prompt || "";
         
-        log('ai', 'Workers AI /ai/run', undefined, 'Initial AI call with tools', 'POST');
+        // Detect if we need tools based on prompt content
+        const needsCalculator = /\d+\s*[\+\-\*\/\^]\s*\d+|\d+\s+(plus|minus|times?|divided?|add|subtract|multiply)\s+\d+|calculate|math|sum\s+of/i.test(prompt);
+        const needsWeather = /weather|temperature|forecast|is it (hot|cold|rainy|sunny)/i.test(prompt);
+        const needsTools = needsCalculator || needsWeather;
+        
+        log('ai', 'Workers AI /ai/run', undefined, needsTools ? 'Calling AI with tools' : 'Calling AI for direct answer', 'POST');
 
-        // Call Workers AI with tools available - AI decides whether to use them
+        // Call Workers AI - with tools only if needed
         let aiResponse;
         try {
-          aiResponse = await callWorkersAI(
-            env.AI,
-            [
-              { 
-                role: 'system', 
-                content: 'You are a helpful assistant. You have access to tools but you should ONLY use them for math calculations (calculator) or weather queries (get_weather). For ALL other questions about animals, facts, history, science, or general knowledge, you MUST answer directly using your own knowledge. NEVER say you cannot answer or suggest searching online - just provide the information you know.'
-              },
-              { role: 'user', content: prompt }
-            ],
-            AI_TOOLS
-          );
+          if (needsTools) {
+            aiResponse = await callWorkersAI(
+              env.AI,
+              [
+                { 
+                  role: 'system', 
+                  content: 'You are a helpful assistant. Use the available tools when needed.'
+                },
+                { role: 'user', content: prompt }
+              ],
+              AI_TOOLS
+            );
+          } else {
+            aiResponse = await callWorkersAI(
+              env.AI,
+              [
+                { 
+                  role: 'system', 
+                  content: 'You are a helpful assistant. Answer the user\'s question directly and concisely using your knowledge.'
+                },
+                { role: 'user', content: prompt }
+              ]
+            );
+          }
           log('ai', 'Workers AI /ai/run', 200, 'AI responded', 'POST');
         } catch (error) {
           log('ai', 'Workers AI /ai/run', 500, 'Error: ' + String(error), 'POST');
