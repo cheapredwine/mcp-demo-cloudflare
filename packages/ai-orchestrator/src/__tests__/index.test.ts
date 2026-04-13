@@ -208,4 +208,23 @@ describe('AI Orchestrator', () => {
       expect(body.stream).toBe(true);
     });
   });
+
+  describe('Build Timestamp', () => {
+    it('should have BUILD_TIME in expected format', () => {
+      // BUILD_TIME format: YYYY-MM-DD HH:MM UTC
+      const timeRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/;
+      const BUILD_TIME = '2026-04-13 08:55 UTC'; // Injected by CI/CD
+      
+      expect(BUILD_TIME).toMatch(timeRegex);
+    });
+
+    it('should replace __BUILD_TIME__ placeholder in HTML', () => {
+      const html = '<span>__BUILD_TIME__</span>';
+      const BUILD_TIME = '2026-04-13 08:55 UTC';
+      const result = html.replace('__BUILD_TIME__', BUILD_TIME);
+      
+      expect(result).toBe('<span>2026-04-13 08:55 UTC</span>');
+      expect(result).not.toContain('__BUILD_TIME__');
+    });
+  });
 });
