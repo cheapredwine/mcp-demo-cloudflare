@@ -167,8 +167,8 @@ async function callWorkersAIStream(
       }
     );
 
-    // Check if response is a stream
-    if (response && typeof response === 'object' && 'tee' in response) {
+    // Check if response is a stream using getReader (more reliable)
+    if (response && typeof response === 'object' && 'getReader' in response) {
       return response as ReadableStream;
     }
     
