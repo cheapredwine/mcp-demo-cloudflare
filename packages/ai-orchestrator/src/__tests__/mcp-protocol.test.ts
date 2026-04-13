@@ -158,4 +158,55 @@ describe('MCP Protocol', () => {
       expect(messages[3].content).toContain('Sunny');
     });
   });
+
+  describe('MCP Tool Response Parsing', () => {
+    it('should parse calculator response correctly', () => {
+      const mockCalcResponse = {
+        content: [
+          { type: 'text', text: '25 * 47 = 1175' },
+        ],
+      };
+
+      const resultText = mockCalcResponse.content?.[0]?.text || 'Error';
+      
+      expect(resultText).toBe('25 * 47 = 1175');
+      expect(resultText).toContain('1175');
+    });
+
+    it('should handle calculator response fallback', () => {
+      const mockCalcResponse = { content: [] };
+
+      const a = 25, b = 47;
+      const opSymbol = '*';
+      const resultText = mockCalcResponse.content?.[0]?.text || `${a} ${opSymbol} ${b} = [error]`;
+      
+      expect(resultText).toBe('25 * 47 = [error]');
+    });
+
+    it('should parse weather response correctly', () => {
+      const mockWeatherResponse = {
+        content: [
+          { type: 'text', text: 'Weather for Paris:' },
+          { type: 'text', text: 'Condition: Sunny' },
+          { type: 'text', text: 'Temperature: 22°C' },
+          { type: 'text', text: 'Humidity: 45%' },
+          { type: 'text', text: 'Wind: 10 km/h' },
+        ],
+      };
+
+      const weatherLines = mockWeatherResponse.content?.map(c => c.text).join('\n') || 'Weather data unavailable';
+      
+      expect(weatherLines).toContain('Paris');
+      expect(weatherLines).toContain('Sunny');
+      expect(weatherLines).toContain('22°C');
+    });
+
+    it('should handle empty weather response', () => {
+      const mockWeatherResponse = { content: [] };
+
+      const weatherLines = mockWeatherResponse.content?.map(c => c.text).join('\n') || 'Weather data unavailable';
+      
+      expect(weatherLines).toBe('Weather data unavailable');
+    });
+  });
 });

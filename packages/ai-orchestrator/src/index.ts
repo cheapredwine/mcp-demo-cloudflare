@@ -896,13 +896,16 @@ export default {
               null, 
               'calculator', 
               { operation, a, b }
-            );
+            ) as { content: Array<{ type: string; text: string }> };
             
             toolCalls = [{ tool: 'calculator', arguments: { operation, a, b }, result }];
             
+            // Extract text from MCP response
+            const resultText = result.content?.[0]?.text || `${a} ${opSymbol} ${b} = [error]`;
+            
             // Format result directly (no AI call needed)
             aiResponse = {
-              response: `${a} ${opSymbol} ${b} = ${result}`
+              response: resultText
             };
           } else if (action === 'weather') {
             // Direct to weather tool
@@ -916,13 +919,16 @@ export default {
               null, 
               'get_weather', 
               { location, units: 'celsius' }
-            ) as { location: string; temperature: number; conditions: string; humidity: number };
+            ) as { content: Array<{ type: string; text: string }> };
             
             toolCalls = [{ tool: 'get_weather', arguments: { location, units: 'celsius' }, result }];
             
+            // Extract text lines from MCP response
+            const weatherLines = result.content?.map(c => c.text).join('\n') || 'Weather data unavailable';
+            
             // Format result directly (no AI call needed)
             aiResponse = {
-              response: `Weather in ${result.location}:\n• Temperature: ${result.temperature}°C\n• Conditions: ${result.conditions}\n• Humidity: ${result.humidity}%`
+              response: weatherLines
             };
           } else if (action === 'multistep') {
             // Multi-step: AI decides which tools to use
