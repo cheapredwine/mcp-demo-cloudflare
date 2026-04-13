@@ -605,7 +605,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 <body>
   <div class="container">
     <h1>AI Orchestrator + MCP</h1>
-    <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + MCP Tools</p>
+    <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + Firewall for AI + MCP Tools</p>
 
     <div class="card">
       <div class="info-box">
