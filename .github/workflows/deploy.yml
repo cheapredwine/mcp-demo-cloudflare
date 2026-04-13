@@ -69,6 +69,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Inject build timestamp
+        run: |
+          BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
+          sed -i "s/BUILD_TIME = 'UNKNOWN'/BUILD_TIME = '$BUILD_TIME'/g" packages/ai-orchestrator/src/index.ts
+          echo "Build time: $BUILD_TIME"
+
       - name: Deploy AI Orchestrator
         uses: cloudflare/wrangler-action@v3
         with:

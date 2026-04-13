@@ -8,6 +8,9 @@
  * - Optimized for performance: parallel tool calls, session reuse
  */
 
+// Build timestamp - set at deployment time
+const BUILD_TIME = '2026-04-13 08:00 UTC'; // Injected by CI/CD
+
 interface Env {
   AI: Ai;
   MCP_SERVER: Fetcher;
@@ -285,9 +288,6 @@ async function processToolCalls(
   
   return results;
 }
-
-// Version - update this when deploying changes
-const VERSION = '1.0';
 
 // HTML template for the web interface
 const HTML_TEMPLATE = `<!DOCTYPE html>
@@ -684,7 +684,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
   <div class="container" style="position: relative;">
     <h1>AI Orchestrator + MCP</h1>
     <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + Firewall for AI + MCP Tools</p>
-    <span style="position: absolute; top: 0; right: 0; font-size: 0.7rem; color: rgba(255,255,255,0.5); font-family: monospace;">${VERSION}</span>
+    <span id="build-time" style="position: absolute; top: 0; right: 0; font-size: 0.7rem; color: rgba(255,255,255,0.5); font-family: monospace;">__BUILD_TIME__</span>
 
     <div class="card">
       <div class="info-box">
@@ -1048,9 +1048,9 @@ export default {
 
     // Web UI
     if (url.pathname === "/") {
-      // Inject VERSION into HTML template
-      const htmlWithVersion = HTML_TEMPLATE.replace('${VERSION}', VERSION);
-      return new Response(htmlWithVersion, {
+      // Inject build time into HTML template
+      const htmlWithBuildTime = HTML_TEMPLATE.replace('__BUILD_TIME__', BUILD_TIME);
+      return new Response(htmlWithBuildTime, {
         headers: { "Content-Type": "text/html", ...corsHeaders },
       });
     }
