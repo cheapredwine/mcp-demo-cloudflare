@@ -625,10 +625,10 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           <ol>
             <li><strong>User Request</strong> - Chat, Calculate, or Weather</li>
             <li><strong>Firewall for AI</strong> - WAF blocks prompt injection</li>
-            <li><strong>AI Gateway</strong> - Caching & analytics</li>
+            <li><strong>AI Gateway</strong> - LLM caching & analytics</li>
           </ol>
           <ol start="4">
-            <li><strong>Workers AI</strong> - LLM inference</li>
+            <li><strong>Workers AI</strong> - LLM inference (@cf/llama-3.1-8b)</li>
             <li><strong>Service Binding</strong> - Private worker-to-worker</li>
             <li><strong>MCP Server</strong> - Tool execution</li>
           </ol>
