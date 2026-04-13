@@ -985,24 +985,50 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           
           buffer += decoder.decode(value, { stream: true });
           
-          // Parse SSE format
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
+          // Parse SSE format - split on \r\n or \n
+          const lines = buffer.split(/\r?\n/);
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
           
+          let currentEvent = '';
           for (const line of lines) {
             if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
+              currentEvent = line.slice(6);
+            } else if (line === '' && currentEvent) {
+              // Empty line means end of event
+              if (currentEvent === '[DONE]') {
+                currentEvent = '';
+                continue;
+              }
               
               try {
-                const parsed = JSON.parse(data);
+                const parsed = JSON.parse(currentEvent);
                 if (parsed.response) {
                   fullText += parsed.response;
                   aiBox.textContent = fullText;
                 }
               } catch (e) {
-                // Skip invalid JSON
+                // Invalid JSON, skip
               }
+              currentEvent = '';
+            }
+          }
+          
+          // If there's a partial data line in buffer, prepend it for next iteration
+          if (buffer.startsWith('data: ')) {
+            currentEvent = buffer.slice(6);
+            buffer = '';
+          }
+          
+          // Process any remaining currentEvent at end of stream
+          if (currentEvent && currentEvent !== '[DONE]') {
+            try {
+              const parsed = JSON.parse(currentEvent);
+              if (parsed.response) {
+                fullText += parsed.response;
+                aiBox.textContent = fullText;
+              }
+            } catch (e) {
+              // Invalid JSON, skip
             }
           }
         }
