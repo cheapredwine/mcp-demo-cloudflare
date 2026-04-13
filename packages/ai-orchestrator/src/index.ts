@@ -117,7 +117,7 @@ async function callWorkersAI(
 
   try {
     const response = await ai.run(
-      "@cf/nousresearch/hermes-2-pro-mistral-7b",
+      "@hf/nousresearch/hermes-2-pro-mistral-7b",
       body,
       {
         gateway: {
