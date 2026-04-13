@@ -620,17 +620,17 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 
     <div class="card">
       <div class="info-box">
-        <h4>How it works:</h4>
+        <h4>Architecture Components:</h4>
         <div class="two-col">
           <ol>
-            <li><strong>Choose action</strong> - Chat, Calculate, or Weather</li>
-            <li><strong>Firewall for AI</strong> - Blocks prompt injection & PII leaks</li>
-            <li><strong>Workers AI</strong> - Processes your request</li>
+            <li><strong>User Request</strong> - Chat, Calculate, or Weather</li>
+            <li><strong>Firewall for AI</strong> - WAF blocks prompt injection</li>
+            <li><strong>AI Gateway</strong> - Caching & analytics</li>
           </ol>
           <ol start="4">
-            <li><strong>AI Gateway</strong> - Caching, analytics, rate limiting</li>
-            <li><strong>Service Binding</strong> - Calls MCP Server privately</li>
-            <li><strong>MCP Server</strong> - Executes calculator/weather tools</li>
+            <li><strong>Workers AI</strong> - LLM inference</li>
+            <li><strong>Service Binding</strong> - Private worker-to-worker</li>
+            <li><strong>MCP Server</strong> - Tool execution</li>
           </ol>
         </div>
       </div>
