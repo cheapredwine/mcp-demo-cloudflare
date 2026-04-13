@@ -1006,24 +1006,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
               }
             }
           }
-          
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('data: ')) {
-              const jsonStr = trimmed.slice(6);
-              if (jsonStr === '[DONE]') continue;
-              
-              try {
-                const data = JSON.parse(jsonStr);
-                if (data.response) {
-                  fullText += data.response;
-                  aiBox.textContent = fullText;
-                }
-              } catch (err) {
-                // Invalid JSON, skip
-              }
-            }
-          }
         }
       } catch (error) {
         aiBox.className = 'result-box error';
