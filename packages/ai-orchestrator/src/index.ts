@@ -252,8 +252,8 @@ async function processToolCalls(
   return results;
 }
 
-// Build timestamp - set when worker is deployed/started
-const BUILD_TIMESTAMP = new Date().toISOString().slice(0, 10) + ' ' + new Date().toISOString().slice(11, 16);
+// Version - update this when deploying changes
+const VERSION = '1.0';
 
 // HTML template for the web interface
 const HTML_TEMPLATE = `<!DOCTYPE html>
@@ -654,7 +654,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
   <div class="container" style="position: relative;">
     <h1>AI Orchestrator + MCP</h1>
     <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + Firewall for AI + MCP Tools</p>
-    <span style="position: absolute; top: 0; right: 0; font-size: 0.7rem; color: rgba(255,255,255,0.5); font-family: monospace;">${BUILD_TIMESTAMP}</span>
+    <span style="position: absolute; top: 0; right: 0; font-size: 0.7rem; color: rgba(255,255,255,0.5); font-family: monospace;">${VERSION}</span>
 
     <div class="card">
       <div class="info-box">
