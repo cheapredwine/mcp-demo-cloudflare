@@ -1468,18 +1468,59 @@ export default {
           <span>🔄 Garden Fence</span>
           <span class="status miss">Not Cached</span>
         </div>
+        <div class="cache-item pending">
+          <span>🔢 Calc: 25 × 47</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🔢 Calc: 13 × 89</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🌤️ Weather: Paris</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🌤️ Weather: Tokyo</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🌤️ Weather: London</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🌤️ Weather: New York</span>
+          <span class="status miss">Not Cached</span>
+        </div>
+        <div class="cache-item pending">
+          <span>🌤️ Weather: Sydney</span>
+          <span class="status miss">Not Cached</span>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
     const QUERIES = [
-      { name: 'Apples Problem', prompt: 'If apples cost $3 each and I have $45, how many can I buy?' },
-      { name: 'Book Store', prompt: 'A book costs $12. If I have $60 and buy 3 books, how much money do I have left?' },
-      { name: 'Cookie Baking', prompt: 'I want to bake 48 cookies. Each batch makes 12 cookies. How many batches do I need?' },
-      { name: 'Gas Mileage', prompt: 'My car gets 25 miles per gallon. How many gallons do I need for a 300 mile trip?' },
-      { name: 'Pizza Party', prompt: 'Pizza costs $15 each. If 8 people want 2 slices each and each pizza has 8 slices, how much will it cost?' },
-      { name: 'Garden Fence', prompt: 'My garden is 20 feet by 15 feet. How many feet of fencing do I need to surround it?' },
+      // Multistep questions
+      { name: 'Apples Problem', prompt: 'If apples cost $3 each and I have $45, how many can I buy?', action: 'multistep' },
+      { name: 'Book Store', prompt: 'A book costs $12. If I have $60 and buy 3 books, how much money do I have left?', action: 'multistep' },
+      { name: 'Cookie Baking', prompt: 'I want to bake 48 cookies. Each batch makes 12 cookies. How many batches do I need?', action: 'multistep' },
+      { name: 'Gas Mileage', prompt: 'My car gets 25 miles per gallon. How many gallons do I need for a 300 mile trip?', action: 'multistep' },
+      { name: 'Pizza Party', prompt: 'Pizza costs $15 each. If 8 people want 2 slices each and each pizza has 8 slices, how much will it cost?', action: 'multistep' },
+      { name: 'Garden Fence', prompt: 'My garden is 20 feet by 15 feet. How many feet of fencing do I need to surround it?', action: 'multistep' },
+      // Calculator problems
+      { name: 'Calc: 25 × 47', prompt: 'Calculate 25 * 47', action: 'calculate' },
+      { name: 'Calc: 13 × 89', prompt: 'Calculate 13 * 89', action: 'calculate' },
+      { name: 'Calc: 56 × 34', prompt: 'Calculate 56 * 34', action: 'calculate' },
+      { name: 'Calc: 72 × 18', prompt: 'Calculate 72 * 18', action: 'calculate' },
+      { name: 'Calc: 91 × 23', prompt: 'Calculate 91 * 23', action: 'calculate' },
+      // Weather queries
+      { name: 'Weather: Paris', prompt: 'What is the weather in Paris?', action: 'weather' },
+      { name: 'Weather: Tokyo', prompt: 'What is the weather in Tokyo?', action: 'weather' },
+      { name: 'Weather: London', prompt: 'What is the weather in London?', action: 'weather' },
+      { name: 'Weather: New York', prompt: 'What is the weather in New York?', action: 'weather' },
+      { name: 'Weather: Sydney', prompt: 'What is the weather in Sydney?', action: 'weather' },
     ];
 
     function addProgress(message, type = 'normal') {
@@ -1510,7 +1551,7 @@ export default {
           const response = await fetch('/api/ask', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: query.prompt, action: 'multistep' })
+            body: JSON.stringify({ prompt: query.prompt, action: query.action })
           });
           
           if (response.ok) {
