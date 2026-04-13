@@ -482,6 +482,40 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       font-size: 0.9rem;
       font-weight: 600;
     }
+    .info-box .flow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .flow-step {
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      border-left: 3px solid #ccc;
+      background: #f5f5f5;
+    }
+    .flow-step.always { border-left-color: #333; background: #e8e8e8; }
+    .flow-step.chat { border-left-color: #F48120; background: #FFF5EB; }
+    .flow-step.calc { border-left-color: #22C55E; background: #F0FDF4; }
+    .flow-step.weather { border-left-color: #3B82F6; background: #EFF6FF; }
+    .flow-step.multistep { border-left-color: #8B5CF6; background: #F5F3FF; }
+    .flow-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.75rem;
+    }
+    .flow-legend .badge {
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+    .badge.always { background: #333; color: white; }
+    .badge.chat { background: #F48120; color: white; }
+    .badge.calc { background: #22C55E; color: white; }
+    .badge.weather { background: #3B82F6; color: white; }
+    .badge.multistep { background: #8B5CF6; color: white; }
     .info-box .two-col {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -620,18 +654,20 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 
     <div class="card">
       <div class="info-box">
-        <h4>Architecture Components:</h4>
-        <div class="two-col">
-          <ol>
-            <li><strong>User Request</strong> - Chat, Calculate, or Weather</li>
-            <li><strong>Firewall for AI</strong> - WAF blocks prompt injection</li>
-            <li><strong>AI Gateway</strong> - LLM caching & analytics</li>
-          </ol>
-          <ol start="4">
-            <li><strong>Workers AI</strong> - LLM inference (@cf/llama-3.1-8b)</li>
-            <li><strong>Service Binding</strong> - Private worker-to-worker</li>
-            <li><strong>MCP Server</strong> - Tool execution</li>
-          </ol>
+        <h4>Request Flow:</h4>
+        <div class="flow-steps">
+          <div class="flow-step always">1. <strong>Firewall for AI</strong> - All requests</div>
+          <div class="flow-step chat multistep">2. <strong>AI Gateway</strong> - Chat & Multistep only</div>
+          <div class="flow-step chat multistep">3. <strong>Workers AI (LLM)</strong> - Chat & Multistep only</div>
+          <div class="flow-step calc weather multistep">4. <strong>Service Binding</strong> - Tools only</div>
+          <div class="flow-step calc weather multistep">5. <strong>MCP Server</strong> - Tools only</div>
+        </div>
+        <div class="flow-legend">
+          <span class="badge always">● All</span>
+          <span class="badge chat">💬 Chat</span>
+          <span class="badge calc">🔢 Calc</span>
+          <span class="badge weather">🌤️ Weather</span>
+          <span class="badge multistep">🔄 Multi-step</span>
         </div>
       </div>
 
