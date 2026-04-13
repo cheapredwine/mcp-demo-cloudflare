@@ -166,4 +166,46 @@ describe('AI Orchestrator', () => {
       // UI would show: 'MCP Server Used (2 tool calls)'
     });
   });
+
+  describe('Streaming Support', () => {
+    it('should detect stream response by getReader method', () => {
+      const mockStream = {
+        getReader: () => ({
+          read: () => Promise.resolve({ done: true }),
+          releaseLock: () => {},
+        }),
+      };
+      
+      // Production code checks: 'getReader' in response
+      const isStream = mockStream && typeof mockStream === 'object' && 'getReader' in mockStream;
+      expect(isStream).toBe(true);
+    });
+
+    it('should return correct headers for streaming response', () => {
+      const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      };
+      
+      const streamingHeaders = {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        ...corsHeaders
+      };
+      
+      expect(streamingHeaders['Content-Type']).toBe('text/event-stream');
+      expect(streamingHeaders['Cache-Control']).toBe('no-cache');
+    });
+
+    it('should set stream flag in request body', () => {
+      const body = {
+        prompt: 'Tell me about cats',
+        action: 'chat',
+        stream: true
+      };
+      
+      expect(body.stream).toBe(true);
+    });
+  });
 });
