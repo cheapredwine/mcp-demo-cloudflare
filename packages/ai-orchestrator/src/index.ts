@@ -661,13 +661,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           <div class="flow-step calc weather multistep">3. <strong>Service Binding → MCP</strong> - Tools only (execute)</div>
           <div class="flow-step multistep">4. <strong>LLM again</strong> - Multistep only (format results)</div>
         </div>
-        <div class="flow-legend">
-          <span class="badge always">● All</span>
-          <span class="badge chat">💬 Chat</span>
-          <span class="badge calc">🔢 Calc</span>
-          <span class="badge weather">🌤️ Weather</span>
-          <span class="badge multistep">🔄 Multi-step</span>
-        </div>
       </div>
 
       <div class="input-row">
