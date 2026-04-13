@@ -395,8 +395,9 @@ describe('MCP Protocol', () => {
       expect(fullText).toBe('Hello');
     });
 
-    it('should parse SSE using split approach like production code', () => {
-      // This mirrors the actual implementation in index.ts
+    it('should parse SSE using indexOf with String.fromCharCode like production', () => {
+      // Mirrors the production code that uses String.fromCharCode(10)
+      // to avoid template string newline issues
       const chunks = [
         'data: {"response": "Hello","p":"abc"}\n',
         'data: {"response": " World","p":"def"}\n',
@@ -409,14 +410,14 @@ describe('MCP Protocol', () => {
       for (const chunk of chunks) {
         buffer += chunk;
         
-        // Process all complete lines in buffer
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed.startsWith('data: ')) {
-            const jsonStr = trimmed.slice(6);
+        // Process complete lines
+        let lineEnd;
+        while ((lineEnd = buffer.indexOf(String.fromCharCode(10))) !== -1) {
+          const line = buffer.slice(0, lineEnd).trim();
+          buffer = buffer.slice(lineEnd + 1);
+          
+          if (line.startsWith('data: ')) {
+            const jsonStr = line.slice(6);
             if (jsonStr === '[DONE]') continue;
             
             try {

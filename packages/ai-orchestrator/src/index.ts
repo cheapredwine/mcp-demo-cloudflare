@@ -985,9 +985,27 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           
           buffer += decoder.decode(value, { stream: true });
           
-          // Process all complete lines in buffer (lines end with \n)
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+          // Find complete lines (ones that have a newline)
+          let lineEnd;
+          while ((lineEnd = buffer.indexOf(String.fromCharCode(10))) !== -1) {
+            const line = buffer.slice(0, lineEnd).trim();
+            buffer = buffer.slice(lineEnd + 1);
+            
+            if (line.startsWith('data: ')) {
+              const jsonStr = line.slice(6);
+              if (jsonStr === '[DONE]') continue;
+              
+              try {
+                const data = JSON.parse(jsonStr);
+                if (data.response) {
+                  fullText += data.response;
+                  aiBox.textContent = fullText;
+                }
+              } catch (err) {
+                // Invalid JSON, skip
+              }
+            }
+          }
           
           for (const line of lines) {
             const trimmed = line.trim();
