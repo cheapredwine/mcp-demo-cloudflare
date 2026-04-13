@@ -170,7 +170,13 @@ async function callWorkersAIStream(
       }
     );
 
-    // Check if response is a stream using getReader (more reliable)
+    // Check if response is an error (has status property like 403)
+    if (response && typeof response === 'object' && 'status' in response) {
+      // This is an error response, not a stream
+      return null;
+    }
+
+    // Check if response is a stream using getReader
     if (response && typeof response === 'object' && 'getReader' in response) {
       return response as ReadableStream;
     }
