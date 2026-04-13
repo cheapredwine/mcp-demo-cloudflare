@@ -772,15 +772,21 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     }
     
     const CITIES = ['Paris', 'Tokyo', 'London', 'New York', 'Sydney', 'Berlin', 'Toronto', 'Dubai', 'Singapore', 'Barcelona'];
+    let cityIndex = 0;
+    let shuffledCities = [...CITIES].sort(() => Math.random() - 0.5);
     
     function randomWeather() {
-      // Pick random city
-      const city = CITIES[Math.floor(Math.random() * CITIES.length)];
+      // Get current city from shuffled order
+      const city = shuffledCities[cityIndex];
       
-      // Update the button label
-      document.getElementById('weather-label').textContent = city + ' Weather';
+      // Move to next city
+      cityIndex = (cityIndex + 1) % shuffledCities.length;
       
-      // Submit with the city
+      // Update button label to show NEXT city
+      const nextCity = shuffledCities[cityIndex];
+      document.getElementById('weather-label').textContent = nextCity + ' Weather';
+      
+      // Submit with CURRENT city
       autoSubmit('What is the weather in ' + city + '?', 'weather');
     }
     
