@@ -4,7 +4,74 @@ How to protect your AI Orchestrator against prompt injection, abuse, and bad res
 
 ---
 
-## 1. Firewall for AI (Primary Protection)
+## 1. Cloudflare Access (Authentication)
+
+Protect your AI Orchestrator by requiring authentication before users can access it.
+
+**Location:** Cloudflare Dashboard → Zero Trust → Access → Applications
+
+### What It Does
+- Requires users to authenticate before accessing your application
+- Supports multiple identity providers (Google, GitHub, Okta, etc.)
+- Adds SSO (Single Sign-On) to your AI demo
+- Works at the Cloudflare edge (before requests reach your Worker)
+
+### How to Enable
+
+1. Go to: https://dash.cloudflare.com → Zero Trust → Access → Applications
+2. Click **"Add an application"**
+3. Select **"Self-hosted"**
+4. Configure:
+   - **Application Name:** MCP Demo AI
+   - **Session Duration:** 24 hours
+   - **Domain:** `mcp-demo.jsherron.com` (your domain)
+5. Add an **Identity Provider** (e.g., Google, GitHub)
+6. Create an **Access Policy**:
+   - **Name:** Allow Employees
+   - **Action:** Allow
+   - **Include:** Select your identity provider
+7. Save and deploy
+
+### How It Works
+
+```
+User Request
+     ↓
+[Cloudflare Edge]
+     ↓
+┌─────────────────────────────────────┐
+│  Cloudflare Access                  │
+│  - Is user authenticated?           │
+│    ↓ No → Redirect to login         │
+│    ↓ Yes → Forward to Worker        │
+└─────────────────────────────────────┘
+     ↓
+[Your AI Orchestrator Worker]
+```
+
+### Testing
+
+**Unauthenticated request:**
+```bash
+curl https://mcp-demo.jsherron.com/
+# Response: 302 Redirect to Access login page
+```
+
+**Authenticated request (via browser):**
+1. Open `https://mcp-demo.jsherron.com/`
+2. Get redirected to Access login
+3. Authenticate with your identity provider
+4. Access the AI Orchestrator
+
+### Notes
+- No code changes needed in your Worker
+- Access handles everything at the edge
+- The Worker just focuses on application logic
+- Can combine with other security layers
+
+---
+
+## 2. Firewall for AI (Prompt Protection)
 
 **Location:** Cloudflare Dashboard → AI → AI Gateway → Security
 
@@ -45,7 +112,7 @@ Dashboard → Security → WAF → Custom Rules
 
 ---
 
-## 2. Rate Limiting (Prevent Abuse)
+## 3. Rate Limiting (Prevent Abuse)
 
 Prevent DoS attacks and control costs:
 
@@ -70,7 +137,7 @@ Prevent DoS attacks and control costs:
 
 ---
 
-## 3. Bot Management
+## 4. Bot Management
 
 Block automated attacks:
 
@@ -85,7 +152,7 @@ Block automated attacks:
 
 ---
 
-## 4. Sensitive Data Detection
+## 5. Sensitive Data Detection
 
 Prevent PII/sensitive data from going to the model:
 
@@ -113,7 +180,7 @@ Dashboard → Security → WAF → Custom Rules
 
 ---
 
-## 5. Dashboard Monitoring
+## 6. Dashboard Monitoring
 
 Monitor AI Gateway analytics:
 
@@ -131,7 +198,7 @@ Monitor AI Gateway analytics:
 
 ---
 
-## 6. Summary of Protection Layers
+## 7. Summary of Protection Layers
 
 ```
 User Request
@@ -139,23 +206,28 @@ User Request
 [Cloudflare Edge]
      ↓
 ┌─────────────────────────────────────┐
-│  1. Bot Management                  │
+│  1. Cloudflare Access               │
+│     - Authentication/SSO            │
+└─────────────────────────────────────┘
+     ↓
+┌─────────────────────────────────────┐
+│  2. Bot Management                  │
 │     - Block known bad bots          │
 └─────────────────────────────────────┘
      ↓
 ┌─────────────────────────────────────┐
-│  2. Rate Limiting                   │
+│  3. Rate Limiting                   │
 │     - Prevent DoS                   │
 └─────────────────────────────────────┘
      ↓
 ┌─────────────────────────────────────┐
-│  3. Firewall for AI                 │
+│  4. Firewall for AI                 │
 │     - Prompt injection detection    │
 │     - Content categorization        │
 └─────────────────────────────────────┘
      ↓
 ┌─────────────────────────────────────┐
-│  4. Sensitive Data Detection        │
+│  5. Sensitive Data Detection        │
 │     - Block PII/API keys            │
 └─────────────────────────────────────┘
      ↓
@@ -166,8 +238,10 @@ User Request
 
 ---
 
-## 7. Quick Setup Checklist
+## 8. Quick Setup Checklist
 
+- [ ] Set up Cloudflare Access application for your domain
+- [ ] Configure identity provider (Google, GitHub, etc.)
 - [ ] Create AI Gateway (if not already done)
 - [ ] Enable Prompt Validation in AI Gateway
 - [ ] Create WAF rule to block low AI Gateway scores (< 20)
@@ -179,7 +253,7 @@ User Request
 
 ---
 
-## 8. Testing Your Security
+## 9. Testing Your Security
 
 After setup, test with these prompts:
 
@@ -195,7 +269,7 @@ After setup, test with these prompts:
 
 ---
 
-## 9. Cost Considerations
+## 10. Cost Considerations
 
 | Feature | Cost Impact |
 |---------|-------------|
@@ -206,7 +280,7 @@ After setup, test with these prompts:
 
 ---
 
-## 10. Additional Resources
+## 11. Additional Resources
 
 - **AI Gateway Docs:** https://developers.cloudflare.com/ai-gateway/
 - **Firewall for AI:** https://developers.cloudflare.com/ai-gateway/security/
