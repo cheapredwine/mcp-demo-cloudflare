@@ -17,11 +17,3 @@ service = "mcp-demo-server"
 # Workers AI binding with AI Gateway integration
 [ai]
 binding = "AI"
-
-# Cloudflare Access Authentication Configuration
-# Set REQUIRE_AUTH = "true" to enable JWT validation
-# Can also be set via GitHub Actions environment variables or Cloudflare Dashboard
-[vars]
-REQUIRE_AUTH = "false"  # Toggle: "true" = auth enabled, "false" = public access
-# TEAM_DOMAIN = "https://cf-jsherron-test-account.cloudflareaccess.com"  # Optional: override team domain
-# POLICY_AUD = "702cc4393c7a66d7e67afbc54d187f73af21aa449639707f6389d0ee93a856da"  # Optional: override AUD tag
