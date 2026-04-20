@@ -18,19 +18,26 @@ Protect your AI Orchestrator by requiring authentication before users can access
 
 ### How to Enable
 
-1. Go to: https://dash.cloudflare.com → Zero Trust → Access → Applications
-2. Click **"Add an application"**
-3. Select **"Self-hosted"**
-4. Configure:
-   - **Application Name:** MCP Demo AI
-   - **Session Duration:** 24 hours
-   - **Domain:** `mcp-demo.jsherron.com` (your domain)
-5. Add an **Identity Provider** (e.g., Google, GitHub)
-6. Create an **Access Policy**:
+1. **(Optional) Add Identity Provider** for Google/GitHub OAuth:
+   - Go to: https://dash.cloudflare.com → Zero Trust → Integrations → Identity Providers
+   - Click "Add a provider" (Google, GitHub, Okta, etc.)
+   - Follow provider-specific setup instructions
+
+2. **Create Application**:
+   - Go to: https://dash.cloudflare.com → Zero Trust → Access → Applications
+   - Click **"Add an application"**
+   - Select **"Self-hosted"**
+   - Configure:
+     - **Application Name:** MCP Demo AI
+     - **Session Duration:** 24 hours
+     - **Domain:** `mcp-demo.YOUR-DOMAIN.com` (your domain)
+
+3. **Create an Access Policy**:
    - **Name:** Allow Employees
    - **Action:** Allow
-   - **Include:** Select your identity provider
-7. Save and deploy
+   - **Include:** Select your identity provider (or specific email/domain)
+
+4. Save and deploy
 
 ### How It Works
 
@@ -53,12 +60,12 @@ User Request
 
 **Unauthenticated request:**
 ```bash
-curl https://mcp-demo.jsherron.com/
+curl https://mcp-demo.YOUR-DOMAIN.com/
 # Response: 302 Redirect to Access login page
 ```
 
 **Authenticated request (via browser):**
-1. Open `https://mcp-demo.jsherron.com/`
+1. Open `https://mcp-demo.YOUR-DOMAIN.com/`
 2. Get redirected to Access login
 3. Authenticate with your identity provider
 4. Access the AI Orchestrator
@@ -68,6 +75,19 @@ curl https://mcp-demo.jsherron.com/
 - Access handles everything at the edge
 - The Worker just focuses on application logic
 - Can combine with other security layers
+
+### Troubleshooting
+
+**PIN email not arriving:**
+- Check spam/quarantine folders
+- Try domain-based access (e.g., `@company.com`) instead of specific email
+- Delete and recreate the Access policy (rules can occasionally get corrupted)
+- Consider using Google/GitHub OAuth instead of One-time PIN for production
+
+**Policy not working after changes:**
+- Ensure the policy is saved and attached to the application
+- Try deleting the policy and creating a new one
+- Check that the identity provider is properly configured
 
 ---
 
