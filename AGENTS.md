@@ -276,12 +276,28 @@ User Request
 - Session duration: 24 hours (configurable)
 - Works at the edge (zero latency impact on authenticated users)
 
+**Current Configuration:**
+- **Application:** `mcp-demo` (Self-hosted)
+- **Identity Provider:** One-time PIN
+- **Access Policy:** Specific email-based policy
+- **Session Duration:** 24 hours
+
 **Setup (if needed):**
-1. Cloudflare Dashboard → Zero Trust → Access → Applications
-2. Add Self-hosted application
-3. Domain: `mcp-demo.jsherron.com`
-4. Configure identity provider
-5. Create Access Policy (Allow action)
+
+1. **Add Identity Provider** (if using Google/GitHub):
+   - Cloudflare Dashboard → Zero Trust → Integrations → Identity Providers
+   - Click "Add a provider" and configure (Google, GitHub, etc.)
+
+2. **Create Application**:
+   - Cloudflare Dashboard → Zero Trust → Access → Applications
+   - Add Self-hosted application
+   - Domain: `mcp-demo.YOUR-DOMAIN.com`
+   - Select identity provider (One-time PIN or configured provider)
+
+3. **Create Access Policy**:
+   - Name: e.g., "Allow My Email"
+   - Action: Allow
+   - Include: Specific email (e.g., `user@example.com`) or domain
 
 ### Security Layers
 
@@ -318,6 +334,19 @@ Workers cannot make HTTP requests to other `*.workers.dev` domains. This project
 - Verify AI Gateway configuration
 - Check Workers AI binding is active
 - Review logs for PII filter blocking
+
+### Cloudflare Access Issues
+
+**PIN email not arriving:**
+- Check spam/quarantine folders
+- If using corporate email, try allowing by domain instead of specific email
+- Delete and recreate the Access policy rule (rules can get corrupted)
+- Alternative: Use Google or GitHub OAuth instead of One-time PIN
+
+**Access policy not working:**
+- Ensure policy is attached to the application
+- Check that the email/domain is entered correctly (no typos)
+- Try deleting and recreating the policy rule
 
 ## Key Files for Context
 
