@@ -22,7 +22,13 @@ This is a **Model Context Protocol (MCP)** demo running on Cloudflare Workers. I
 │  User (Browser)                                             │
 │  • 3-Panel Web UI (Prompt | MCP Status | AI Response)       │
 └──────────────────────────┬──────────────────────────────────┘
-                           │ HTTP
+                           │ HTTPS
+┌──────────────────────────┴──────────────────────────────────┐
+│  Cloudflare Access (Zero Trust)                             │
+│  • Authentication/SSO at the edge                           │
+│  • Identity provider integration                            │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ (authenticated)
 ┌──────────────────────────┴──────────────────────────────────┐
 │  AI Orchestrator (Worker)                                   │
 │  • Workers AI binding with AI Gateway                       │
@@ -243,12 +249,60 @@ npm run dev:ai &
 npm run test:integration
 ```
 
-## Security
+## Authentication & Security
 
-- **MCP Server** is private (`workers_dev = false`)
-- **AI Gateway** provides guardrails for prompt injection
-- **WAF** can be configured for rate limiting (requires custom domain)
-- **PII Detection** available via Cloudflare Firewall for AI
+### Authentication: Cloudflare Access (Zero Trust)
+
+This project uses **Cloudflare Access** (Zero Trust) for authentication at the edge. **No authentication logic exists in the Worker code** - it's all handled by Cloudflare before requests reach the worker.
+
+```
+User Request
+     ↓
+[Cloudflare Edge]
+     ↓
+┌─────────────────────────────────────┐
+│  Cloudflare Access                  │
+│  - Is user authenticated?           │
+│    ↓ No → Redirect to login page    │
+│    ↓ Yes → Forward to Worker        │
+└─────────────────────────────────────┘
+     ↓
+[AI Orchestrator Worker]
+```
+
+**Key Points:**
+- Worker code has **zero auth logic** - Access handles everything
+- Supports multiple identity providers (Google, GitHub, Okta, etc.)
+- Session duration: 24 hours (configurable)
+- Works at the edge (zero latency impact on authenticated users)
+
+**Setup (if needed):**
+1. Cloudflare Dashboard → Zero Trust → Access → Applications
+2. Add Self-hosted application
+3. Domain: `mcp-demo.jsherron.com`
+4. Configure identity provider
+5. Create Access Policy (Allow action)
+
+### Security Layers
+
+| Layer | Service | Purpose |
+|-------|---------|---------|
+| **Authentication** | Cloudflare Access | SSO, identity verification |
+| **Bot Protection** | Super Bot Fight Mode | Block automated attacks |
+| **Rate Limiting** | WAF Rate Limiting | Prevent DoS (10 req/min/IP) |
+| **Prompt Protection** | Firewall for AI | Block prompt injection |
+| **Data Protection** | Sensitive Data Detection | Block PII/API keys |
+| **Caching** | AI Gateway | Reduce costs, faster responses |
+
+**Important Files:**
+- `SECURITY-GUIDE.md` - Detailed security setup instructions
+- AI Gateway Security: Dashboard → AI → AI Gateway → Security
+
+### MCP Server Security
+
+- **Private by design**: `workers_dev = false` in wrangler.toml
+- **No public URL**: Only accessible via Service Binding
+- **Internal network**: Communication never leaves Cloudflare's edge
 
 ## Troubleshooting
 
