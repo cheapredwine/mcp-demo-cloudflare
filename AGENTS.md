@@ -220,28 +220,6 @@ The MCP server exposes these tools:
 |----------|--------|-------------|
 | `/mcp` | POST | MCP protocol endpoint |
 
-### Shadow API (for API Shield Discovery)
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/shadow/users` | GET | List dummy users |
-| `/api/v1/shadow/users/:id` | GET | Get dummy user by ID |
-| `/api/v1/shadow/metrics` | GET | Dummy metrics data |
-| `/api/v1/shadow/config` | GET | Dummy configuration |
-
-**Purpose:** These endpoints generate traffic for Cloudflare API Shield (Web Asset) discovery.
-
-**Generate traffic:**
-```bash
-# Run this in a loop to generate API traffic
-while true; do
-  curl https://mcp-demo.jsherron.com/api/v1/shadow/users
-  curl https://mcp-demo.jsherron.com/api/v1/shadow/metrics
-  curl https://mcp-demo.jsherron.com/api/v1/shadow/users/123
-  sleep 5
-done
-```
-
 ## Common Tasks
 
 ### Trigger Redeploy
