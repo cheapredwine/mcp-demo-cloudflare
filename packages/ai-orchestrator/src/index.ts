@@ -1630,56 +1630,6 @@ export default {
       );
     }
 
-    // Shadow API endpoints for API Shield discovery
-    if (url.pathname === "/api/v1/shadow/users") {
-      return new Response(
-        JSON.stringify({
-          users: [
-            { id: 1, name: "Alice", role: "admin" },
-            { id: 2, name: "Bob", role: "user" },
-            { id: 3, name: "Charlie", role: "user" }
-          ]
-        }, null, 2),
-        { headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    if (url.pathname === "/api/v1/shadow/metrics") {
-      return new Response(
-        JSON.stringify({
-          requests: 1234,
-          latency_ms: 45,
-          errors: 2,
-          timestamp: new Date().toISOString()
-        }, null, 2),
-        { headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    if (url.pathname === "/api/v1/shadow/config") {
-      return new Response(
-        JSON.stringify({
-          version: "1.0.0",
-          features: ["mcp", "streaming", "caching"],
-          maintenance_mode: false
-        }, null, 2),
-        { headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    if (url.pathname.startsWith("/api/v1/shadow/users/")) {
-      const userId = url.pathname.split("/").pop();
-      return new Response(
-        JSON.stringify({
-          id: userId,
-          name: `User ${userId}`,
-          email: `user${userId}@example.com`,
-          created_at: "2024-01-01T00:00:00Z"
-        }, null, 2),
-        { headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
     return new Response(
       JSON.stringify({ error: "Not found" }, null, 2),
       { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
