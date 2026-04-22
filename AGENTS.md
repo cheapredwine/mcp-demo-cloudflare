@@ -278,26 +278,56 @@ User Request
 
 **Current Configuration:**
 - **Application:** `mcp-demo` (Self-hosted)
-- **Identity Provider:** One-time PIN
-- **Access Policy:** Specific email-based policy
+- **Identity Provider:** GitHub OAuth
+- **Access Policy:** Everyone (any authenticated GitHub user)
 - **Session Duration:** 24 hours
 
-**Setup (if needed):**
+**GitHub OAuth Setup:**
 
-1. **Add Identity Provider** (if using Google/GitHub):
+1. **Create GitHub OAuth App**:
+   - Go to: https://github.com/settings/developers
+   - Click **"New OAuth App"**
+   - **Application name:** MCP Demo (or your preference)
+   - **Homepage URL:** `https://mcp-demo.jsherron.com`
+   - **Authorization callback URL:** `https://cf-jsherron-test-account.cloudflareaccess.com/cdn-cgi/access/callback`
+   - Save and copy the **Client ID** and **Client Secret**
+
+2. **Add GitHub Identity Provider in Cloudflare**:
    - Cloudflare Dashboard → Zero Trust → Integrations → Identity Providers
-   - Click "Add a provider" and configure (Google, GitHub, etc.)
+   - Click **"Add a provider"** → Select **GitHub**
+   - Enter the **Client ID** and **Client Secret** from GitHub
+   - Save
 
-2. **Create Application**:
+3. **Create Application**:
    - Cloudflare Dashboard → Zero Trust → Access → Applications
    - Add Self-hosted application
-   - Domain: `mcp-demo.YOUR-DOMAIN.com`
-   - Select identity provider (One-time PIN or configured provider)
+   - **Domain:** `mcp-demo.jsherron.com`
+   - Select **GitHub** as the identity provider (uncheck One-time PIN)
 
-3. **Create Access Policy**:
-   - Name: e.g., "Allow My Email"
-   - Action: Allow
-   - Include: Specific email (e.g., `user@example.com`) or domain
+4. **Create Access Policy**:
+   - **Name:** Allow GitHub Users
+   - **Action:** Allow
+   - **Include:** Select **"Everyone"** (allows any authenticated GitHub user)
+   - Under **Authentication / Identity providers**, ensure only **GitHub** is selected
+   - Save
+
+**Alternative Policy Options:**
+
+| Use Case | Include Selector | Result |
+|----------|-----------------|--------|
+| Any GitHub user | **Everyone** | All authenticated GitHub users can access |
+| Specific GitHub user | **Emails** | Enter the GitHub user's primary email |
+| GitHub org members | **GitHub organization** | Enter your org name |
+| Specific email | **Emails** | `user@example.com` (works with any IdP) |
+
+**Callback URL Format:**
+
+For GitHub OAuth, the callback URL must be:
+```
+https://<TEAM-NAME>.cloudflareaccess.com/cdn-cgi/access/callback
+```
+
+Replace `<TEAM-NAME>` with your Cloudflare Zero Trust team name (e.g., `cf-jsherron-test-account`). This URL is the same regardless of your custom domain.
 
 ### Security Layers
 
@@ -337,16 +367,28 @@ Workers cannot make HTTP requests to other `*.workers.dev` domains. This project
 
 ### Cloudflare Access Issues
 
-**PIN email not arriving:**
-- Check spam/quarantine folders
-- If using corporate email, try allowing by domain instead of specific email
-- Delete and recreate the Access policy rule (rules can get corrupted)
-- Alternative: Use Google or GitHub OAuth instead of One-time PIN
+**"The redirect_uri is not associated with this application" error:**
+- This means the callback URL in your GitHub OAuth app doesn't match what Cloudflare expects
+- Verify the callback URL is exactly: `https://cf-jsherron-test-account.cloudflareaccess.com/cdn-cgi/access/callback`
+- Check that your GitHub OAuth app's **Client ID** matches what's in Cloudflare Identity Provider settings
+- Clear GitHub cookies or test in incognito mode
 
-**Access policy not working:**
-- Ensure policy is attached to the application
-- Check that the email/domain is entered correctly (no typos)
-- Try deleting and recreating the policy rule
+**"That account does not have access" error:**
+- Your GitHub OAuth succeeded, but your Access Policy doesn't allow your user
+- Edit the policy and ensure you're using the correct **Include** selector
+- For GitHub auth, use **"Everyone"** to allow any authenticated GitHub user
+- Or use **"Emails"** selector with your GitHub account's primary email
+
+**GitHub username selector not available:**
+- Cloudflare Access doesn't expose "GitHub username" as a direct selector
+- Use **"Emails"** selector with your GitHub account's primary email instead
+- Or use **"GitHub organization"** if you belong to an org
+
+**Access policy not working after changes:**
+- Ensure the policy is saved and attached to the application
+- Try deleting the policy and creating a new one
+- Check that the identity provider is properly configured
+- Verify the application has the correct identity provider selected
 
 ## Key Files for Context
 

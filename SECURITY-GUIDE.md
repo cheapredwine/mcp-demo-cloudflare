@@ -18,26 +18,43 @@ Protect your AI Orchestrator by requiring authentication before users can access
 
 ### How to Enable
 
-1. **(Optional) Add Identity Provider** for Google/GitHub OAuth:
-   - Go to: https://dash.cloudflare.com → Zero Trust → Integrations → Identity Providers
-   - Click "Add a provider" (Google, GitHub, Okta, etc.)
-   - Follow provider-specific setup instructions
+1. **Create GitHub OAuth App**:
+   - Go to: https://github.com/settings/developers → OAuth Apps
+   - Click **"New OAuth App"**
+   - Configure:
+     - **Application name:** MCP Demo
+     - **Homepage URL:** `https://mcp-demo.jsherron.com`
+     - **Authorization callback URL:** `https://cf-jsherron-test-account.cloudflareaccess.com/cdn-cgi/access/callback`
+   - Save and copy the **Client ID** and **Client Secret**
 
-2. **Create Application**:
+2. **Add GitHub Identity Provider**:
+   - Go to: https://dash.cloudflare.com → Zero Trust → Integrations → Identity Providers
+   - Click **"Add a provider"** → Select **GitHub**
+   - Enter the **Client ID** and **Client Secret** from GitHub
+   - Save
+
+3. **Create Application**:
    - Go to: https://dash.cloudflare.com → Zero Trust → Access → Applications
    - Click **"Add an application"**
    - Select **"Self-hosted"**
    - Configure:
      - **Application Name:** MCP Demo AI
      - **Session Duration:** 24 hours
-     - **Domain:** `mcp-demo.YOUR-DOMAIN.com` (your domain)
+     - **Domain:** `mcp-demo.jsherron.com`
+     - Select **GitHub** as the identity provider
 
-3. **Create an Access Policy**:
-   - **Name:** Allow Employees
+4. **Create an Access Policy**:
+   - **Name:** Allow GitHub Users
    - **Action:** Allow
-   - **Include:** Select your identity provider (or specific email/domain)
+   - **Include:** Select **"Everyone"** (allows any authenticated GitHub user)
+   - Under **Authentication / Identity providers**, ensure only **GitHub** is selected
 
-4. Save and deploy
+5. Save and deploy
+
+**Callback URL Format:** The callback URL uses your Cloudflare Zero Trust team name (e.g., `cf-jsherron-test-account`) regardless of your custom domain:
+```
+https://<TEAM-NAME>.cloudflareaccess.com/cdn-cgi/access/callback
+```
 
 ### How It Works
 
@@ -78,16 +95,22 @@ curl https://mcp-demo.YOUR-DOMAIN.com/
 
 ### Troubleshooting
 
-**PIN email not arriving:**
-- Check spam/quarantine folders
-- Try domain-based access (e.g., `@company.com`) instead of specific email
-- Delete and recreate the Access policy (rules can occasionally get corrupted)
-- Consider using Google/GitHub OAuth instead of One-time PIN for production
+**"The redirect_uri is not associated with this application" error:**
+- The callback URL in your GitHub OAuth app doesn't match what Cloudflare expects
+- Verify your callback URL matches your team name: `https://cf-jsherron-test-account.cloudflareaccess.com/cdn-cgi/access/callback`
+- Ensure the GitHub OAuth **Client ID** matches what's configured in Cloudflare
+- Clear GitHub cookies or test in a fresh browser/incognito window
+
+**"That account does not have access" error:**
+- GitHub OAuth succeeded, but your Access Policy doesn't allow the user
+- Edit the policy and use **"Everyone"** as the Include selector to allow any GitHub user
+- Or use **"Emails"** selector with the GitHub user's primary email
 
 **Policy not working after changes:**
 - Ensure the policy is saved and attached to the application
 - Try deleting the policy and creating a new one
 - Check that the identity provider is properly configured
+- Verify the application has the correct identity provider selected (GitHub vs One-time PIN)
 
 ---
 
@@ -260,8 +283,10 @@ User Request
 
 ## 8. Quick Setup Checklist
 
+- [ ] Create GitHub OAuth App with correct callback URL
+- [ ] Add GitHub as Identity Provider in Cloudflare Zero Trust
 - [ ] Set up Cloudflare Access application for your domain
-- [ ] Configure identity provider (Google, GitHub, etc.)
+- [ ] Configure Access Policy (Everyone = any GitHub user, or specific emails/orgs)
 - [ ] Create AI Gateway (if not already done)
 - [ ] Enable Prompt Validation in AI Gateway
 - [ ] Create WAF rule to block low AI Gateway scores (< 20)
