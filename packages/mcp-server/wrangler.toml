@@ -3,14 +3,15 @@ main = "src/index.ts"
 compatibility_date = "2025-03-21"
 compatibility_flags = ["nodejs_compat"]
 
-# Disable public workers.dev route - only accessible via Service Binding
-workers_dev = false
+# Enable public access for MCP Portal integration
+# Keep Service Binding for internal AI Orchestrator traffic
+workers_dev = true
 
 # Account ID is set via CLOUDFLARE_ACCOUNT_ID environment variable or secret
 # Enable observability for logging
 [observability]
 enabled = true
 
-# This is a STATELESS server running on regular Workers
-# No Durable Objects needed!
-# NO routes = private - only accessible via Service Binding from AI Orchestrator
+# This server supports TWO access paths:
+# 1. Internal: AI Orchestrator → Service Binding (zero latency)
+# 2. External: MCP Portal → HTTPS → this Worker (for governance/analytics)
