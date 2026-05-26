@@ -17,33 +17,11 @@ This is a **Model Context Protocol (MCP)** demo running on Cloudflare Workers. I
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  User (Browser)                                             │
-│  • 3-Panel Web UI (Prompt | MCP Status | AI Response)       │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ HTTPS
-┌──────────────────────────┴──────────────────────────────────┐
-│  Cloudflare Access (Zero Trust)                             │
-│  • Authentication/SSO at the edge                           │
-│  • Identity provider integration                            │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ (authenticated)
-┌──────────────────────────┴──────────────────────────────────┐
-│  AI Orchestrator (Worker)                                   │
-│  • Workers AI binding with AI Gateway                       │
-│  • Tool calling logic                                       │
-│  • SSE streaming responses                                  │
-│  • Service Binding to MCP Server                            │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ Service Binding (internal)
-┌──────────────────────────┴──────────────────────────────────┐
-│  MCP Server (Worker)                                        │
-│  • MCP protocol implementation                              │
-│  • Tools: calculator, get_weather, echo, random_fact        │
-│  • Private (workers_dev = false)                            │
-└─────────────────────────────────────────────────────────────┘
-```
+The canonical architecture and design decisions are now documented in Mermaid format:
+
+- [`docs/architecture.md`](docs/architecture.md)
+
+This contains both the visual diagram and the rationale for each major component (Access, Orchestrator, Workers AI, AI Gateway, and MCP Server).
 
 ## Project Structure
 

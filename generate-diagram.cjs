@@ -3,7 +3,7 @@ const fs = require('fs');
 
 // Canvas setup
 const width = 1400;
-const height = 1100;
+const height = 1500;
 const canvas = createCanvas(width, height);
 const ctx = canvas.getContext('2d');
 
@@ -15,6 +15,7 @@ const WHITE = '#FFFFFF';
 const GRAY = '#F5F5F5';
 const PURPLE = '#9C27B0';
 const BLUE = '#2196F3';
+const ACCESS_BLUE = '#0D47A1';
 const GREEN = '#22C55E';
 const RED = '#DC2626';
 
@@ -179,31 +180,51 @@ ctx.fillStyle = '#666';
 ctx.textAlign = 'left';
 ctx.fillText('🌐 Web browser with 3-Panel UI', width/2 + 60, 160);
 
-// AI Orchestrator (below user) - moved down
-drawBox(350, 230, 700, 180, 'AI Orchestrator (Worker)', 'mcp-demo.jsherron.com', '🤖', ORANGE);
+// Cloudflare Access between User and AI Orchestrator
+drawBox(350, 220, 700, 140, 'Cloudflare Access', 'Zero Trust authentication', '🔒', ACCESS_BLUE);
+ctx.font = '13px Arial';
+ctx.fillStyle = '#666';
+ctx.textAlign = 'left';
+ctx.fillText('• Authentication at the edge', 370, 250);
+ctx.fillText('• Access policy enforces authorized users', 370, 270);
+ctx.fillText('• Blocks unauthenticated requests before the Worker', 370, 290);
+
+// AI Gateway between Access and AI Orchestrator
+drawComponentBox(420, 380, 560, 100, 'AI Gateway + Security', [
+  '• Inbound request filtering',
+  '• Prompt injection / PII protection',
+  '• Caching + analytics + rate limiting'
+], '#FF6B35');
+
+drawBox(350, 500, 700, 180, 'AI Orchestrator (Worker)', 'mcp-demo.jsherron.com', '🤖', ORANGE);
 
 // 3-Panel Web UI inside AI Orchestrator
-drawComponentBox(370, 290, 660, 110, '3-Panel Web UI', [
+drawComponentBox(370, 560, 660, 110, '3-Panel Web UI', [
   '• Prompt | MCP Status | AI Response',
   '• Enter to submit, Shift+Enter for newline',
   '• HTTP Log panel shows all internal calls'
 ], GREEN);
 
-// Arrow: User -> AI Orchestrator
-drawArrow(width/2, 185, width/2, 230, DARK, 'HTTP');
+// Arrow: User -> Cloudflare Access
+drawArrow(width/2, 185, width/2, 220, DARK, 'HTTP request');
 
-// Arrow: AI Orchestrator -> Cloudflare AI Platform - moved to avoid overlap
-drawArrow(width/2, 410, width/2, 450, PURPLE, 'Workers AI Binding', 'right');
+// Arrow: Cloudflare Access -> AI Gateway
+drawArrow(width/2, 360, width/2, 380, DARK, 'Authenticated request', 'right');
 
-// Cloudflare AI Platform (middle layer) - moved down
-drawRoundedRect(200, 460, 1000, 240, 12, '#E8F4FD');
+drawArrow(width/2, 480, width/2, 500, DARK, 'Filtered request', 'right');
+
+// Arrow: AI Orchestrator -> Cloudflare AI Platform
+drawArrow(width/2, 680, width/2, 700, PURPLE, 'Workers AI Binding', 'right');
+
+// Cloudflare AI Platform (middle layer)
+drawRoundedRect(200, 700, 1000, 260, 12, '#E8F4FD');
 ctx.font = 'bold 16px Arial';
 ctx.fillStyle = DARK;
 ctx.textAlign = 'center';
-ctx.fillText('Cloudflare AI Platform', width/2, 488);
+ctx.fillText('Cloudflare AI Platform', width/2, 730);
 
 // Workers AI box (left side of platform)
-drawComponentBox(240, 510, 440, 170, 'Workers AI', [
+drawComponentBox(240, 760, 440, 170, 'Workers AI', [
   '• Workers AI LLM model instance',
   '• Natural language understanding',
   '• Intelligent tool selection',
@@ -211,7 +232,7 @@ drawComponentBox(240, 510, 440, 170, 'Workers AI', [
 ], PURPLE);
 
 // AI Gateway box (right side of platform)
-drawComponentBox(720, 510, 460, 170, 'AI Gateway + Security', [
+drawComponentBox(720, 760, 460, 170, 'AI Gateway + Security', [
   '• Caching + Analytics + Rate limiting',
   '• Guardrails: Blocks prompt injection attacks',
   '• Firewall for AI: PII detection & blocking',
@@ -226,11 +247,11 @@ drawBadge(1020, 605, 140, 24, '🔥 Firewall for AI', BLUE);
 drawArrow(680, 595, 720, 595, '#666', '', '');
 drawArrow(720, 615, 680, 615, '#666', '', '');
 
-// Arrow: Cloudflare AI Platform -> MCP Server - moved to avoid overlap
-drawArrow(width/2, 700, width/2, 760, BLUE, 'Service Binding', 'right');
+// Arrow: Cloudflare AI Platform -> MCP Server
+drawArrow(width/2, 980, width/2, 1040, BLUE, 'Service Binding', 'right');
 
-// MCP Server (bottom) - moved down
-drawBox(400, 760, 600, 160, 'MCP Server (Worker)', 'Private - No Public URL', '🔧', BLUE);
+// MCP Server (bottom)
+drawBox(400, 1040, 600, 160, 'MCP Server (Worker)', 'Private - No Public URL', '🔧', BLUE);
 
 // MCP Server content
 drawComponentBox(420, 820, 560, 90, 'MCP Protocol Handler', [
@@ -239,7 +260,7 @@ drawComponentBox(420, 820, 560, 90, 'MCP Protocol Handler', [
 ], BLUE);
 
 // Legend (bottom left) - moved down
-let legendY = 980;
+let legendY = 1280;
 ctx.font = 'bold 16px Arial';
 ctx.fillStyle = DARK;
 ctx.textAlign = 'left';
@@ -249,6 +270,7 @@ legendY += 32;
 const legendItems = [
   { color: ORANGE, text: 'Cloudflare Workers' },
   { color: GREEN, text: 'Web UI' },
+  { color: ACCESS_BLUE, text: 'Cloudflare Access' },
   { color: PURPLE, text: 'Workers AI' },
   { color: '#FF6B35', text: 'AI Gateway + WAF' },
   { color: BLUE, text: 'MCP Server (Private)' },
@@ -273,9 +295,9 @@ legendItems.forEach((item, i) => {
 ctx.font = '13px Arial';
 ctx.fillStyle = '#666';
 ctx.textAlign = 'left';
-ctx.fillText('Security: Firewall for AI blocks prompt injection. PII detection protects sensitive data.', 50, 1060);
-ctx.fillText('Guardrails provide additional content filtering. Custom domain enables WAF rules.', 50, 1080);
-ctx.fillText('Note: Workers AI is a platform service. In this demo we use the Workers AI binding.', 50, 1100);
+ctx.fillText('Security: Firewall for AI blocks prompt injection. PII detection protects sensitive data.', 50, 1340);
+ctx.fillText('Cloudflare Access enforces Zero Trust authentication before requests hit the Worker.', 50, 1360);
+ctx.fillText('Note: Workers AI is a platform service. In this demo we use the Workers AI binding.', 50, 1380);
 
 // Save
 const buffer = canvas.toBuffer('image/png');
