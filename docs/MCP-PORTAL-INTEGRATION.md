@@ -4,6 +4,8 @@
 
 This document outlines a plan to integrate **Cloudflare MCP Portal** (managed MCP service) into our existing MCP demo application. The goal is to leverage Cloudflare's managed MCP infrastructure while preserving our AI Gateway, Workers AI, and web UI investments.
 
+> NOTE: This is planning documentation only. The current repo implementation still uses the private custom MCP server and internal Service Binding path; Portal integration is not implemented yet.
+
 **Current State:** Custom MCP server (private Worker) + AI Orchestrator with Service Bindings
 **Target State:** Cloudflare MCP Portal manages tool registration/routing + AI Orchestrator connects via Portal
 

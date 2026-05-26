@@ -3,6 +3,8 @@
 ## Goal
 Enable Cloudflare MCP Portal to access our MCP server via HTTP while preserving the existing Service Binding path for internal AI Orchestrator traffic.
 
+> NOTE: This document is a conceptual hybrid plan only. The current codebase does not implement MCP Portal routing; the active runtime path remains internal Service Binding.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  AI Orchestrator (Worker)                                   │
