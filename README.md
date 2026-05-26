@@ -44,39 +44,15 @@ The UI shows the deployment timestamp (top-right corner) so you know when the co
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  User                                                       │
-│  • Web browser with 3-Panel UI                              │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ HTTP
-┌──────────────────────────┴──────────────────────────────────┐
-│  AI Orchestrator (Worker)                                   │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │ 3-Panel Web UI                                       │  │
-│  │ • Prompt | MCP Status | AI Response                  │  │
-│  │ • Interactive buttons (calc, weather, multistep)     │  │
-│  │ • Streaming chat responses                           │  │
-│  └───────────────────────────────────────────────────────┘  │
-└──────────────────────────┬──────────────────────────────────┘
-                            │ Workers AI Binding¹
-┌──────────────────────────┴──────────────────────────────────┐
-│  Cloudflare AI Platform                                     │
-│  ┌───────────────────┐  ┌───────────────────────────────┐  │
-│  │ Workers AI        │  │ AI Gateway + WAF²             │  │
-│  │ • LLM model inst. │←─┤ • Caching + Analytics         │  │
-│  │ • Tool calling    │  │ • Guardrails (prompt inj.)    │  │
-│  │ • SSE Streaming   │  │ • Firewall for AI (PII)       │  │
-│  └───────────────────┘  └───────────────────────────────┘  │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ Service Binding
-┌──────────────────────────┴──────────────────────────────────┐
-│  MCP Server (Worker)                                        │
-│  • Handles MCP protocol                                     │
-│  • Exposes 2 tools: calculator, get_weather                 │
-│  • Private (no public URL)                                  │
-└─────────────────────────────────────────────────────────────┘
-```
+The canonical architecture diagram is now centralized in Mermaid format:
+
+- [`docs/architecture.md`](docs/architecture.md)
+
+The canonical architecture and design rationale are documented in `docs/architecture.md`:
+
+- User browser → Cloudflare Access → AI Orchestrator Worker
+- AI Orchestrator uses Workers AI + AI Gateway
+- MCP Server is reached through Service Binding
 
 **¹ Note:** Workers AI is a Cloudflare platform service. In this demo we access it via binding from the AI Orchestrator worker. You can also call it via the REST API from any worker or external service.
 

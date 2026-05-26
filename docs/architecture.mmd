@@ -1,0 +1,28 @@
+flowchart TB
+  user([User<br/>Web browser<br/>3-Panel UI])
+  access["Cloudflare Access<br/>Zero Trust authentication"]
+  aiOrch["AI Orchestrator (Worker)<br/>Workers AI binding + AI Gateway<br/>Tool calling logic<br/>SSE streaming responses<br/>Service Binding to MCP Server"]
+  workersAI["Workers AI<br/>LLM model instance<br/>Tool calling capability<br/>Tool calling support"]
+  gateway["AI Gateway + Security<br/>Caching + Analytics + Rate limiting<br/>Guardrails: prompt injection, PII detection"]
+  mcp["MCP Server (Worker)<br/>Private: no public URL<br/>MCP protocol implementation<br/>Tools: calculator, get_weather, echo, random_fact"]
+
+  user -->|HTTPS| access
+  access -->|Authenticated request| gateway
+  gateway -->|Filtered inbound request| aiOrch
+  aiOrch -->|Workers AI Binding| workersAI
+  workersAI -->|Outbound response filtered| gateway
+  gateway -->|Filtered response| aiOrch
+  aiOrch -->|Service Binding| mcp
+
+  classDef cloudflare fill:#0D47A1,stroke:#082B5B,color:#fff,stroke-width:2px;
+  classDef worker fill:#F48120,stroke:#C9691C,color:#fff,stroke-width:2px;
+  classDef ai fill:#9C27B0,stroke:#6A1B9A,color:#fff,stroke-width:2px;
+  classDef gateway fill:#FF6B35,stroke:#BF360C,color:#fff,stroke-width:2px;
+  classDef private fill:#2196F3,stroke:#0D47A1,color:#fff,stroke-width:2px;
+
+  class user cloudflare;
+  class access cloudflare;
+  class aiOrch worker;
+  class workersAI ai;
+  class gateway gateway;
+  class mcp private;
