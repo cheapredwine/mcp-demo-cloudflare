@@ -85,7 +85,7 @@ npm run dev:ai        # Start AI orchestrator
 ### Testing
 
 ```bash
-npm test              # Run all tests (99 tests)
+npm test              # Run all tests (84 tests)
 npm run test:watch    # Watch mode
 npm run test:coverage # With coverage report
 npm run typecheck     # TypeScript type checking

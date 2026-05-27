@@ -1,87 +1,63 @@
 import { describe, it, expect } from 'vitest';
+import { AI_TOOLS } from '../index';
 
 describe('AI Orchestrator', () => {
   describe('AI Tools Configuration', () => {
-    const AI_TOOLS = [
-      {
-        name: 'calculator',
-        description: 'ONLY use when the user asks for mathematical calculations.',
-        parameters: {
-          type: 'object',
-          properties: {
-            operation: { type: 'string', enum: ['add', 'subtract', 'multiply', 'divide'] },
-            a: { type: 'number' },
-            b: { type: 'number' }
-          },
-          required: ['operation', 'a', 'b']
-        }
-      },
-      {
-        name: 'get_weather',
-        description: 'ONLY use when the user specifically asks about weather.',
-        parameters: {
-          type: 'object',
-          properties: {
-            location: { type: 'string' },
-            units: { type: 'string', enum: ['celsius', 'fahrenheit'] }
-          },
-          required: ['location']
-        }
-      }
-    ];
-
-    it('should have 2 tools defined (reduced from 4)', () => {
-      expect(AI_TOOLS).toHaveLength(2);
+    it('should have 4 tools defined', () => {
+      expect(AI_TOOLS).toHaveLength(4);
     });
 
-    it('should have calculator tool with restrictive description', () => {
+    it('should have calculator tool', () => {
       const calcTool = AI_TOOLS.find(t => t.name === 'calculator');
       expect(calcTool).toBeDefined();
-      expect(calcTool?.description).toContain('ONLY use');
-      expect(calcTool?.parameters.properties.operation.enum).toEqual(['add', 'subtract', 'multiply', 'divide']);
+      expect(calcTool?.description).toContain('mathematical');
+      expect(calcTool?.parameters.properties.operation).toBeDefined();
+      expect((calcTool?.parameters.properties.operation as { enum: string[] }).enum).toEqual(['add', 'subtract', 'multiply', 'divide']);
+      expect(calcTool?.parameters.required).toEqual(['operation', 'a', 'b']);
     });
 
-    it('should have weather tool with restrictive description', () => {
+    it('should have weather tool', () => {
       const weatherTool = AI_TOOLS.find(t => t.name === 'get_weather');
       expect(weatherTool).toBeDefined();
-      expect(weatherTool?.description).toContain('ONLY use');
+      expect(weatherTool?.description).toContain('weather');
       expect(weatherTool?.parameters.required).toEqual(['location']);
     });
 
-    it('should NOT have echo or random_fact tools anymore', () => {
+    it('should have echo tool', () => {
       const echoTool = AI_TOOLS.find(t => t.name === 'echo');
+      expect(echoTool).toBeDefined();
+      expect(echoTool?.description).toContain('echo');
+      expect(echoTool?.parameters.required).toEqual(['message']);
+    });
+
+    it('should have random_fact tool', () => {
       const factTool = AI_TOOLS.find(t => t.name === 'random_fact');
-      expect(echoTool).toBeUndefined();
-      expect(factTool).toBeUndefined();
+      expect(factTool).toBeDefined();
+      expect(factTool?.description).toContain('fact');
+      expect(factTool?.parameters.properties.category).toBeDefined();
+      expect((factTool?.parameters.properties.category as { enum: string[] }).enum).toEqual(['science', 'history', 'technology', 'nature', 'space']);
     });
   });
 
   describe('Tool Definitions for AI Gateway', () => {
     it('should define tools with OpenAI function format', () => {
-      const tools = [
-        {
-          type: 'function',
-          function: {
-            name: 'calculator',
-            description: 'ONLY use for math',
-            parameters: {
-              type: 'object',
-              properties: { a: { type: 'number' } },
-              required: ['a']
-            }
-          }
+      const tools = AI_TOOLS.map(tool => ({
+        type: 'function',
+        function: {
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters,
         }
-      ];
+      }));
 
       expect(tools[0].type).toBe('function');
       expect(tools[0].function.name).toBe('calculator');
-      expect(tools[0].function.description).toContain('ONLY');
+      expect(tools[0].function.description).toBeTruthy();
     });
   });
 
   describe('API Response Format', () => {
     it('should return empty toolCalls array when no tools are used', () => {
-      // Simulate API response when AI answers directly without tools
       const response = {
         ai: {
           response: "Terns are seabirds in the family Laridae...",
@@ -96,7 +72,6 @@ describe('AI Orchestrator', () => {
     });
 
     it('should return toolCalls array when tools are used', () => {
-      // Simulate API response when AI uses tools
       const response = {
         ai: {
           response: "The weather in Paris is sunny and 22°C",
@@ -132,8 +107,6 @@ describe('AI Orchestrator', () => {
       const mcpWasUsed = data.toolCalls && data.toolCalls.length > 0;
       
       expect(mcpWasUsed).toBe(false);
-      // UI would show: mcpStatus.className = 'mcp-status not-used'
-      // UI would show: mcpStatus.textContent = 'MCP Not Used'
     });
 
     it('should show "MCP Server Used" when toolCalls has items', () => {
@@ -146,8 +119,6 @@ describe('AI Orchestrator', () => {
       
       expect(mcpWasUsed).toBe(true);
       expect(callCount).toBe(1);
-      // UI would show: mcpStatus.className = 'mcp-status used'
-      // UI would show: 'MCP Server Used (1 tool call)'
     });
 
     it('should handle pluralization for multiple tool calls', () => {
@@ -163,7 +134,6 @@ describe('AI Orchestrator', () => {
       
       expect(callCount).toBe(2);
       expect(suffix).toBe('s');
-      // UI would show: 'MCP Server Used (2 tool calls)'
     });
   });
 
@@ -176,7 +146,6 @@ describe('AI Orchestrator', () => {
         }),
       };
       
-      // Production code checks: 'getReader' in response
       const isStream = mockStream && typeof mockStream === 'object' && 'getReader' in mockStream;
       expect(isStream).toBe(true);
     });
@@ -211,9 +180,8 @@ describe('AI Orchestrator', () => {
 
   describe('Build Timestamp', () => {
     it('should have BUILD_TIME in expected format', () => {
-      // BUILD_TIME format: YYYY-MM-DD HH:MM UTC
       const timeRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/;
-      const BUILD_TIME = '2026-04-13 08:55 UTC'; // Injected by CI/CD
+      const BUILD_TIME = '2026-04-13 08:55 UTC';
       
       expect(BUILD_TIME).toMatch(timeRegex);
     });

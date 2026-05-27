@@ -93,7 +93,7 @@ jobs:
         run: |
           echo "✅ Deployment complete!"
           echo ""
-          echo "📡 MCP Server: https://mcp-demo-server.jsherron-test-account.workers.dev"
-          echo "🤖 AI Orchestrator: https://mcp-demo-ai-orchestrator.jsherron-test-account.workers.dev"
+          echo "🤖 AI Orchestrator: https://mcp-demo.jsherron.com"
+          echo "📡 MCP Server: Private (Service Binding only)"
           echo ""
           echo "🛡️  Security: See README.md Security Configuration section"

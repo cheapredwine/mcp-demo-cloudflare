@@ -19,7 +19,7 @@ interface Env {
 // Call log tracking
 interface CallLog {
   timestamp: string;
-  type: 'ai' | 'mcp-init' | 'mcp-tool' | 'auth';
+  type: 'ai' | 'mcp-tool' | 'auth';
   method?: string;
   endpoint: string;
   status?: number;
@@ -56,7 +56,7 @@ interface ToolDefinition {
 }
 
 // Tool definitions for Worker AI
-const AI_TOOLS: ToolDefinition[] = [
+export const AI_TOOLS: ToolDefinition[] = [
   {
     name: "calculator",
     description: "Use for mathematical calculations and arithmetic operations like addition, subtraction, multiplication, division.",
@@ -91,6 +91,34 @@ const AI_TOOLS: ToolDefinition[] = [
         }
       },
       required: ["location"]
+    }
+  },
+  {
+    name: "echo",
+    description: "Use to echo back a message. Good for testing connectivity or repeating user input.",
+    parameters: {
+      type: "object",
+      properties: {
+        message: { 
+          type: "string", 
+          description: "Message to echo back"
+        }
+      },
+      required: ["message"]
+    }
+  },
+  {
+    name: "random_fact",
+    description: "Use when the user asks for an interesting fact, trivia, or wants to learn something fun.",
+    parameters: {
+      type: "object",
+      properties: {
+        category: { 
+          type: "string", 
+          enum: ["science", "history", "technology", "nature", "space"],
+          description: "Fact category"
+        }
+      }
     }
   }
 ];
@@ -185,48 +213,15 @@ async function callWorkersAIStream(
   }
 }
 
-// Initialize MCP session once for multiple tool calls
-async function initMCP(
-  service: Fetcher
-): Promise<string | null> {
-  const initBody = {
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'initialize',
-    params: {
-      protocolVersion: '2024-11-05',
-      capabilities: {},
-      clientInfo: { name: 'ai-orchestrator', version: '1.0.0' },
-    },
-  };
-
-  const initResponse = await service.fetch('http://mcp-server/mcp', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json, text/event-stream',
-    },
-    body: JSON.stringify(initBody),
-  });
-
-  if (!initResponse.ok) {
-    const errorText = await initResponse.text();
-    throw new Error(`MCP init failed: ${initResponse.status} - ${errorText}`);
-  }
-
-  return initResponse.headers.get('mcp-session-id');
-}
-
-// Call MCP tool using existing session
-async function callMCPToolWithSession(
+// Call MCP tool via Service Binding (stateless - no session init needed)
+async function callMCPTool(
   service: Fetcher,
-  sessionId: string | null,
   toolName: string,
   args: Record<string, unknown>
 ): Promise<unknown> {
   const toolBody = {
     jsonrpc: '2.0',
-    id: 2,
+    id: 1,
     method: 'tools/call',
     params: {
       name: toolName,
@@ -234,19 +229,13 @@ async function callMCPToolWithSession(
     },
   };
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json, text/event-stream',
-    'Mcp-Protocol-Version': '2024-11-05',
-  };
-  
-  if (sessionId) {
-    headers['Mcp-Session-Id'] = sessionId;
-  }
-
   const response = await service.fetch('http://mcp-server/mcp', {
     method: 'POST',
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream',
+      'Mcp-Protocol-Version': '2024-11-05',
+    },
     body: JSON.stringify(toolBody),
   });
 
@@ -267,22 +256,17 @@ async function callMCPToolWithSession(
   return data.result;
 }
 
-// Process AI response with tool calls - optimized: single session init, parallel tool calls
+// Process AI response with tool calls - parallel execution
 async function processToolCalls(
   service: Fetcher,
   toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>,
   log?: (type: CallLog['type'], endpoint: string, status?: number, details?: string, method?: string) => void
 ): Promise<Array<{ tool: string; result: unknown }>> {
-  // Initialize MCP session once for all tools
-  if (log) log('mcp-init', 'Service Binding: MCP initialize', undefined, 'Single session init for ' + toolCalls.length + ' tool(s)', 'POST');
-  const sessionId = await initMCP(service);
-  if (log) log('mcp-init', 'Service Binding: MCP initialize', 200, 'Session established', 'POST');
-  
-  // Call all tools in parallel
+  // Call all tools in parallel (stateless - no session init needed)
   if (log) log('mcp-tool', 'Service Binding: tools/call', undefined, 'Executing ' + toolCalls.length + ' tool call(s) in parallel', 'POST');
   
   const toolPromises = toolCalls.map(async (call) => {
-    const result = await callMCPToolWithSession(service, sessionId, call.name, call.arguments);
+    const result = await callMCPTool(service, call.name, call.arguments);
     return { tool: call.name, result };
   });
   
@@ -1244,9 +1228,8 @@ export default {
               else if (opStr === '/' || opStr === 'divide') { operation = 'divide'; opSymbol = '÷'; }
             }
             
-            const result = await callMCPToolWithSession(
+            const result = await callMCPTool(
               env.MCP_SERVER, 
-              null, 
               'calculator', 
               { operation, a, b }
             ) as { content: Array<{ type: string; text: string }> };
@@ -1268,9 +1251,8 @@ export default {
             const locationMatch = prompt.match(/(?:weather|temperature)(?:\s+in|\s+at|\s+for)?\s+([^?]+)/i);
             const location = locationMatch ? locationMatch[1].trim() : 'Unknown';
             
-            const result = await callMCPToolWithSession(
+            const result = await callMCPTool(
               env.MCP_SERVER, 
-              null, 
               'get_weather', 
               { location, units: 'celsius' }
             ) as { content: Array<{ type: string; text: string }> };
@@ -1303,13 +1285,13 @@ export default {
             
             if (initialResponse.tool_calls && initialResponse.tool_calls.length > 0) {
               // AI wants to use tools
-              const VALID_TOOLS = ['calculator', 'get_weather'];
+              const VALID_TOOLS = ['calculator', 'get_weather', 'echo', 'random_fact'];
               const validToolCalls = initialResponse.tool_calls.filter(
                 tc => VALID_TOOLS.includes(tc.name)
               );
               
               // Execute the tool calls
-              log('mcp-init', 'Service Binding: Starting tool execution', undefined, 'Executing ' + validToolCalls.length + ' tool call(s)', 'POST');
+              log('mcp-tool', 'Service Binding: Starting tool execution', undefined, 'Executing ' + validToolCalls.length + ' tool call(s)', 'POST');
               const results = await processToolCalls(env.MCP_SERVER, validToolCalls, log);
               
               for (let i = 0; i < validToolCalls.length; i++) {

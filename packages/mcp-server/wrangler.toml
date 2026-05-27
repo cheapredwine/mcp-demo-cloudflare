@@ -3,15 +3,9 @@ main = "src/index.ts"
 compatibility_date = "2025-03-21"
 compatibility_flags = ["nodejs_compat"]
 
-# Enable public access for MCP Portal integration
-# Keep Service Binding for internal AI Orchestrator traffic
-workers_dev = true
+# Private - no public URL, only accessible via Service Binding
+workers_dev = false
 
-# Account ID is set via CLOUDFLARE_ACCOUNT_ID environment variable or secret
 # Enable observability for logging
 [observability]
 enabled = true
-
-# This server supports TWO access paths:
-# 1. Internal: AI Orchestrator → Service Binding (zero latency)
-# 2. External: MCP Portal → HTTPS → this Worker (for governance/analytics)
