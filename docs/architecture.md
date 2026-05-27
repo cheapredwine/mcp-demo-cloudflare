@@ -8,25 +8,23 @@ flowchart TB
   workersAI["Workers AI<br/>LLM model instance<br/>Tool calling capability<br/>Tool calling support"]
   gateway["AI Gateway + Security<br/>Caching + Analytics + Rate limiting<br/>Guardrails: prompt injection, PII detection"]
   mcp["MCP Server (Worker)<br/>Private: no public URL<br/>MCP protocol implementation<br/>Tools: calculator, get_weather, echo, random_fact"]
+  extClient([External Client<br/>Optional / demo only<br/>Explores Service Binding usage])
 
   user -->|HTTPS| access
   access -->|Authenticated request| gateway
   gateway -->|Filtered inbound request| aiOrch
   aiOrch -->|Workers AI Binding| workersAI
   workersAI -->|Outbound response filtered| gateway
-  gateway -->|Filtered response| aiOrch
+  aiOrch -->|Filtered response| gateway
   aiOrch -->|Service Binding| mcp
-  externalClient([External MCP client<br/>via MCP Portal])
-  portal["Cloudflare MCP Portal<br/>(conceptual external discovery)"]
-  externalClient -->|MCP discovery| portal
-  portal -->|HTTPS / Access| mcp
+  extClient -.->|Service Binding| mcp
 
   classDef cloudflare fill:#0D47A1,stroke:#082B5B,color:#fff,stroke-width:2px;
   classDef worker fill:#F48120,stroke:#C9691C,color:#fff,stroke-width:2px;
   classDef ai fill:#9C27B0,stroke:#6A1B9A,color:#fff,stroke-width:2px;
   classDef gateway fill:#FF6B35,stroke:#BF360C,color:#fff,stroke-width:2px;
   classDef private fill:#2196F3,stroke:#0D47A1,color:#fff,stroke-width:2px;
-  classDef planned fill:#607D8B,stroke:#455A64,color:#fff,stroke-width:2px,stroke-dasharray: 5 5;
+  classDef optional fill:#999,stroke:#666,color:#fff,stroke-width:2px,stroke-dasharray: 5 5;
 
   class user cloudflare;
   class access cloudflare;
@@ -34,11 +32,8 @@ flowchart TB
   class workersAI ai;
   class gateway gateway;
   class mcp private;
-  class portal planned;
-  class externalClient planned;
+  class extClient optional;
 ```
-
-> **Note:** The external Portal path shown above is conceptual only. The current repository implementation uses only the internal Service Binding path.
 
 ## Overview
 
@@ -56,18 +51,19 @@ This document describes the high-level architecture for the MCP demo running on 
   - Why: keeps orchestration, UI, and tool-calling logic colocated for transparency, and allows easy inspection of requests and internal logs.
 
 - **Workers AI** — the model runtime accessed via the Workers AI binding.
-  - Why: platform binding avoids extra HTTP hops, reduces latency and cost, and integrates with Cloudflare’s model governance and billing.
+  - Why: platform binding avoids extra HTTP hops, reduces latency and cost, and integrates with Cloudflare's model governance and billing.
 
 - **AI Gateway** — sits inline between Cloudflare Access and the model/orchestrator path for caching, analytics, rate limiting, and security guardrails (prompt-injection detection, PII blocking).
   - Why: consolidates caching and safety policies so both inbound requests and outbound model responses are filtered before they reach the worker or the model.
 
 - **MCP Server (Worker)** — implements the MCP protocol and exposes demo tools. It is private (`workers_dev = false`) and only reachable via Service Binding.
   - Why: keeping the tool server private reduces attack surface and ensures tools run only when invoked by trusted orchestrator workers.
-  - Note: a Cloudflare MCP Portal path is conceptually possible, but this repo does not currently implement it.
 
 - **Service Binding** — internal binding used by the orchestrator to call the MCP server.
   - Why: Cloudflare prevents worker-to-worker HTTP calls between `*.workers.dev` domains (error 1042). Service Bindings are the supported, lower-latency, secure way to call internal worker code.
-  - Footnote: using a Portal-based external path would add latency, auth complexity, and require exposing the MCP server publicly.
+
+- **External Client** *(optional / demo only)* — a standalone worker that connects to the MCP server via Service Binding to test tool calls independently of the AI Orchestrator. Not part of the core deployment.
+  - Why: demonstrates that any authorized worker can consume the MCP server's tools via Service Binding, not just the AI Orchestrator.
 
 ## Security and operational considerations
 

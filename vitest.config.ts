@@ -26,7 +26,6 @@ export default defineConfig({
     alias: {
       // Ensure proper module resolution for workspace packages
       '@mcp-demo/server': './packages/mcp-server/src/index.ts',
-      '@mcp-demo/client': './packages/workers-client/src/index.ts',
     },
   },
 });

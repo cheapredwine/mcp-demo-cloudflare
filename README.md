@@ -410,7 +410,7 @@ npm run typecheck
 npm run test:coverage
 ```
 
-**Current Test Count: 99 tests passing**
+**Current Test Count: 84 tests passing**
 
 ## Project Structure
 
@@ -424,7 +424,7 @@ packages/
 │
 └── ai-orchestrator/     # AI Orchestrator with Worker AI
     ├── src/index.ts     # AI + MCP integration + streaming
-    ├── src/__tests__/   # Tests (43 tests: 16 index + 27 mcp-protocol)
+    ├── src/__tests__/   # Tests (44 tests: 17 index + 27 mcp-protocol)
     ├── wrangler.toml    # Worker config (AI binding + service binding)
     └── package.json
 
