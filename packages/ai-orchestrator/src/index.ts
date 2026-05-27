@@ -433,6 +433,18 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       color: white;
       border-color: #F48120;
     }
+    .access-note {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.95);
+      background: rgba(0,0,0,0.16);
+      padding: 2px 6px;
+      border-radius: 6px;
+      cursor: default;
+      border: 1px solid rgba(255,255,255,0.12);
+      font-weight: 600;
+    }
     .result-section {
       margin-top: 20px;
     }
@@ -687,7 +699,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 <body>
   <div class="container" style="position: relative;">
     <h1>AI Orchestrator + MCP</h1>
-    <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + Firewall for AI + MCP Tools</p>
+    <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + Firewall for AI + MCP Tools — Protected by Cloudflare Access for authentication <span class="access-note">Cloudflare Access auth enabled</span></p>
     <span id="build-time" style="position: absolute; top: 0; right: 0; font-size: 0.7rem; color: rgba(255,255,255,0.5); font-family: monospace;">__BUILD_TIME__</span>
 
     <div class="card">
@@ -854,9 +866,22 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
     document.addEventListener('DOMContentLoaded', function() {
       const textarea = document.getElementById('prompt');
       
-      // Select all text on click (for easy replacement)
-      textarea.addEventListener('click', function() {
-        this.select();
+      // Preserve default double-click behavior (select word).
+      // If double-click did not produce a selection (e.g. clicked in whitespace to the right),
+      // select all text as a convenience.
+      textarea.addEventListener('dblclick', function() {
+        const el = this;
+        // Allow the browser to perform its default selection first
+        setTimeout(function() {
+          try {
+            if (el.selectionStart === el.selectionEnd) {
+              el.select();
+            }
+          } catch (err) {
+            // If selection properties are not available, fallback to selecting all
+            try { el.select(); } catch (e) {}
+          }
+        }, 0);
       });
       
       textarea.addEventListener('keydown', function(e) {
@@ -1029,6 +1054,28 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
               
               try {
                 const data = JSON.parse(jsonStr);
+                // If the stream contains callLogs, update the HTTP log UI
+                if (data.callLogs && data.callLogs.length > 0) {
+                  const logContainer = document.getElementById('http-log-content');
+                  const logContainer2 = document.getElementById('http-log-container');
+                  const logToggle = document.getElementById('http-log-toggle');
+                  if (logContainer && logContainer2 && logToggle) {
+                    logContainer.innerHTML = data.callLogs.map(function(log) {
+                      var statusColor = log.status >= 200 && log.status < 300 ? '#22C55E' : 
+                                       log.status >= 400 ? '#EF4444' : '#F48120';
+                      return '<div class="http-log-entry">' +
+                        '<span style="color: #888;">[' + log.timestamp + ']</span> ' +
+                        '<span style="color: #00FF00;">' + (log.method || 'POST') + '</span> ' +
+                        '<span style="color: #fff;">' + log.endpoint + '</span> ' +
+                        (log.status ? '<span style="color: ' + statusColor + ';">' + log.status + '</span>' : '') +
+                        (log.details ? ' <span style="color: #888;">- ' + log.details + '</span>' : '') +
+                        '</div>';
+                    }).join('');
+                    logContainer2.classList.add('open');
+                    logToggle.textContent = '▼ HTTP Log (' + data.callLogs.length + ' calls)';
+                  }
+                }
+
                 if (data.response) {
                   fullText += data.response;
                   aiBox.textContent = fullText;
@@ -1082,8 +1129,12 @@ export default {
 
     // Web UI
     if (url.pathname === "/") {
-      // Inject build time into HTML template
-      const htmlWithBuildTime = HTML_TEMPLATE.replace('__BUILD_TIME__', BUILD_TIME);
+      // Inject build time into HTML template.
+      // In local dev without CI injection, show a runtime timestamp instead of UNKNOWN.
+      const currentBuildTime = BUILD_TIME === 'UNKNOWN'
+        ? new Date().toISOString().replace('T', ' ').split('.')[0] + ' UTC'
+        : BUILD_TIME;
+      const htmlWithBuildTime = HTML_TEMPLATE.replace('__BUILD_TIME__', currentBuildTime);
       return new Response(htmlWithBuildTime, {
         headers: { "Content-Type": "text/html", ...corsHeaders },
       });
@@ -1113,9 +1164,33 @@ export default {
               { role: 'user', content: prompt }
             ]
           );
-          
+
           if (stream) {
-            return new Response(stream, {
+            // Prepend callLogs as an initial SSE event so the client can render HTTP logs
+            const encoder = new TextEncoder();
+            const original = stream;
+
+            const combined = new ReadableStream({
+              async start(controller) {
+                try {
+                  // Send initial event with callLogs
+                  const initEvent = 'data: ' + JSON.stringify({ callLogs: logs }) + '\n\n';
+                  controller.enqueue(encoder.encode(initEvent));
+
+                  const reader = (original as ReadableStream).getReader();
+                  while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    controller.enqueue(value);
+                  }
+                  controller.close();
+                } catch (err) {
+                  controller.error(err);
+                }
+              }
+            });
+
+            return new Response(combined, {
               headers: {
                 'Content-Type': 'text/event-stream',
                 'Cache-Control': 'no-cache',
