@@ -382,3 +382,6 @@ Workers cannot make HTTP requests to other `*.workers.dev` domains. This project
 3. **AI Gateway caching** - Responses cached for 24 hours
 4. **Build timestamp** - Automatically updated via CI/CD
 5. **Tests must pass** - Run `npm test` before any commit
+6. **MCP Server has 5 tools, orchestrator exposes 4** - `get_traffic_log` is in the MCP server but not wired to AI. Either add it to `AI_TOOLS` and `VALID_TOOLS` in ai-orchestrator, or remove it from mcp-server for consistency
+7. **Verify Service Binding after deploy** - On next deploy, confirm `MCP_SERVER` Service Binding is still configured for `mcp-demo-ai-orchestrator`
+8. **Integration tests need running servers** - `npm run dev:server & npm run dev:ai & npm run test:integration` to validate full stack end-to-end
