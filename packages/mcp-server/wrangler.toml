@@ -2,9 +2,19 @@ name = "mcp-demo-server"
 main = "src/index.ts"
 compatibility_date = "2025-03-21"
 compatibility_flags = ["nodejs_compat"]
+account_id = "1ddebf6f9507d3fc9052158be9d42dee"
 
-# Private - no public URL, only accessible via Service Binding
-workers_dev = false
+# Public URL for MCP Portal + Service Binding for internal AI Orchestrator
+# Two access paths:
+# 1. Internal: AI Orchestrator -> Service Binding (zero latency)
+# 2. External: MCP Portal / clients -> HTTPS -> this Worker
+workers_dev = true
+
+# Custom domains
+routes = [
+  { pattern = "mcp-server.jsherron.com", custom_domain = true },
+  { pattern = "mcp.jsherron.com", custom_domain = true }
+]
 
 # Enable observability for logging
 [observability]

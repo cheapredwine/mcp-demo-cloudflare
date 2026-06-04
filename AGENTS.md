@@ -4,8 +4,11 @@
 
 This is a **Model Context Protocol (MCP)** demo running on Cloudflare Workers. It demonstrates:
 
-- **MCP Server**: A private, stateless MCP server exposing tools (calculator, get_weather, echo, random_fact)
-- **AI Orchestrator**: A web UI that uses Cloudflare Workers AI with AI Gateway for intelligent tool calling
+- **MCP Server**: MCP server exposing 5 tools (calculator, get_weather, echo, random_fact, get_traffic_log)
+  - **Internal**: Private via Service Binding (AI Orchestrator)
+  - **External**: Public via HTTPS at `mcp-server.jsherron.com` (for MCP Portal/clients)
+  - **Protocol**: Stateful SSE mode (required for MCP Portal compatibility)
+- **AI Orchestrator**: Web UI using Cloudflare Workers AI with AI Gateway for intelligent tool calling
 - **Service Bindings**: Internal worker-to-worker communication (avoids Cloudflare's 1042 error)
 - **Streaming**: Real-time SSE streaming for chat responses
 - **AI Gateway**: Caching, analytics, and guardrails for AI requests
@@ -13,7 +16,9 @@ This is a **Model Context Protocol (MCP)** demo running on Cloudflare Workers. I
 ### Live URLs
 
 - **AI Orchestrator**: https://mcp-demo.jsherron.com/
-- **MCP Server**: Private (no public URL, accessed via Service Binding)
+- **MCP Server (Direct)**: https://mcp-server.jsherron.com/mcp (public, for Portal/clients)
+- **MCP Portal Endpoint**: https://mcp-portal.jsherron.com/mcp (Cloudflare MCP Portal proxy)
+- **MCP Server (Internal)**: Private (accessed via Service Binding only)
 
 ## Architecture
 
@@ -30,7 +35,7 @@ packages/
 ├── mcp-server/              # MCP protocol server
 │   ├── src/index.ts         # Server implementation (5 tools)
 │   ├── src/__tests__/       # Unit tests (40 tests)
-│   ├── wrangler.toml        # Worker config (private, no workers_dev)
+│   ├── wrangler.toml        # Worker config (public + Service Binding)
 │   └── package.json
 │
 └── ai-orchestrator/         # AI Orchestrator with Workers AI
@@ -38,6 +43,9 @@ packages/
     ├── src/__tests__/       # Tests (43+ tests)
     ├── wrangler.toml        # Config with AI binding + Service Binding
     └── package.json
+
+tools/
+└── mcp-portal-client.js     # CLI traffic generator for MCP Portal
 
 .github/workflows/
 └── deploy.yml               # CI/CD deployment workflow
@@ -128,7 +136,7 @@ wrangler service bind MCP_SERVER --service=mcp-demo-server
 ```
 
 Or via Cloudflare Dashboard:
-1. Workers & Pages → mcp-demo-ai-orchestrator
+1. Workers & Pages → mcp-demo-app
 2. Settings → Service bindings
 3. Add: `MCP_SERVER` → `mcp-demo-server`
 
@@ -137,7 +145,7 @@ Or via Cloudflare Dashboard:
 ### AI Orchestrator (packages/ai-orchestrator/wrangler.toml)
 
 ```toml
-name = "mcp-demo-ai-orchestrator"
+name = "mcp-demo-app"
 routes = [
   { pattern = "mcp-demo.jsherron.com", custom_domain = true }
 ]
@@ -156,8 +164,13 @@ binding = "AI"
 
 ```toml
 name = "mcp-demo-server"
-workers_dev = false  # Private - no public URL
-# Only accessible via Service Binding from AI Orchestrator
+workers_dev = true  # Public for Portal/clients
+
+# Custom domains
+routes = [
+  { pattern = "mcp-server.jsherron.com", custom_domain = true },
+  { pattern = "mcp.jsherron.com", custom_domain = true }
+]
 ```
 
 ### Build Timestamp
@@ -196,7 +209,7 @@ The MCP server exposes these tools:
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/mcp` | POST | MCP protocol endpoint |
+| `/mcp` | POST | MCP protocol endpoint (stateful SSE mode) |
 
 ## Common Tasks
 
@@ -215,7 +228,7 @@ git push
 wrangler tail --name mcp-demo-server
 
 # AI Orchestrator logs
-wrangler tail --name mcp-demo-ai-orchestrator
+wrangler tail --name mcp-demo-app
 ```
 
 ### Run Integration Tests
@@ -226,6 +239,24 @@ npm run dev:server &
 npm run dev:ai &
 npm run test:integration
 ```
+
+### MCP Portal Traffic Generator
+
+A CLI tool for testing the MCP Portal endpoint:
+
+```bash
+cd tools
+CF_ACCESS_CLIENT_ID=xxx CF_ACCESS_CLIENT_SECRET=yyy node mcp-portal-client.js
+```
+
+Commands:
+- `node mcp-portal-client.js --list` — List available tools
+- `node mcp-portal-client.js --batch 10` — Run 10 random tool calls
+- `node mcp-portal-client.js` — Interactive mode
+
+Environment variables:
+- `MCP_PORTAL_URL` — Portal endpoint (default: `https://mcp-portal.jsherron.com/mcp`)
+- `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` — Service token for auth
 
 ## Authentication & Security
 
@@ -324,9 +355,10 @@ Replace `<TEAM-NAME>` with your Cloudflare Zero Trust team name (e.g., `cf-jsher
 
 ### MCP Server Security
 
-- **Private by design**: `workers_dev = false` in wrangler.toml
-- **No public URL**: Only accessible via Service Binding
-- **Internal network**: Communication never leaves Cloudflare's edge
+- **Public for Portal access**: `workers_dev = true` in wrangler.toml
+- **Custom domains**: `mcp-server.jsherron.com`, `mcp.jsherron.com`
+- **Internal network**: AI Orchestrator still uses Service Binding (zero latency)
+- **TODO**: Add Cloudflare Access app to protect direct server access
 
 ## Troubleshooting
 
@@ -383,5 +415,9 @@ Workers cannot make HTTP requests to other `*.workers.dev` domains. This project
 4. **Build timestamp** - Automatically updated via CI/CD
 5. **Tests must pass** - Run `npm test` before any commit
 6. **MCP Server has 5 tools, orchestrator exposes 4** - `get_traffic_log` is in the MCP server but not wired to AI. Either add it to `AI_TOOLS` and `VALID_TOOLS` in ai-orchestrator, or remove it from mcp-server for consistency
-7. **Verify Service Binding after deploy** - On next deploy, confirm `MCP_SERVER` Service Binding is still configured for `mcp-demo-ai-orchestrator`
+7. **Verify Service Binding after deploy** - On next deploy, confirm `MCP_SERVER` Service Binding is still configured for `mcp-demo-app`
 8. **Integration tests need running servers** - `npm run dev:server & npm run dev:ai & npm run test:integration` to validate full stack end-to-end
+9. **Portal tool execution is broken** - Dashboard shows Ready but tool calls fail. Likely needs browser OAuth to enable server. See TODO.md for details
+10. **Service token auth invalid** - Token returns `invalid_token`. May need recreation. See TODO.md
+11. **MCP server now uses SSE mode** - Changed from stateless JSON to stateful SSE for Portal compatibility. Direct calls still work
+12. **Custom domains active** - `mcp-server.jsherron.com` and `mcp.jsherron.com` both point to MCP server

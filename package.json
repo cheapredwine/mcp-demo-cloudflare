@@ -14,7 +14,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:integration": "echo 'Start servers first: npm run dev:server & npm run dev:client' && npx vitest run --config vitest.integration.config.ts"
+    "test:integration": "echo 'Start servers first: npm run dev:server & npm run dev:client' && npx vitest run --config vitest.integration.config.ts",
+    "portal:client": "node tools/mcp-portal-client.js",
+    "portal:traffic": "node tools/mcp-portal-client.js --batch"
   },
   "workspaces": [
     "packages/*"

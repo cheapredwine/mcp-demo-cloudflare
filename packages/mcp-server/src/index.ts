@@ -318,10 +318,10 @@ export default {
       const server = createServer();
       
       // Use WebStandard transport for Cloudflare Workers
-      // Enable JSON response mode for stateless requests (waits for all responses before returning)
+      // Stateful mode with SSE streaming (required for MCP Portal)
       const transport = new WebStandardStreamableHTTPServerTransport({
-        sessionIdGenerator: undefined, // Stateless mode
-        enableJsonResponse: true,      // Return JSON instead of SSE streaming
+        sessionIdGenerator: () => crypto.randomUUID(),
+        enableJsonResponse: false,  // Use SSE streaming
       });
       
       // Connect server to transport
