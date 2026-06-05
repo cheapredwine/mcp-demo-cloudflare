@@ -6,8 +6,8 @@ This is a **Model Context Protocol (MCP)** demo running on Cloudflare Workers. I
 
 - **MCP Server**: MCP server exposing 5 tools (calculator, get_weather, echo, random_fact, get_traffic_log)
   - **Internal**: Private via Service Binding (AI Orchestrator)
-  - **External**: Public via HTTPS at `mcp-server.jsherron.com` (for MCP Portal/clients)
-  - **Protocol**: Stateful SSE mode (required for MCP Portal compatibility)
+  - **External**: HTTPS at `mcp-server.jsherron.com`, protected by Cloudflare Access (OAuth) for MCP Portal/clients
+  - **Protocol**: Stateless JSON mode (`sessionIdGenerator: undefined`, `enableJsonResponse: true`) — required for a per-request Worker
 - **AI Orchestrator**: Web UI using Cloudflare Workers AI with AI Gateway for intelligent tool calling
 - **Service Bindings**: Internal worker-to-worker communication (avoids Cloudflare's 1042 error)
 - **Streaming**: Real-time SSE streaming for chat responses
@@ -15,10 +15,13 @@ This is a **Model Context Protocol (MCP)** demo running on Cloudflare Workers. I
 
 ### Live URLs
 
-- **AI Orchestrator**: https://mcp-demo.jsherron.com/
-- **MCP Server (Direct)**: https://mcp-server.jsherron.com/mcp (public, for Portal/clients)
+- **AI Orchestrator**: https://mcp-demo.jsherron.com/ (Access-protected; One-time PIN to `jsherron@cloudflare.com`)
+- **MCP Server (Direct)**: https://mcp-server.jsherron.com/mcp (Access-protected; OAuth flow for MCP clients)
 - **MCP Portal Endpoint**: https://mcp-portal.jsherron.com/mcp (Cloudflare MCP Portal proxy)
 - **MCP Server (Internal)**: Private (accessed via Service Binding only)
+
+> All public bypass routes are closed: `workers_dev = false`, and the
+> unauthenticated `mcp.jsherron.com` alias has been removed.
 
 ## Architecture
 
@@ -164,12 +167,12 @@ binding = "AI"
 
 ```toml
 name = "mcp-demo-server"
-workers_dev = true  # Public for Portal/clients
+workers_dev = false  # No unauthenticated workers.dev bypass
 
-# Custom domains
+# Single Access-protected custom domain (the mcp.jsherron.com alias was
+# removed because it bypassed Access)
 routes = [
-  { pattern = "mcp-server.jsherron.com", custom_domain = true },
-  { pattern = "mcp.jsherron.com", custom_domain = true }
+  { pattern = "mcp-server.jsherron.com", custom_domain = true }
 ]
 ```
 
@@ -209,7 +212,7 @@ The MCP server exposes these tools:
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/mcp` | POST | MCP protocol endpoint (stateful SSE mode) |
+| `/mcp` | POST | MCP protocol endpoint (stateless JSON mode) |
 
 ## Common Tasks
 
@@ -246,7 +249,7 @@ A CLI tool for testing the MCP Portal endpoint:
 
 ```bash
 cd tools
-CF_ACCESS_CLIENT_ID=xxx CF_ACCESS_CLIENT_SECRET=yyy node mcp-portal-client.js
+node mcp-portal-client.js
 ```
 
 Commands:
@@ -256,7 +259,9 @@ Commands:
 
 Environment variables:
 - `MCP_PORTAL_URL` — Portal endpoint (default: `https://mcp-portal.jsherron.com/mcp`)
-- `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` — Service token for auth
+
+> Note: The MCP server is protected by Cloudflare Access using the interactive
+> OAuth flow (browser-based MCP clients). Service tokens are not used.
 
 ## Authentication & Security
 
@@ -285,13 +290,17 @@ User Request
 - Session duration: 24 hours (configurable)
 - Works at the edge (zero latency impact on authenticated users)
 
-**Current Configuration:**
-- **Application:** `mcp-demo` (Self-hosted)
-- **Identity Provider:** GitHub OAuth
-- **Access Policy:** Everyone (any authenticated GitHub user)
+**Current Configuration (web app — `mcp-demo.jsherron.com`):**
+- **Application:** `mcp-demo-app` (Self-hosted), domain `mcp-demo.jsherron.com` — covers `/`, `/api/ask`, `/admin`
+- **Identity Provider:** One-time PIN (email). `auto_redirect_to_identity = true`, so users go straight to the email-PIN flow (GitHub was removed)
+- **Access Policy:** Allow → `jsherron@cloudflare.com` only (broaden Include for multi-user demos)
 - **Session Duration:** 24 hours
+- App ID: `d8e84822-d158-4519-9ff1-1e3e02c6306e`; OTP IdP ID: `e529bbec-62d9-46e6-abd6-01f6f1abbfcb`
 
-**GitHub OAuth Setup:**
+> The MCP server (`mcp-server.jsherron.com`) is a separate Access app using the
+> interactive OAuth flow for MCP clients — see "MCP Server Security" below.
+
+**GitHub OAuth Setup (historical reference — GitHub is no longer used for the web app):**
 
 1. **Create GitHub OAuth App**:
    - Go to: https://github.com/settings/developers
@@ -355,10 +364,11 @@ Replace `<TEAM-NAME>` with your Cloudflare Zero Trust team name (e.g., `cf-jsher
 
 ### MCP Server Security
 
-- **Public for Portal access**: `workers_dev = true` in wrangler.toml
-- **Custom domains**: `mcp-server.jsherron.com`, `mcp.jsherron.com`
-- **Internal network**: AI Orchestrator still uses Service Binding (zero latency)
-- **TODO**: Add Cloudflare Access app to protect direct server access
+- **Cloudflare Access (OAuth)**: `mcp-server.jsherron.com` is fronted by an Access "MCP server" app. Unauthenticated requests get `401` with a `WWW-Authenticate` OAuth challenge; browser MCP clients (Portal/Playground) complete the interactive OAuth flow
+- **Single custom domain**: only `mcp-server.jsherron.com` (the `mcp.jsherron.com` alias was removed — it bypassed Access)
+- **No workers.dev bypass**: `workers_dev = false`
+- **Internal network**: AI Orchestrator uses the Service Binding (zero latency), which bypasses Access by design
+- **AI controls admin credential**: the Access "MCP server" entry holds an OAuth admin credential (account `jsherron@cloudflare.com`) used for tool sync/refresh. If "unable to refresh tools", reauthenticate the server in Zero Trust → AI controls → MCP servers
 
 ## Troubleshooting
 
@@ -417,7 +427,6 @@ Workers cannot make HTTP requests to other `*.workers.dev` domains. This project
 6. **MCP Server has 5 tools, orchestrator exposes 4** - `get_traffic_log` is in the MCP server but not wired to AI. Either add it to `AI_TOOLS` and `VALID_TOOLS` in ai-orchestrator, or remove it from mcp-server for consistency
 7. **Verify Service Binding after deploy** - On next deploy, confirm `MCP_SERVER` Service Binding is still configured for `mcp-demo-app`
 8. **Integration tests need running servers** - `npm run dev:server & npm run dev:ai & npm run test:integration` to validate full stack end-to-end
-9. **Portal tool execution is broken** - Dashboard shows Ready but tool calls fail. Likely needs browser OAuth to enable server. See TODO.md for details
-10. **Service token auth invalid** - Token returns `invalid_token`. May need recreation. See TODO.md
-11. **MCP server now uses SSE mode** - Changed from stateless JSON to stateful SSE for Portal compatibility. Direct calls still work
-12. **Custom domains active** - `mcp-server.jsherron.com` and `mcp.jsherron.com` both point to MCP server
+9. **MCP server uses stateless JSON mode** - `WebStandardStreamableHTTPServerTransport` with `sessionIdGenerator: undefined` and `enableJsonResponse: true`. Required because a regular Worker has no shared memory between requests; stateful/SSE mode broke the handshake for real MCP clients (Portal/Playground/SDK). Per-request server+transport is correct here
+10. **No service tokens** - MCP server is behind Cloudflare Access via the interactive OAuth flow (browser-based MCP clients). Service token (machine) auth is not used
+11. **Single custom domain, workers.dev disabled** - only `mcp-server.jsherron.com` points to the MCP server. `workers_dev = false` and the `mcp.jsherron.com` alias was removed, so there is no unauthenticated bypass route

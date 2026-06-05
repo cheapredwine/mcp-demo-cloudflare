@@ -1,5 +1,12 @@
 # MCP Server Visibility Toggle Guide
 
+> ⚠️ **SUPERSEDED.** This guide describes toggling `workers_dev` to expose the
+> MCP server publicly. The project has since moved to **Cloudflare Access** in
+> front of `mcp-server.jsherron.com`, with `workers_dev = false` permanently and
+> the `mcp.jsherron.com` alias removed. Do **not** re-enable `workers_dev` — it
+> reopens an unauthenticated bypass. See `AGENTS.md` → "MCP Server Security" and
+> `TODO.md` for the current posture. Kept for historical context only.
+
 ## The One-Line Kill Switch
 
 You can instantly hide the MCP server from external access while keeping the web demo running. This is controlled by a single line in `packages/mcp-server/wrangler.toml`.
