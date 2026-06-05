@@ -417,18 +417,6 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       color: white;
       border-color: #F48120;
     }
-    .access-note {
-      display: inline-block;
-      margin-left: 8px;
-      font-size: 0.85rem;
-      color: rgba(255,255,255,0.95);
-      background: rgba(0,0,0,0.16);
-      padding: 2px 6px;
-      border-radius: 6px;
-      cursor: default;
-      border: 1px solid rgba(255,255,255,0.12);
-      font-weight: 600;
-    }
     .result-section {
       margin-top: 20px;
     }
@@ -683,7 +671,7 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 <body>
   <div class="container" style="position: relative;">
     <h1>AI Orchestrator + MCP</h1>
-    <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + Firewall for AI + MCP Tools — Protected by Cloudflare Access for authentication <span class="access-note">Cloudflare Access auth enabled</span></p>
+    <p class="subtitle"><span class="cloudflare-badge">⚡ Cloudflare</span> Workers AI + AI Gateway + Firewall for AI + MCP Tools — Protected by Cloudflare Access for authentication</p>
     <span id="build-time" style="position: absolute; top: 0; right: 0; font-size: 0.7rem; color: rgba(255,255,255,0.5); font-family: monospace;">__BUILD_TIME__</span>
 
     <div class="card">
