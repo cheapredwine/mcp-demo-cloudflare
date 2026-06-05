@@ -4,16 +4,22 @@ compatibility_date = "2025-03-21"
 compatibility_flags = ["nodejs_compat"]
 account_id = "1ddebf6f9507d3fc9052158be9d42dee"
 
-# Public URL for MCP Portal + Service Binding for internal AI Orchestrator
-# Two access paths:
+# Access paths:
 # 1. Internal: AI Orchestrator -> Service Binding (zero latency)
-# 2. External: MCP Portal / clients -> HTTPS -> this Worker
-workers_dev = true
+# 2. External: MCP Portal / clients -> custom domain (Cloudflare Access protected)
+#
+# workers.dev route is DISABLED so the only public entry point is the
+# Access-protected custom domain. The *.workers.dev hostname bypasses the
+# custom-domain Access app, so leaving it enabled would expose the server
+# unauthenticated.
+workers_dev = false
 
-# Custom domains
+# Custom domain (single, Access-protected entry point).
+# mcp.jsherron.com was removed: it was an unauthenticated alias to the same
+# Worker and bypassed the Cloudflare Access app that only covers
+# mcp-server.jsherron.com.
 routes = [
-  { pattern = "mcp-server.jsherron.com", custom_domain = true },
-  { pattern = "mcp.jsherron.com", custom_domain = true }
+  { pattern = "mcp-server.jsherron.com", custom_domain = true }
 ]
 
 # Enable observability for logging
