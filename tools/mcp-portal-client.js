@@ -6,14 +6,12 @@
  * and calls tools to generate traffic for testing/demo purposes.
  * 
  * Usage:
- *   CF_ACCESS_CLIENT_ID=xxx CF_ACCESS_CLIENT_SECRET=yyy node mcp-portal-client.js
+ *   node mcp-portal-client.js
  *   node mcp-portal-client.js --help
  */
 
 const MCP_PORTAL_URL = process.env.MCP_PORTAL_URL || 'https://mcp-portal.jsherron.com/mcp';
 const MCP_SERVER_ID = process.env.MCP_SERVER_ID || 'mcp-demo';
-const CLIENT_ID = process.env.CF_ACCESS_CLIENT_ID;
-const CLIENT_SECRET = process.env.CF_ACCESS_CLIENT_SECRET;
 
 let sessionId = null;
 
@@ -22,10 +20,6 @@ function getHeaders(includeSession = true) {
     'Content-Type': 'application/json',
     'Accept': 'application/json, text/event-stream',
   };
-  if (CLIENT_ID && CLIENT_SECRET) {
-    headers['CF-Access-Client-Id'] = CLIENT_ID;
-    headers['CF-Access-Client-Secret'] = CLIENT_SECRET;
-  }
   if (includeSession && sessionId) {
     headers['Mcp-Session-Id'] = sessionId;
   }
@@ -261,24 +255,14 @@ async function main() {
 MCP Portal Traffic Generator
 
 Environment Variables:
-  MCP_PORTAL_URL            Portal MCP endpoint (default: https://jsherron.com/mcp)
-  CF_ACCESS_CLIENT_ID       Cloudflare Access Service Token ID
-  CF_ACCESS_CLIENT_SECRET   Cloudflare Access Service Token Secret
+  MCP_PORTAL_URL            Portal MCP endpoint (default: https://mcp-portal.jsherron.com/mcp)
 
 Usage:
   node mcp-portal-client.js              # Interactive mode
   node mcp-portal-client.js --batch 10   # Run 10 random tool calls
   node mcp-portal-client.js --list       # List available tools
-
-Examples:
-  CF_ACCESS_CLIENT_ID=xxx CF_ACCESS_CLIENT_SECRET=yyy node mcp-portal-client.js
 `);
     return;
-  }
-
-  if (!CLIENT_ID || !CLIENT_SECRET) {
-    console.warn('⚠️  Warning: CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET not set.');
-    console.warn('   If your Portal requires authentication, requests will fail.\n');
   }
 
   await initialize();
