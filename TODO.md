@@ -58,8 +58,9 @@ and intentionally bypasses Access (zero latency).
 ## Open / next session
 
 - [ ] **Commit + push** the working-tree changes (this session's work) — _in progress at handoff._
-- [ ] **Delete the dangling `mcp.jsherron.com` DNS record** (currently returns
-      `530`). Cosmetic; not a security issue.
+- [x] ~~Delete the dangling `mcp.jsherron.com` DNS record~~ — already gone.
+      Removing the Workers custom domain auto-deleted its managed DNS record;
+      `mcp.jsherron.com` no longer resolves.
 - [ ] **Rotate the Cloudflare API tokens** used this session (`cfat_jFKoc3...`
       already appears dead; rotate/delete `cfat_9yim...`).
 - [ ] **(Optional) Validate `Cf-Access-Jwt-Assertion` in the Worker** for
