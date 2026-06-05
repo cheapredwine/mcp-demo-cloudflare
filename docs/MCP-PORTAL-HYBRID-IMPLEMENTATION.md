@@ -5,6 +5,12 @@ Enable Cloudflare MCP Portal to access our MCP server via HTTP while preserving 
 
 > NOTE: This document is a conceptual hybrid plan only. The current codebase does not implement MCP Portal routing; the active runtime path remains internal Service Binding.
 
+> ⚠️ **Superseded details.** This plan suggests `workers_dev = true` to expose
+> the server. The implemented setup instead keeps `workers_dev = false`, uses a
+> single Access-protected custom domain (`mcp-server.jsherron.com`), removed the
+> `mcp.jsherron.com` alias, and registers the server in AI controls with OAuth.
+> See `AGENTS.md` and `TODO.md` for the current state.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  AI Orchestrator (Worker)                                   │

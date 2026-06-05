@@ -4,14 +4,19 @@ A working MCP (Model Context Protocol) server and client running on Cloudflare W
 
 ## 🚀 Live Demo
 
-- **AI Orchestrator:** https://mcp-demo.jsherron.com/
-- **MCP Server:** Private (accessible only via Service Binding from AI Orchestrator)
+- **AI Orchestrator:** https://mcp-demo.jsherron.com/ (behind Cloudflare Access — One-time PIN login)
+- **MCP Server:** https://mcp-server.jsherron.com/mcp (behind Cloudflare Access — OAuth flow for MCP clients; also reachable internally via Service Binding)
 
 Open the AI Orchestrator Web UI and type a message to see the MCP protocol in action!
 
+> **Security:** Both endpoints are protected by Cloudflare Access. All
+> unauthenticated bypass routes are closed (`workers_dev = false`, and the
+> `mcp.jsherron.com` alias was removed). The AI Orchestrator reaches the MCP
+> server over an internal Service Binding, which bypasses Access by design.
+
 ## What This Is
 
-- **MCP Server**: Private stateless server handling MCP protocol (no public URL)
+- **MCP Server**: Stateless server handling MCP protocol (stateless JSON Streamable HTTP). Reachable internally via Service Binding and externally at `mcp-server.jsherron.com` behind Cloudflare Access
 - **AI Orchestrator**: Workers AI + AI Gateway + Web UI with streaming
   - Uses Workers AI LLM model instance
   - AI Gateway provides caching, analytics, and rate limiting
@@ -106,7 +111,10 @@ The MCP server exposes these tools:
 | Tool | Description |
 |------|-------------|
 | `calculator` | Basic math (add, subtract, multiply, divide) |
-| `get_weather` | Simulated weather data |
+| `get_weather` | Simulated weather data for a location |
+| `echo` | Echo back the input message |
+| `random_fact` | Random fact by category (science, history, technology, nature, space) |
+| `get_traffic_log` | Request info (stateless demo) |
 
 ## API Endpoints
 
@@ -359,7 +367,7 @@ Zone: None (unless using WAF rules)
 
 **Check:**
 1. Is the AI Orchestrator deployed? Check the live demo URL
-2. Is the MCP server deployed? (It has no public URL - check via Cloudflare Dashboard)
+2. Is the MCP server deployed? (External URL is Access-protected; verify via Cloudflare Dashboard or an authenticated MCP client)
 3. Is the service binding configured? Check Cloudflare Dashboard → Workers → Service Bindings
 4. Check server logs: `wrangler tail --name mcp-demo-server`
 

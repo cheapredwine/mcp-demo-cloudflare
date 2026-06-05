@@ -16,45 +16,48 @@ Protect your AI Orchestrator by requiring authentication before users can access
 - Adds SSO (Single Sign-On) to your AI demo
 - Works at the Cloudflare edge (before requests reach your Worker)
 
-### How to Enable
+### Current configuration (this demo)
 
-1. **Create GitHub OAuth App**:
-   - Go to: https://github.com/settings/developers → OAuth Apps
-   - Click **"New OAuth App"**
-   - Configure:
-     - **Application name:** MCP Demo
-     - **Homepage URL:** `https://mcp-demo.jsherron.com`
-     - **Authorization callback URL:** `https://cf-jsherron-test-account.cloudflareaccess.com/cdn-cgi/access/callback`
-   - Save and copy the **Client ID** and **Client Secret**
+Two separate Access applications protect the two public hostnames:
 
-2. **Add GitHub Identity Provider**:
-   - Go to: https://dash.cloudflare.com → Zero Trust → Integrations → Identity Providers
-   - Click **"Add a provider"** → Select **GitHub**
-   - Enter the **Client ID** and **Client Secret** from GitHub
-   - Save
+| App | Hostname | IdP | Policy |
+|-----|----------|-----|--------|
+| `mcp-demo-app` (Self-hosted) | `mcp-demo.jsherron.com` (web UI, `/api/ask`, `/admin`) | **One-time PIN** (email), `auto_redirect_to_identity = true` | Allow → `jsherron@cloudflare.com` |
+| `mcp-server` (AI controls "MCP server", OAuth) | `mcp-server.jsherron.com/mcp` | Cloudflare Access OAuth (interactive) | Allow → `jsherron@cloudflare.com` |
 
-3. **Create Application**:
-   - Go to: https://dash.cloudflare.com → Zero Trust → Access → Applications
-   - Click **"Add an application"**
-   - Select **"Self-hosted"**
-   - Configure:
-     - **Application Name:** MCP Demo AI
-     - **Session Duration:** 24 hours
-     - **Domain:** `mcp-demo.jsherron.com`
-     - Select **GitHub** as the identity provider
+The web app uses One-time PIN: the user enters an email, Cloudflare sends a
+PIN, and only addresses matching the Allow policy get through. GitHub was
+removed. To broaden for multi-user demos, add emails (Include → Emails) or your
+domain.
 
-4. **Create an Access Policy**:
-   - **Name:** Allow GitHub Users
-   - **Action:** Allow
-   - **Include:** Select **"Everyone"** (allows any authenticated GitHub user)
-   - Under **Authentication / Identity providers**, ensure only **GitHub** is selected
+### How to set up the web-app Access app (One-time PIN)
 
-5. Save and deploy
+1. **Enable One-time PIN** (if not already): Zero Trust → Settings → Authentication → Login methods → add **One-time PIN**.
+2. **Create Application**: Zero Trust → Access → Applications → **Add an application** → **Self-hosted**.
+   - **Domain:** `mcp-demo.jsherron.com` (empty path → protects the whole app)
+   - **Session Duration:** 24 hours
+   - **Identity provider:** One-time PIN only (enable *Apply instant authentication* to skip the chooser)
+3. **Create an Access Policy**: Action **Allow**, Include → **Emails** → `jsherron@cloudflare.com`.
+4. Save.
 
-**Callback URL Format:** The callback URL uses your Cloudflare Zero Trust team name (e.g., `cf-jsherron-test-account`) regardless of your custom domain:
+> The MCP server (`mcp-server.jsherron.com`) is protected separately via the AI
+> controls "MCP server" OAuth flow — see the secure-MCP-servers reference and
+> `AGENTS.md` → "MCP Server Security".
+
+<details>
+<summary>Optional: use GitHub (or another IdP) instead of One-time PIN</summary>
+
+1. **Create GitHub OAuth App** at https://github.com/settings/developers → OAuth Apps:
+   - **Homepage URL:** `https://mcp-demo.jsherron.com`
+   - **Authorization callback URL:** `https://<TEAM-NAME>.cloudflareaccess.com/cdn-cgi/access/callback`
+2. **Add GitHub Identity Provider**: Zero Trust → Integrations → Identity Providers → add GitHub with the Client ID/Secret.
+3. On the application, select **GitHub** as the identity provider and scope the policy (Everyone = any authenticated GitHub user, or specific Emails).
+
+**Callback URL Format:** uses your Zero Trust team name regardless of custom domain:
 ```
 https://<TEAM-NAME>.cloudflareaccess.com/cdn-cgi/access/callback
 ```
+</details>
 
 ### How It Works
 

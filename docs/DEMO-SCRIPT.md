@@ -1,5 +1,12 @@
 # MCP Demo Script
 
+> ⚠️ **Partially outdated.** Steps that toggle `workers_dev = true` to expose the
+> MCP server are superseded. The MCP server is now behind Cloudflare Access at
+> `mcp-server.jsherron.com` with `workers_dev = false` permanently and the
+> `mcp.jsherron.com` alias removed. Connect MCP clients via the Access OAuth
+> flow, not a public workers.dev URL. See `AGENTS.md` and `TODO.md` for the
+> current state.
+
 ## Overview
 
 This script guides you through a live demo showing:

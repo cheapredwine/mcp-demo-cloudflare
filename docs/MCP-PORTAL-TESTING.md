@@ -1,5 +1,13 @@
 # MCP Portal Testing Guide
 
+> ⚠️ **Superseded.** This guide predates the current setup and instructs
+> enabling `workers_dev = true` / an unauthenticated endpoint. The MCP server is
+> now Access-protected at `mcp-server.jsherron.com` (`workers_dev = false`, no
+> `mcp.jsherron.com` alias) and uses **stateless JSON** transport. Register it
+> in Zero Trust → AI controls → MCP servers with `auth_type = oauth` and
+> authenticate to establish the admin credential used for tool sync. See
+> `AGENTS.md` and `TODO.md`. Kept for historical context.
+
 ## Pre-Deployment Checklist
 
 Before making any changes, verify:

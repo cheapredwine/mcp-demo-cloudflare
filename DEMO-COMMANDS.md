@@ -1,5 +1,11 @@
 MCP demo commands
 
+> NOTE: `mcp-demo.jsherron.com` is now behind Cloudflare Access (One-time PIN).
+> These raw curls will get a 302 redirect to the Access login, not a response.
+> To run them, either authenticate in a browser first and pass the
+> `CF_Authorization` cookie, or use `cloudflared access curl <url>` to attach a
+> valid token. They work as-is only against a local `wrangler dev` instance.
+
  curl -X POST https://mcp-demo.jsherron.com/api/ask \
   -H "Content-Type: application/json" \
   -d '{"prompt": "What is the weather in Tokyo?"}'
