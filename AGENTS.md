@@ -370,6 +370,28 @@ Replace `<TEAM-NAME>` with your Cloudflare Zero Trust team name (e.g., `cf-jsher
 - **Internal network**: AI Orchestrator uses the Service Binding (zero latency), which bypasses Access by design
 - **AI controls admin credential**: the Access "MCP server" entry holds an OAuth admin credential (account `jsherron@cloudflare.com`) used for tool sync/refresh. If "unable to refresh tools", reauthenticate the server in Zero Trust → AI controls → MCP servers
 
+### MCP Portal login process (`mcp-portal.jsherron.com`)
+
+The portal homepage is **not a website you log into** — there is no browser
+sign-in button. You authenticate by **connecting an MCP client to the `/mcp`
+endpoint**, which runs the Cloudflare Access OAuth flow.
+
+- **"Disconnected" on the homepage is the normal idle state**, not a fault. It
+  reflects whether an authenticated MCP-client session exists. After a client
+  completes OAuth it flips to **Connected** + your email + a Sign out button.
+- **DNS:** `mcp-portal.jsherron.com` is a proxied CNAME → `gateway.agents.cloudflare.com`
+  (portals created via API/Terraform need this record created manually; missing
+  it → `522`).
+- **Connect / verify:**
+  1. Workers AI Playground (https://playground.ai.cloudflare.com/) → **MCP Servers** → add `https://mcp-portal.jsherron.com/mcp` → **Connect**.
+  2. Popup → log in to Cloudflare Access (**One-time PIN** email).
+  3. The popup lists upstream servers requiring auth → **Connect** the `mcp-server` upstream → **Done**.
+  4. Reload the portal homepage → shows **Connected**.
+  - Config-file clients: `npx -y mcp-remote@latest https://mcp-portal.jsherron.com/mcp` (use the `command`/`args` form, not `serverURL`).
+- If the **client** login loops/denies (vs. the homepage just showing
+  Disconnected), the issue is the **portal's own Access application** — verify it
+  has an Allow policy for your identity and an enabled IdP.
+
 ## Troubleshooting
 
 ### Error 1042

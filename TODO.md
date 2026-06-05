@@ -21,6 +21,21 @@ closed. The MCP handshake bug that broke Portal/Playground/SDK clients is fixed.
 Internal path (AI Orchestrator → MCP server via Service Binding) is unchanged
 and intentionally bypasses Access (zero latency).
 
+## MCP Portal (`mcp-portal.jsherron.com`) — operational
+
+- Status: **working.** DNS is a proxied CNAME → `gateway.agents.cloudflare.com`;
+  homepage renders (200); OAuth discovery (`/.well-known/oauth-protected-resource`,
+  `/.well-known/oauth-authorization-server`) returns 200; upstream `mcp-server`
+  shows **Ready**.
+- **"Disconnected" on the portal homepage is normal** — it is the idle session
+  state, not a fault. There is **no browser sign-in button**. You authenticate
+  by connecting an MCP client to `https://mcp-portal.jsherron.com/mcp`, which
+  runs the OAuth flow; the homepage then shows **Connected** + your email.
+- To connect / verify: Workers AI Playground → add `https://mcp-portal.jsherron.com/mcp`
+  → Connect → log in (One-time PIN) → connect the `mcp-server` upstream → Done.
+  Or `npx -y mcp-remote@latest https://mcp-portal.jsherron.com/mcp` (use the
+  `command`/`args` form, not `serverURL`).
+
 ## What changed this session (code)
 
 - **`packages/mcp-server/src/index.ts`** — Fixed the core bug. The Streamable
