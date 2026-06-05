@@ -61,8 +61,9 @@ and intentionally bypasses Access (zero latency).
 - [x] ~~Delete the dangling `mcp.jsherron.com` DNS record~~ — already gone.
       Removing the Workers custom domain auto-deleted its managed DNS record;
       `mcp.jsherron.com` no longer resolves.
-- [ ] **Rotate the Cloudflare API tokens** used this session (`cfat_jFKoc3...`
-      already appears dead; rotate/delete `cfat_9yim...`).
+- [x] ~~Rotate the Cloudflare API tokens used this session~~ — done. Both
+      tokens deleted (`cfat_jFKoc3...` was already invalid; `cfat_9yim...`
+      deleted by the user).
 - [ ] **(Optional) Validate `Cf-Access-Jwt-Assertion` in the Worker** for
       defense-in-depth. Currently auth is enforced only at the edge, not
       re-checked in code. Per the secure-mcp-servers reference: verify JWT
