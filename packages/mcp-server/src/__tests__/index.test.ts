@@ -186,8 +186,9 @@ describe('Request Handling', () => {
   });
 
   describe('HTTP Endpoint', () => {
-    it('should handle POST /mcp', () => {
-      expect(sourceCode).toContain('url.pathname !== "/mcp" || request.method !== "POST"');
+    it('should route /mcp requests to the transport', () => {
+      expect(sourceCode).toContain('url.pathname !== "/mcp"');
+      expect(sourceCode).toContain('transport.handleRequest(request)');
     });
 
     it('should return 404 for other paths', () => {
