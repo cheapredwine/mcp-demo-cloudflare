@@ -1,54 +1,94 @@
-## Active
+# Project State & Handoff
 
-- [ ] **Fix Portal tool execution** — Returns `Tool Server not found` or `Invalid tool name format`
-  - Portal discovers 5 tools but cannot route calls to them
-  - Tool name format: tried `mcp-demo_get_weather`, `get_weather`, `mcp-demo-server_get_weather`
-  - May need browser OAuth to enable server in Portal (service token API auth != browser session)
-  - Direct server calls work fine — issue is Portal proxy layer
+_Last updated: end of the Access/MCP hardening session._
 
-- [ ] **Fix Portal service token auth** — Returns `invalid_token` despite policy configured
-  - Service token `076ee7885452696502b0e36d4ab7753d.access` in Service Auth policy
-  - Policy exists in `mcp-demo-portal` Access app but token rejected
-  - May need to re-verify token is explicitly selected (not just created)
-  - May need to recreate token and update policy
+## TL;DR
 
-- [ ] **Secure direct MCP server** — `mcp-server.jsherron.com` publicly accessible
-  - Add Cloudflare Access app for `mcp-server.jsherron.com`
-  - Add Service Auth policy (allow service token only)
-  - Add Block policy for everything else
+The MCP demo is deployed and **fully locked down**. Both the web app and the MCP
+server are behind Cloudflare Access; all unauthenticated bypass routes are
+closed. The MCP handshake bug that broke Portal/Playground/SDK clients is fixed.
 
-## Completed
+## Current security posture (verified live)
 
-- [x] Rename Workers: `mcp-demo-app` and `mcp-demo-server`
-- [x] Deploy MCP server with public custom domains: `mcp-server.jsherron.com`, `mcp.jsherron.com`
-- [x] Register MCP server in Cloudflare MCP Portal (shows Ready, 5 tools)
-- [x] Build CLI traffic generator: `tools/mcp-portal-client.js` with SSE parsing, session tracking, debug mode
-- [x] Portal session initializes successfully (returns `cloudflare-mcp-portal` + session ID)
-- [x] Change MCP server from stateless JSON to stateful SSE mode for Portal compatibility
-- [x] Direct MCP server fully functional at `mcp-server.jsherron.com/mcp`
-- [x] AI Orchestrator still works via Service Binding (unchanged)
+| Endpoint | Status | Meaning |
+|----------|--------|---------|
+| `https://mcp-demo.jsherron.com/` (web UI) | `302` → Access login | Protected (One-time PIN) |
+| `https://mcp-demo.jsherron.com/api/ask`, `/admin` | `302` | Protected (whole host) |
+| `https://mcp-server.jsherron.com/mcp` | `401` OAuth challenge | Protected (Access MCP OAuth) |
+| `https://mcp.jsherron.com/mcp` | `530` | Alias removed — no longer serves the Worker |
+| `https://mcp-demo-server.<sub>.workers.dev/mcp` | `404` | `workers_dev = false` |
 
-## Known Issues
+Internal path (AI Orchestrator → MCP server via Service Binding) is unchanged
+and intentionally bypasses Access (zero latency).
 
-| Issue | Symptom | Likely Cause |
-|-------|---------|-------------|
-| Portal tool routing | `Tool Server mcp-demo_get_weather not found` | Server not enabled in Portal UI, or name format mismatch |
-| Service token auth | `invalid_token` | Token not properly linked to Access app policy, or token rotated |
-| Public direct server | No auth required | No Access app configured for `mcp-server.jsherron.com` |
+## What changed this session (code)
 
-## Next Session Priorities
+- **`packages/mcp-server/src/index.ts`** — Fixed the core bug. The Streamable
+  HTTP transport was in **stateful** mode (`sessionIdGenerator` set) on a
+  per-request Worker with no shared memory, so every request after `initialize`
+  failed session validation (400/404). Real MCP clients (Portal, Playground,
+  Inspector, SDK) died right after the handshake while one-shot curl
+  `initialize` appeared to work. Now: `sessionIdGenerator: undefined` (stateless)
+  + `enableJsonResponse: true` (avoids an SSE/`server.close()` race), and all
+  `/mcp` methods (POST/GET/DELETE) route to the transport.
+- **`packages/mcp-server/wrangler.toml`** — `workers_dev = false`; removed the
+  `mcp.jsherron.com` route (was an unauthenticated alias to the same Worker).
+- **`packages/ai-orchestrator/src/index.ts`** — removed the "Cloudflare Access
+  auth enabled" UI badge + its CSS.
+- **`packages/mcp-server/src/__tests__/index.test.ts`** — updated the routing
+  assertion to match the new handler. All 84 tests pass.
+- **`tools/mcp-portal-client.js`** — removed Cloudflare Access **service-token**
+  auth (`CF_ACCESS_CLIENT_ID/SECRET`). Service tokens are not used anymore.
+- **Docs** — `AGENTS.md` updated (stateless JSON, single domain, OTP web-app
+  auth, no service tokens); this file rewritten as the handoff.
 
-1. **Verify service token** — Check Cloudflare Dashboard → Zero Trust → Access → Service Auth. Ensure token `076ee7885452696502b0e36d4ab7753d.access` is active and explicitly included in `mcp-demo-portal` app policy.
-2. **Enable server in Portal UI** — Open Portal in browser, authenticate with GitHub OAuth, toggle `mcp-demo` server ON. Service token API auth and browser auth are separate contexts.
-3. **Retest tool calls** — After browser enablement, run `node tools/mcp-portal-client.js --list` to see if 5 demo tools appear.
-4. **Secure direct server** — Create Access app for `mcp-server.jsherron.com` with Service Auth allow + Block everyone else.
+## What changed this session (Cloudflare config, via API)
 
-## Key Context
+- **Web-app Access app** (`mcp-demo-app`, id `d8e84822-d158-4519-9ff1-1e3e02c6306e`):
+  - Fixed the domain — it was guarding `mcp-demo-app.jsherron.com` (typo) while
+    the Worker serves `mcp-demo.jsherron.com`. Now set to `mcp-demo.jsherron.com`.
+  - Switched IdP from GitHub → **One-time PIN** (`e529bbec-62d9-46e6-abd6-01f6f1abbfcb`),
+    `auto_redirect_to_identity = true`.
+  - Policy: **Allow → `jsherron@cloudflare.com`** (unchanged, still attached).
+- **MCP server** registered in Zero Trust → AI controls → MCP servers with
+  `auth_type = oauth`; admin credential established by interactive login
+  (account `jsherron@cloudflare.com`). This is what fixed "unable to refresh
+  tools" — sync uses that admin credential.
 
+## Open / next session
+
+- [ ] **Commit + push** the working-tree changes (this session's work) — _in progress at handoff._
+- [ ] **Delete the dangling `mcp.jsherron.com` DNS record** (currently returns
+      `530`). Cosmetic; not a security issue.
+- [ ] **Rotate the Cloudflare API tokens** used this session (`cfat_jFKoc3...`
+      already appears dead; rotate/delete `cfat_9yim...`).
+- [ ] **(Optional) Validate `Cf-Access-Jwt-Assertion` in the Worker** for
+      defense-in-depth. Currently auth is enforced only at the edge, not
+      re-checked in code. Per the secure-mcp-servers reference: verify JWT
+      signature, issuer, and `POLICY_AUD`. Not required for the demo.
+- [ ] **(Optional) Broaden Access policies** if other people need to demo:
+      add their emails (Include → Emails) or your domain.
+- [ ] **Stale planning docs** still reference `workers_dev = true` and the
+      old toggle approach: `docs/MCP-SERVER-TOGGLE-GUIDE.md`,
+      `docs/DEMO-SCRIPT.md`, `docs/MCP-PORTAL-*`. Update or mark superseded
+      when convenient.
+
+## Key context / IDs
+
+- **Web app:** `https://mcp-demo.jsherron.com` (Access app `mcp-demo-app`, id `d8e84822-d158-4519-9ff1-1e3e02c6306e`)
+- **MCP server:** `https://mcp-server.jsherron.com/mcp` (Access-protected, interactive OAuth)
 - **Portal endpoint:** `https://mcp-portal.jsherron.com/mcp`
-- **Direct server:** `https://mcp-server.jsherron.com/mcp`
-- **AI Orchestrator:** `https://mcp-demo.jsherron.com`
 - **Access team:** `cf-jsherron-test-account`
-- **Service token ID:** `076ee7885452696502b0e36d4ab7753d.access`
+- **OTP IdP ID:** `e529bbec-62d9-46e6-abd6-01f6f1abbfcb`
 - **Account ID:** `1ddebf6f9507d3fc9052158be9d42dee`
 - **Zone ID:** `6bcf8859da225392d8fae3351eb5de3e`
+
+## Verify after any redeploy
+
+```bash
+# web app should 302 to Access; MCP server should 401; bypasses should be dead
+curl -s -o /dev/null -w "%{http_code}\n" https://mcp-demo.jsherron.com/            # 302
+curl -s -o /dev/null -w "%{http_code}\n" -X POST https://mcp-server.jsherron.com/mcp \
+  -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'                  # 401
+```
