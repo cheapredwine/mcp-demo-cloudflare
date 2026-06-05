@@ -39,41 +39,38 @@ Enable Cloudflare MCP Portal to access our MCP server via HTTP while preserving 
 
 ### Summary
 
-| Component | Change | Impact |
-|-----------|--------|--------|
-| MCP Server | `workers_dev = true` | Enables public URL for Portal |
-| AI Orchestrator | None | Service Binding continues working |
-| Portal | Register server URL | Discovery and governance |
+> The table below is the **original plan**. What was actually implemented is
+> noted in each row.
 
-> 🔒 **Kill Switch:** You can hide the MCP server anytime by changing `workers_dev = false`. The web demo keeps running. See [MCP Server Toggle Guide](./MCP-SERVER-TOGGLE-GUIDE.md) for details.
+| Component | Original plan | What shipped |
+|-----------|---------------|--------------|
+| MCP Server | `workers_dev = true` for a public URL | `workers_dev = false`; single Access-protected custom domain `mcp-server.jsherron.com` |
+| AI Orchestrator | None | None — Service Binding continues working |
+| Portal | Register server URL | Registered in AI controls with `auth_type = oauth` + admin credential |
+
+> 🔒 **Access control:** External access is gated by a Cloudflare Access OAuth
+> app, not a `workers_dev` toggle. See [MCP Server Access Control Guide](./MCP-SERVER-TOGGLE-GUIDE.md) for how to block/restrict/remove external access.
 
 ---
 
-### 1. MCP Server - Add Public Route
+### 1. MCP Server — single Access-protected route (as shipped)
 
 **File:** `packages/mcp-server/wrangler.toml`
 
-Currently:
 ```toml
-workers_dev = false  # Private only
+workers_dev = false          # no unauthenticated workers.dev bypass
+routes = [
+  { pattern = "mcp-server.jsherron.com", custom_domain = true }
+]
 ```
 
-Change to:
-```toml
-# Enable public access for MCP Portal integration
-# Keep Service Binding for internal AI Orchestrator traffic
-workers_dev = true
+The MCP server is reachable at:
+- **Internal:** `env.MCP_SERVER.fetch()` (Service Binding, zero latency)
+- **External:** `https://mcp-server.jsherron.com/mcp` behind Cloudflare Access (OAuth)
 
-# This server supports TWO access paths:
-# 1. Internal: AI Orchestrator → Service Binding (zero latency)
-# 2. External: MCP Portal → HTTPS → this Worker (for governance/analytics)
-```
-
-This is the **only code change required**. The MCP server will now be accessible at:
-- **Internal:** `env.MCP_SERVER.fetch()` (Service Binding, zero latency) ← **unchanged**
-- **External:** `https://mcp-demo-server.jsherron.workers.dev/mcp` (HTTPS for Portal) ← **new**
-
-> **Toggle:** See [MCP Server Toggle Guide](./MCP-SERVER-TOGGLE-GUIDE.md) for switching between public/private modes.
+> The original plan proposed exposing a `*.workers.dev` URL with
+> `workers_dev = true`. That was rejected: a `*.workers.dev` host bypasses the
+> custom-domain Access app. The alias `mcp.jsherron.com` was likewise removed.
 
 ---
 
@@ -233,11 +230,17 @@ If anything breaks:
 
 ---
 
-## Open Questions Before Deploy
+## Open Questions Before Deploy — RESOLVED
 
-1. **Domain:** Should we use `mcp-server.jsherron.com` or enable `workers_dev = true` for simplicity?
-2. **Auth:** Should MCP server be unauthenticated (easier testing) or Access-protected (more realistic)?
-3. **Portal Auth:** If server is Access-protected, does Portal need admin credentials to connect?
+1. **Domain:** ✅ Use the custom domain `mcp-server.jsherron.com` only. `workers_dev`
+   is disabled (`false`) — a `*.workers.dev` host bypasses the custom-domain
+   Access app, so it was never an acceptable shortcut.
+2. **Auth:** ✅ Access-protected. The MCP server sits behind a Cloudflare Access
+   OAuth app; unauthenticated requests get a 401 challenge.
+3. **Portal Auth:** ✅ Yes. The portal connects to the Access-protected server
+   using an **admin credential** established via interactive OAuth in
+   Zero Trust → AI controls → MCP servers (used for tool sync). Per-user OAuth is
+   also supported when "Require user auth" is enabled on the server.
 
-*Document version: 1.0*
+*Document version: 1.1 — outcomes recorded; see `AGENTS.md`/`TODO.md` for canonical state.*
 *Branch: plan/mcp-portal-integration*
