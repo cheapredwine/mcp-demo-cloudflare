@@ -1,7 +1,11 @@
 /**
  * MCP Demo Server - Stateless Regular Worker
  * 
- * A stateless MCP server running on regular Cloudflare Workers.
+ * A stateless MCP server running on regular Cloudflare Workers (no Durable
+ * Objects). Uses the Streamable HTTP transport in STATELESS mode, which is the
+ * only session model compatible with a per-request Worker that has no shared
+ * memory between requests.
+ *
  * Exposes 5 demo tools: echo, calculator, get_weather, random_fact, get_traffic_log
  */
 
@@ -297,42 +301,64 @@ function createServer(): Server {
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    
-    // Only handle POST requests to /mcp
-    if (url.pathname !== "/mcp" || request.method !== "POST") {
+
+    // The MCP Streamable HTTP transport uses POST (JSON-RPC), GET (standalone
+    // SSE stream), and DELETE (session termination), all on /mcp. Route every
+    // method to the transport and let it return the spec-compliant response.
+    if (url.pathname !== "/mcp") {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: "Not Found",
-          message: "MCP endpoint is at POST /mcp",
+          message: "MCP endpoint is at /mcp",
           status: "MCP Demo Server is running"
         }, null, 2),
-        { 
-          status: 404, 
-          headers: { "Content-Type": "application/json" } 
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" }
         }
       );
     }
 
     try {
-      // Create server and transport for this request
+      // Create server and transport for this request.
       const server = createServer();
-      
-      // Use WebStandard transport for Cloudflare Workers
-      // Stateful mode with SSE streaming (required for MCP Portal)
+
+      // STATELESS mode. A regular Cloudflare Worker has no shared memory
+      // between requests, so it cannot hold the in-memory session state that
+      // STATEFUL mode (sessionIdGenerator set) requires. In stateful mode the
+      // server issues an Mcp-Session-Id on `initialize`, but every following
+      // request lands on a brand-new transport instance with _initialized=false
+      // and sessionId=undefined, so validateSession() rejects it (400 "Server
+      // not initialized" / 404 "Session not found"). That breaks the MCP
+      // handshake for any real client (MCP Portal, Playground, Inspector, SDK
+      // client) right after initialize, even though one-shot curl initialize
+      // calls appear to work.
+      //
+      // Setting sessionIdGenerator: undefined disables session management, so
+      // each request is self-contained and a fresh per-request transport is
+      // correct (and required by the SDK for stateless mode).
       const transport = new WebStandardStreamableHTTPServerTransport({
-        sessionIdGenerator: () => crypto.randomUUID(),
-        enableJsonResponse: false,  // Use SSE streaming
+        sessionIdGenerator: undefined,
+        // JSON response mode (not SSE). In a per-request Worker, handleRequest
+        // resolves with a complete Response only after the JSON-RPC reply is
+        // ready, so it is safe to close the server afterward. With SSE mode
+        // (enableJsonResponse: false) handleRequest returns the stream
+        // immediately and the ctx.waitUntil(server.close()) below would tear
+        // the stream down before the async handler writes the body, hanging the
+        // client. JSON responses are fully MCP Streamable HTTP compliant.
+        enableJsonResponse: true,
       });
-      
+
       // Connect server to transport
       await server.connect(transport);
-      
-      // Handle the request
+
+      // Handle the request (POST / GET / DELETE). For POST this resolves once
+      // the full JSON-RPC response is ready.
       const response = await transport.handleRequest(request);
-      
-      // Clean up
+
+      // Safe to clean up: the response body is already fully buffered.
       ctx.waitUntil(server.close());
-      
+
       return response;
     } catch (error) {
       console.error("MCP Server Error:", error);
