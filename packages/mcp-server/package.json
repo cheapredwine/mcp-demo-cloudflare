@@ -1,4 +1,5 @@
 {
+  "license": "MIT",
   "name": "@mcp-demo/server",
   "version": "1.0.0",
   "description": "Stateless MCP server with Code Mode demo tools - runs on regular Cloudflare Workers (no Durable Objects needed)",

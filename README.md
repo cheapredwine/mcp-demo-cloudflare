@@ -1,5 +1,10 @@
 # MCP Demo on Cloudflare Workers
 
+> ⚠️ **NOT OFFICIAL CLOUDFLARE.** Not affiliated with or endorsed by Cloudflare, Inc.
+> NO WARRANTIES, EXPRESS OR IMPLIED. Effectively untested demo code — read everything
+> and dry-run before you run. You assume all risk. See [DISCLAIMER.md](./DISCLAIMER.md).
+
+
 A working MCP (Model Context Protocol) server and client running on Cloudflare Workers with **streaming AI responses**, intelligent tool calling, and **AI Gateway caching**. This demonstrates how to build and deploy MCP infrastructure on Cloudflare's edge platform using **Service Bindings** for worker-to-worker communication.
 
 ## 🚀 Live Demo
