@@ -2,7 +2,6 @@ name = "mcp-demo-server"
 main = "src/index.ts"
 compatibility_date = "2025-03-21"
 compatibility_flags = ["nodejs_compat"]
-account_id = "<your-account-id>"
 
 # Access paths:
 # 1. Internal: AI Orchestrator -> Service Binding (zero latency)
