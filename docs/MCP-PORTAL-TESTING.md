@@ -67,6 +67,7 @@ The portal is at `https://mcp-portal.jsherron.com/mcp`
 (DNS: proxied CNAME → `gateway.agents.cloudflare.com`).
 
 **Workers AI Playground:**
+
 1. https://playground.ai.cloudflare.com/ → **MCP Servers** → add the portal `/mcp` URL → **Connect**.
 2. Popup → log in to Cloudflare Access (One-time PIN).
 3. Connect the `mcp-server` upstream when listed → **Done**.
@@ -74,6 +75,7 @@ The portal is at `https://mcp-portal.jsherron.com/mcp`
 5. Ask "What's the weather in Paris?" → tool call proxied through the portal.
 
 **Config-file client (Claude Desktop, Cursor, etc.):**
+
 ```json
 {
   "mcpServers": {
@@ -84,6 +86,7 @@ The portal is at `https://mcp-portal.jsherron.com/mcp`
   }
 }
 ```
+
 Use the `command`/`args` form, not `serverURL`.
 
 ---
@@ -100,13 +103,13 @@ Use the `command`/`args` form, not `serverURL`.
 
 ## Success criteria
 
-| Test | Criteria |
-|------|----------|
+| Test                 | Criteria                                                   |
+| -------------------- | ---------------------------------------------------------- |
 | MCP server protected | Direct `/mcp` returns 401 OAuth; `workers.dev` returns 404 |
-| Internal path | Web app tool calls work via Service Binding |
-| Server registered | AI controls shows the server **Ready** with all 5 tools |
-| Portal end-to-end | A client connects via OAuth and calls a tool successfully |
-| Portal homepage | Flips to **Connected** after a client authenticates |
+| Internal path        | Web app tool calls work via Service Binding                |
+| Server registered    | AI controls shows the server **Ready** with all 5 tools    |
+| Portal end-to-end    | A client connects via OAuth and calls a tool successfully  |
+| Portal homepage      | Flips to **Connected** after a client authenticates        |
 
 ---
 

@@ -1,6 +1,6 @@
 /**
  * MCP Demo Server - Stateless Regular Worker
- * 
+ *
  * A stateless MCP server running on regular Cloudflare Workers (no Durable
  * Objects). Uses the Streamable HTTP transport in STATELESS mode, which is the
  * only session model compatible with a per-request Worker that has no shared
@@ -10,7 +10,12 @@
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { CallToolRequestSchema, ListToolsRequestSchema, ListResourcesRequestSchema, ReadResourceRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 
 /**
@@ -58,7 +63,7 @@ function createServer(): Server {
         tools: {},
         resources: {},
       },
-    }
+    },
   );
 
   // List available tools
@@ -82,10 +87,10 @@ function createServer(): Server {
           inputSchema: {
             type: "object",
             properties: {
-              operation: { 
-                type: "string", 
+              operation: {
+                type: "string",
                 enum: ["add", "subtract", "multiply", "divide"],
-                description: "Math operation to perform"
+                description: "Math operation to perform",
               },
               a: { type: "number", description: "First number" },
               b: { type: "number", description: "Second number" },
@@ -100,11 +105,11 @@ function createServer(): Server {
             type: "object",
             properties: {
               location: { type: "string", description: "City name or location" },
-              units: { 
-                type: "string", 
+              units: {
+                type: "string",
                 enum: ["celsius", "fahrenheit"],
                 description: "Temperature units",
-                default: "celsius"
+                default: "celsius",
               },
             },
             required: ["location"],
@@ -116,10 +121,10 @@ function createServer(): Server {
           inputSchema: {
             type: "object",
             properties: {
-              category: { 
-                type: "string", 
+              category: {
+                type: "string",
                 enum: ["science", "history", "technology", "nature", "space"],
-                description: "Fact category"
+                description: "Fact category",
               },
             },
           },
@@ -162,12 +167,16 @@ function createServer(): Server {
           {
             uri,
             mimeType: "application/json",
-            text: JSON.stringify({
-              name: "MCP Demo Server",
-              version: "1.0.0",
-              description: "Stateless MCP server on Cloudflare Workers",
-              tools: ["echo", "calculator", "get_weather", "random_fact", "get_traffic_log"],
-            }, null, 2),
+            text: JSON.stringify(
+              {
+                name: "MCP Demo Server",
+                version: "1.0.0",
+                description: "Stateless MCP server on Cloudflare Workers",
+                tools: ["echo", "calculator", "get_weather", "random_fact", "get_traffic_log"],
+              },
+              null,
+              2,
+            ),
           },
         ],
       };
@@ -185,9 +194,7 @@ function createServer(): Server {
         case "echo": {
           const message = args?.message as string;
           return {
-            content: [
-              { type: "text" as const, text: `Echo: ${message}` },
-            ],
+            content: [{ type: "text" as const, text: `Echo: ${message}` }],
           };
         }
 
@@ -195,10 +202,10 @@ function createServer(): Server {
           const operation = args?.operation as string;
           const a = args?.a as number;
           const b = args?.b as number;
-          
+
           let result: number;
           let opSymbol: string;
-          
+
           switch (operation) {
             case "add":
               result = a + b;
@@ -228,24 +235,22 @@ function createServer(): Server {
                 isError: true,
               };
           }
-          
+
           return {
-            content: [
-              { type: "text" as const, text: `${a} ${opSymbol} ${b} = ${result}` },
-            ],
+            content: [{ type: "text" as const, text: `${a} ${opSymbol} ${b} = ${result}` }],
           };
         }
 
         case "get_weather": {
           const location = args?.location as string;
           const units = (args?.units as string) || "celsius";
-          
+
           const conditions = ["Sunny", "Cloudy", "Rainy", "Partly Cloudy", "Windy"];
           const condition = conditions[Math.floor(Math.random() * conditions.length)];
           const tempC = Math.floor(Math.random() * 35) - 5;
-          const temp = units === "fahrenheit" ? Math.round(tempC * 9 / 5 + 32) : tempC;
+          const temp = units === "fahrenheit" ? Math.round((tempC * 9) / 5 + 32) : tempC;
           const unitSymbol = units === "fahrenheit" ? "°F" : "°C";
-          
+
           return {
             content: [
               { type: "text" as const, text: `Weather for ${location}:` },
@@ -259,10 +264,11 @@ function createServer(): Server {
 
         case "random_fact": {
           const category = args?.category as string | undefined;
-          const selectedCategory = category || Object.keys(FACTS)[Math.floor(Math.random() * Object.keys(FACTS).length)];
+          const selectedCategory =
+            category || Object.keys(FACTS)[Math.floor(Math.random() * Object.keys(FACTS).length)];
           const categoryFacts = FACTS[selectedCategory] || FACTS["science"];
           const fact = categoryFacts[Math.floor(Math.random() * categoryFacts.length)];
-          
+
           return {
             content: [
               { type: "text" as const, text: `Category: ${selectedCategory}` },
@@ -307,15 +313,19 @@ export default {
     // method to the transport and let it return the spec-compliant response.
     if (url.pathname !== "/mcp") {
       return new Response(
-        JSON.stringify({
-          error: "Not Found",
-          message: "MCP endpoint is at /mcp",
-          status: "MCP Demo Server is running"
-        }, null, 2),
+        JSON.stringify(
+          {
+            error: "Not Found",
+            message: "MCP endpoint is at /mcp",
+            status: "MCP Demo Server is running",
+          },
+          null,
+          2,
+        ),
         {
           status: 404,
-          headers: { "Content-Type": "application/json" }
-        }
+          headers: { "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -363,14 +373,18 @@ export default {
     } catch (error) {
       console.error("MCP Server Error:", error);
       return new Response(
-        JSON.stringify({ 
-          error: "Internal Server Error",
-          message: error instanceof Error ? error.message : String(error)
-        }, null, 2),
-        { 
-          status: 500, 
-          headers: { "Content-Type": "application/json" } 
-        }
+        JSON.stringify(
+          {
+            error: "Internal Server Error",
+            message: error instanceof Error ? error.message : String(error),
+          },
+          null,
+          2,
+        ),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        },
       );
     }
   },

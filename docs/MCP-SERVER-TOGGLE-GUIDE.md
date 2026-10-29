@@ -9,11 +9,13 @@ controlled._
 The MCP server has **two independent access paths**:
 
 ### Path 1: Internal (AI Orchestrator) — always works
+
 - AI Orchestrator → **Service Binding** → MCP server.
 - Stays inside Cloudflare's edge, bypasses Access by design, zero latency.
 - Unaffected by any external access change below.
 
 ### Path 2: External (MCP clients / Portal) — Cloudflare Access
+
 - `https://mcp-server.jsherron.com/mcp` is fronted by a Cloudflare **Access**
   application (AI controls "MCP server", OAuth).
 - Unauthenticated requests get `401` with a `WWW-Authenticate` OAuth challenge.
@@ -28,12 +30,12 @@ The MCP server has **two independent access paths**:
 To take the MCP server offline for external clients, change the **Access policy**
 or the **route** — not `workers_dev`:
 
-| Goal | Action | Effect |
-|------|--------|--------|
-| Block all external users | Edit the `mcp-server` Access app policy → set to **Block** (or remove the Allow include) | External clients/Portal can't authenticate; internal Service Binding still works |
-| Restrict to specific people | Access policy Include → **Emails**/domain | Only those identities pass |
-| Fully remove the public endpoint | Remove the `mcp-server.jsherron.com` route from `packages/mcp-server/wrangler.toml` and `wrangler deploy` | Hostname stops serving the Worker; internal Service Binding still works |
-| Pause Portal exposure only | AI controls → portal → disable the server, or AI controls → MCP servers → remove its Allow policy | Server no longer surfaced in the portal |
+| Goal                             | Action                                                                                                    | Effect                                                                           |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Block all external users         | Edit the `mcp-server` Access app policy → set to **Block** (or remove the Allow include)                  | External clients/Portal can't authenticate; internal Service Binding still works |
+| Restrict to specific people      | Access policy Include → **Emails**/domain                                                                 | Only those identities pass                                                       |
+| Fully remove the public endpoint | Remove the `mcp-server.jsherron.com` route from `packages/mcp-server/wrangler.jsonc` and `wrangler deploy` | Hostname stops serving the Worker; internal Service Binding still works          |
+| Pause Portal exposure only       | AI controls → portal → disable the server, or AI controls → MCP servers → remove its Allow policy         | Server no longer surfaced in the portal                                          |
 
 In every case the **web app keeps working**, because it reaches the MCP server
 over the internal Service Binding, independent of the external Access path.
@@ -55,11 +57,11 @@ curl -s -o /dev/null -w "%{http_code}\n" https://mcp-demo.jsherron.com/         
 
 ## Summary
 
-| Want to… | Do this | Time |
-|----------|---------|------|
-| Block external access | Set the `mcp-server` Access policy to Block / remove Allow | seconds |
-| Limit who can connect | Scope the Access policy Include | seconds |
-| Remove the endpoint entirely | Drop the route in `wrangler.toml` + deploy | ~1 min |
-| Keep internal app running | Nothing — Service Binding is always independent | — |
+| Want to…                     | Do this                                                    | Time    |
+| ---------------------------- | ---------------------------------------------------------- | ------- |
+| Block external access        | Set the `mcp-server` Access policy to Block / remove Allow | seconds |
+| Limit who can connect        | Scope the Access policy Include                            | seconds |
+| Remove the endpoint entirely | Drop the route in `wrangler.jsonc` + deploy                 | ~1 min  |
+| Keep internal app running    | Nothing — Service Binding is always independent            | —       |
 
 See `AGENTS.md` → "MCP Server Security" and `TODO.md` for the canonical state.

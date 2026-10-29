@@ -76,18 +76,21 @@ We have three viable approaches, ordered by complexity:
 **Concept:** Keep our custom MCP server exactly as-is. Register it with MCP Portal. Portal handles external client connections and proxies authenticated requests to our server.
 
 **Changes Needed:**
+
 - Register `mcp-demo-server` in MCP Portal
 - Update AI Orchestrator to connect via Portal URL instead of Service Binding
 - Add Portal authentication headers to MCP requests
 - Keep existing MCP server Worker unchanged
 
 **Pros:**
+
 - Minimal code changes
 - Shows Portal's auth/routing capabilities immediately
 - Easy to revert
 - Our MCP server stays private (Portal provides the public face)
 
 **Cons:**
+
 - Extra network hop (latency)
 - Not leveraging Portal's full potential (just using as proxy)
 
@@ -100,6 +103,7 @@ We have three viable approaches, ordered by complexity:
 **Concept:** Migrate our tool implementations to Cloudflare MCP Portal's native format. Each tool becomes a separate Worker or Durable Object registered with the Portal.
 
 **Changes Needed:**
+
 - Refactor tools from monolithic MCP server into individual handlers
 - Register each tool with MCP Portal registry
 - Update tool schemas to Portal format
@@ -107,12 +111,14 @@ We have three viable approaches, ordered by complexity:
 - Remove custom MCP server Worker entirely
 
 **Pros:**
+
 - Leverages full Portal feature set (per-tool analytics, independent scaling)
 - Each tool can have its own auth policy
 - Portal handles MCP protocol entirely
 - Most "Cloudflare-native" approach
 
 **Cons:**
+
 - More refactoring required
 - Need to understand Portal's specific API/format
 - May lose some custom MCP protocol features
@@ -126,18 +132,21 @@ We have three viable approaches, ordered by complexity:
 **Concept:** Use Portal for external/public access and keep Service Bindings for internal/AI Orchestrator traffic.
 
 **Changes Needed:**
+
 - Register MCP server with Portal for external access
 - AI Orchestrator keeps Service Binding for fast internal calls
 - Add conditional routing: external → Portal, internal → direct binding
 - Portal provides analytics for external traffic
 
 **Pros:**
+
 - Best of both worlds
 - Internal traffic stays fast (no extra hop)
 - External users get Portal benefits (auth, analytics)
 - Good for production scenarios
 
 **Cons:**
+
 - More complex architecture
 - Two paths to maintain
 
@@ -150,18 +159,21 @@ We have three viable approaches, ordered by complexity:
 **Concept:** Use MCP Portal for **discovery, registry, and external analytics** while keeping **Service Bindings for actual tool execution**. This gives us Portal's dashboard and management features without sacrificing performance.
 
 **How it works:**
+
 1. Register our MCP server in Portal (for catalog visibility and external access)
 2. AI Orchestrator queries Portal for tool discovery/schema validation
 3. AI Orchestrator calls tools via **existing Service Binding** (fast, internal)
 4. Portal receives telemetry/logs for dashboard display (async, out-of-band)
 
 **Changes Needed:**
+
 - Register `mcp-demo-server` in MCP Portal
 - Add optional Portal telemetry reporting to MCP server
 - Keep `env.MCP_SERVER.fetch()` exactly as-is for tool execution
 - Optionally query Portal for tool schema discovery
 
 **Pros:**
+
 - ✅ **Preserves Service Bindings** (zero-latency internal calls)
 - ✅ Gets Portal dashboard/analytics
 - ✅ No performance regression
@@ -169,6 +181,7 @@ We have three viable approaches, ordered by complexity:
 - ✅ Can still expose tools externally via Portal if needed
 
 **Cons:**
+
 - Requires Portal to support telemetry-only or discovery-only modes
 - Slightly more complex (two connections: binding + telemetry)
 
@@ -184,42 +197,47 @@ You caught an important issue in the original plan. Here's the analysis:
 
 ### Why Service Bindings Matter
 
-| Metric | Service Binding | `fetch()` to Portal |
-|--------|----------------|---------------------|
-| **Latency** | ~0ms (same colo) | ~50-200ms (internet) |
-| **Reliability** | Never leaves Cloudflare edge | Subject to internet conditions |
-| **Security** | Internal, no auth tokens needed | Requires auth headers, TLS |
-| **Rate Limits** | No external rate limits | Subject to API rate limits |
-| **Cost** | Free (internal traffic) | May incur egress/ingress |
-| **Error 1042** | Avoided automatically | Risk if using workers.dev |
+| Metric          | Service Binding                 | `fetch()` to Portal            |
+| --------------- | ------------------------------- | ------------------------------ |
+| **Latency**     | ~0ms (same colo)                | ~50-200ms (internet)           |
+| **Reliability** | Never leaves Cloudflare edge    | Subject to internet conditions |
+| **Security**    | Internal, no auth tokens needed | Requires auth headers, TLS     |
+| **Rate Limits** | No external rate limits         | Subject to API rate limits     |
+| **Cost**        | Free (internal traffic)         | May incur egress/ingress       |
+| **Error 1042**  | Avoided automatically           | Risk if using workers.dev      |
 
 ### How MCP Portal Might Support Bindings
 
 Cloudflare MCP Portal could support Service Bindings in several ways:
 
 **Option 1: Portal exposes a Worker binding**
+
 ```toml
 [[services]]
 binding = "MCP_PORTAL"
 service = "mcp-portal"  # If Portal is a Worker service
 ```
+
 AI Orchestrator calls `env.MCP_PORTAL.fetch()` instead of `fetch()`.
 
 **Option 2: MCP Server reports to Portal (telemetry only)**
+
 ```typescript
 // MCP Server keeps Service Binding
 // But also sends analytics to Portal
-await fetch('https://mcp-portal.cloudflare.com/telemetry', {
-  method: 'POST',
-  body: JSON.stringify(toolCallMetrics)
+await fetch("https://mcp-portal.cloudflare.com/telemetry", {
+  method: "POST",
+  body: JSON.stringify(toolCallMetrics),
 });
 ```
 
 **Option 3: Portal as optional external access layer**
+
 ```
 Internal path (fast):     AI Orchestrator → Service Binding → MCP Server
 External path (managed):  External Client → MCP Portal → MCP Server
 ```
+
 Both paths work simultaneously.
 
 ### Updated Recommendation
@@ -253,18 +271,20 @@ Both paths work simultaneously.
 **File: `packages/ai-orchestrator/src/index.ts`**
 
 Keep existing Service Binding code:
+
 ```typescript
 // KEEP THIS - Service Binding is fast and internal
 const mcpResponse = await env.MCP_SERVER.fetch(/* ... */);
 ```
 
 If Portal provides a binding for discovery:
+
 ```typescript
 // OPTIONAL - Query Portal for tool schemas (only if needed)
-const toolSchema = await env.MCP_PORTAL.fetch('/tools/calculator/schema');
+const toolSchema = await env.MCP_PORTAL.fetch("/tools/calculator/schema");
 ```
 
-**File: `packages/ai-orchestrator/wrangler.toml`**
+**File: `packages/ai-orchestrator/wrangler.jsonc`**
 
 ```toml
 # KEEP existing Service Binding
@@ -285,25 +305,27 @@ If Portal does NOT support Service Bindings, we add telemetry reporting while ke
 **File: `packages/mcp-server/src/index.ts`**
 
 Add optional telemetry reporting:
+
 ```typescript
 // After handling a tool call, report to Portal
 if (env.MCP_PORTAL_URL) {
-  fetch(env.MCP_PORTAL_URL + '/telemetry', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${env.MCP_PORTAL_TOKEN}` },
+  fetch(env.MCP_PORTAL_URL + "/telemetry", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.MCP_PORTAL_TOKEN}` },
     body: JSON.stringify({
-      server: 'mcp-demo-server',
+      server: "mcp-demo-server",
       tool: toolName,
       duration: Date.now() - startTime,
-      success: !error
-    })
+      success: !error,
+    }),
   }).catch(() => {}); // Fire and forget
 }
 ```
 
-**File: `packages/mcp-server/wrangler.toml`**
+**File: `packages/mcp-server/wrangler.jsonc`**
 
 Keep private:
+
 ```toml
 workers_dev = false  # Remains private, accessed only via Service Binding
 ```
@@ -316,19 +338,21 @@ If Portal mandates all traffic go through it:
 
 ```typescript
 // FALLBACK ONLY - if Portal requires fetch()
-const MCP_PORTAL_URL = env.MCP_PORTAL_URL || 'https://mcp-portal.cloudflare.com/v1/servers/mcp-demo';
+const MCP_PORTAL_URL =
+  env.MCP_PORTAL_URL || "https://mcp-portal.cloudflare.com/v1/servers/mcp-demo";
 
 const mcpResponse = await fetch(MCP_PORTAL_URL, {
-  method: 'POST',
+  method: "POST",
   headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${env.MCP_PORTAL_TOKEN}`,
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${env.MCP_PORTAL_TOKEN}`,
   },
   body: JSON.stringify(mcpRequest),
 });
 ```
 
 **Trade-offs:**
+
 - ❌ Loses zero-latency Service Binding
 - ❌ Adds authentication overhead
 - ✅ Gets full Portal analytics
@@ -363,29 +387,29 @@ const mcpResponse = await fetch(MCP_PORTAL_URL, {
 
 ### Modified Files (Approach D - Service Binding-First)
 
-| File | Change | Reason |
-|------|--------|--------|
-| `packages/mcp-server/src/index.ts` | Add optional Portal telemetry reporting | Send metrics to Portal dashboard without losing bindings |
-| `packages/ai-orchestrator/wrangler.toml` | Add optional `MCP_PORTAL` Service Binding | If Portal exposes a Worker binding |
-| `packages/mcp-server/wrangler.toml` | No changes | Stays private, accessed via existing binding |
-| `packages/ai-orchestrator/src/index.ts` | No changes to core logic | Keeps `env.MCP_SERVER.fetch()` |
+| File                                      | Change                                    | Reason                                                   |
+| ----------------------------------------- | ----------------------------------------- | -------------------------------------------------------- |
+| `packages/mcp-server/src/index.ts`        | Add optional Portal telemetry reporting   | Send metrics to Portal dashboard without losing bindings |
+| `packages/ai-orchestrator/wrangler.jsonc` | Add optional `MCP_PORTAL` Service Binding | If Portal exposes a Worker binding                       |
+| `packages/mcp-server/wrangler.jsonc`      | No changes                                | Stays private, accessed via existing binding             |
+| `packages/ai-orchestrator/src/index.ts`   | No changes to core logic                  | Keeps `env.MCP_SERVER.fetch()`                           |
 
 ### Modified Files (Fallback - Fetch-Based, Only if Required)
 
-| File | Change | Reason |
-|------|--------|--------|
-| `packages/ai-orchestrator/src/index.ts` | Add `fetch()` path to Portal | Route traffic through Portal |
-| `packages/ai-orchestrator/wrangler.toml` | Remove Service Binding, add Portal vars | Configuration |
-| `packages/ai-orchestrator/src/__tests__/*.ts` | Update mocks for Portal responses | Test compatibility |
-| `.github/workflows/deploy.yml` | Add Portal token secret | CI/CD auth |
+| File                                          | Change                                  | Reason                       |
+| --------------------------------------------- | --------------------------------------- | ---------------------------- |
+| `packages/ai-orchestrator/src/index.ts`       | Add `fetch()` path to Portal            | Route traffic through Portal |
+| `packages/ai-orchestrator/wrangler.jsonc`     | Remove Service Binding, add Portal vars | Configuration                |
+| `packages/ai-orchestrator/src/__tests__/*.ts` | Update mocks for Portal responses       | Test compatibility           |
+| `.github/workflows/deploy.yml`                | Add Portal token secret                 | CI/CD auth                   |
 
 ### New Files
 
-| File | Purpose |
-|------|---------|
-| `docs/MCP-PORTAL-INTEGRATION.md` | This plan document |
+| File                                                | Purpose                                      |
+| --------------------------------------------------- | -------------------------------------------- |
+| `docs/MCP-PORTAL-INTEGRATION.md`                    | This plan document                           |
 | `packages/ai-orchestrator/src/mcp-portal-client.ts` | Portal client wrapper (optional abstraction) |
-| `scripts/setup-portal.sh` | One-time Portal registration script |
+| `scripts/setup-portal.sh`                           | One-time Portal registration script          |
 
 ---
 
@@ -393,15 +417,15 @@ const mcpResponse = await fetch(MCP_PORTAL_URL, {
 
 ### Environment Variables
 
-| Variable | Location | Description |
-|----------|----------|-------------|
-| `MCP_PORTAL_URL` | `wrangler.toml` [vars] | Portal API endpoint |
-| `MCP_PORTAL_TOKEN` | Wrangler secret | Authentication token |
+| Variable           | Location                | Description          |
+| ------------------ | ----------------------- | -------------------- |
+| `MCP_PORTAL_URL`   | `wrangler.jsonc` [vars] | Portal API endpoint  |
+| `MCP_PORTAL_TOKEN` | Wrangler secret         | Authentication token |
 
 ### GitHub Secrets (CI/CD)
 
-| Secret | Purpose |
-|--------|---------|
+| Secret             | Purpose                                  |
+| ------------------ | ---------------------------------------- |
 | `MCP_PORTAL_TOKEN` | Deploy-time auth for Portal verification |
 
 ---
@@ -409,6 +433,7 @@ const mcpResponse = await fetch(MCP_PORTAL_URL, {
 ## 6. Rollback Plan
 
 ### Approach D (Service Binding-First) Rollback:
+
 If issues arise, rollback is trivial:
 
 1. **Disable telemetry reporting**
@@ -422,13 +447,14 @@ If issues arise, rollback is trivial:
 **Rollback time:** < 1 minute (just stop sending telemetry)
 
 ### Fetch-Based Rollback (if implemented):
+
 If you had to switch to fetch() and want to revert:
 
 1. **Restore `ai-orchestrator/src/index.ts`**
    - Restore `env.MCP_SERVER.fetch()` calls
    - Remove Portal URL/token references
 
-2. **Restore `ai-orchestrator/wrangler.toml`**
+2. **Restore `ai-orchestrator/wrangler.jsonc`**
    - Restore Service Binding configuration
    - Remove Portal vars
 
@@ -445,6 +471,7 @@ If you had to switch to fetch() and want to revert:
 After integration, you'll be able to show:
 
 ### Cloudflare MCP Portal Dashboard
+
 - **Server Health:** Status of `mcp-demo-server`
 - **Request Volume:** Traffic over time
 - **Tool Breakdown:** Which tools are called most
@@ -452,12 +479,14 @@ After integration, you'll be able to show:
 - **Latency:** Response times per tool
 
 ### Cloudflare AI Gateway Dashboard (unchanged)
+
 - **LLM Requests:** AI calls with tool definitions
 - **Cache Performance:** Hit/miss rates
 - **Token Usage:** Input/output tokens
 - **Cost Analytics:** Estimated costs
 
 ### Combined View (Approach D - Service Binding-First)
+
 ```
 User Request
      ↓
@@ -476,6 +505,7 @@ User Request
 ```
 
 ### Combined View (Fetch-Based Fallback)
+
 ```
 User Request
      ↓
@@ -520,6 +550,7 @@ Before implementation, we should clarify:
 **Only fall back to fetch()-based approaches if Cloudflare MCP Portal explicitly requires it and provides no binding alternative.**
 
 **Next Steps:**
+
 1. Review and approve this plan
 2. Verify MCP Portal access in Cloudflare Dashboard
 3. **Determine if Portal supports Service Bindings** (critical decision point)
@@ -529,8 +560,8 @@ Before implementation, we should clarify:
 
 ---
 
-*Plan created: 2026-05-04*
-*Branch: `plan/mcp-portal-integration`*
+_Plan created: 2026-05-04_
+_Branch: `plan/mcp-portal-integration`_
 
 ## Appendix A: Decision Tree
 
