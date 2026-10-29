@@ -425,6 +425,15 @@ Workers cannot make HTTP requests to other `*.workers.dev` domains. This project
 - Verify `CLOUDFLARE_ACCOUNT_ID` is correct
 - Ensure Service Binding is configured
 
+### "Unexpected token '<', "<!DOCTYPE "... is not valid JSON" (button error)
+- Cause: the Cloudflare Access session expired; the edge returned its HTML
+  challenge page (401/403) to the browser `fetch('/api/ask')`, and the client
+  tried to parse it as JSON. Not weather-button-specific — affects any
+  non-chat action (they share the same non-streaming fetch path).
+- Fix in place: both client fetch paths (non-streaming + streaming) check the
+  response content-type and surface "Session expired — please reload the page
+  to sign in again" instead of a parse crash. Reload the page to re-authenticate.
+
 ### Streaming Issues
 
 - Verify AI Gateway configuration

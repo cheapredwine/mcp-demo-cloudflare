@@ -934,6 +934,15 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
           body: JSON.stringify({ prompt, action })
         });
 
+        // Guard against non-JSON responses: if the Cloudflare Access session
+        // has expired, the edge returns a 401/403 HTML challenge page instead
+        // of the API's JSON. response.json() would then throw a cryptic
+        // "Unexpected token '<'" SyntaxError. Detect and prompt a reload.
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new SessionExpiredError(response.status);
+        }
+
         const data = await response.json();
         
         // Display HTTP call logs if available
@@ -1010,17 +1019,33 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
       }
     }
     
+    // Thrown when the API returns non-JSON (i.e. the Cloudflare Access
+    // session has expired and the edge served its HTML challenge page).
+    function SessionExpiredError(status) {
+      this.name = 'SessionExpiredError';
+      this.status = status;
+      this.message = 'Session expired — please reload the page to sign in again (HTTP ' + status + ')';
+    }
+    SessionExpiredError.prototype = Object.create(Error.prototype);
+
     async function sendPromptStream(prompt, action) {
       const aiBox = document.getElementById('ai-box');
       const toolsBox = document.getElementById('tools-box');
-      
+
       try {
         const response = await fetch('/api/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt, action, stream: true })
         });
-        
+
+        // Same non-JSON guard as the non-streaming path: an expired Access
+        // session returns the HTML challenge page, not an SSE stream.
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json') && !contentType.includes('text/event-stream')) {
+          throw new SessionExpiredError(response.status);
+        }
+
         if (!response.ok) {
           throw new Error('Stream request failed: ' + response.status);
         }
