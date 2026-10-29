@@ -12,6 +12,15 @@ export default defineConfig({
         // Worker isn't part of this test project. Runtime tests below never
         // route through it; production wiring is verified post-deploy.
         serviceBindings: {
+          // Local mock AI binding: prevents the plugin from starting a remote
+          // proxy session (which requires CLOUDFLARE_API_TOKEN). Runtime tests
+          // below don't exercise live inference.
+          AI() {
+            return new Response(
+              JSON.stringify({ result: { response: 'mock-ai-response' } }),
+              { headers: { 'Content-Type': 'application/json' } }
+            );
+          },
           MCP_SERVER() {
             return new Response(JSON.stringify({ jsonrpc: "2.0", id: 0, result: {} }), {
               headers: { "Content-Type": "application/json" },
