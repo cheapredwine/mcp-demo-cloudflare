@@ -18,14 +18,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Run tests
         run: npm test
+
+      - name: Run Workers runtime tests
+        run: npm run test:runtime
 
   deploy-mcp-server:
     runs-on: ubuntu-latest
@@ -38,8 +47,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -63,8 +72,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -72,7 +81,7 @@ jobs:
       - name: Inject build timestamp
         run: |
           BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
-          sed -i "s/BUILD_TIME = 'UNKNOWN'/BUILD_TIME = '$BUILD_TIME'/g" packages/ai-orchestrator/src/index.ts
+          sed -i 's/BUILD_TIME = "UNKNOWN"/BUILD_TIME = "'$BUILD_TIME'"/g' packages/ai-orchestrator/src/index.ts
           echo "Build time: $BUILD_TIME"
 
       - name: Deploy AI Orchestrator

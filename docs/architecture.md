@@ -65,7 +65,7 @@ This document describes the high-level architecture for the MCP demo running on 
 - **Service Binding** — internal binding used by the orchestrator to call the MCP server. Bypasses Access by design (internal, trusted).
   - Why: Cloudflare prevents worker-to-worker HTTP calls between `*.workers.dev` domains (error 1042). Service Bindings are the supported, lower-latency, secure way to call internal worker code.
 
-- **MCP Client** *(external)* — Cloudflare MCP Portal, Workers AI Playground, MCP Inspector, or any remote MCP client. Connects over HTTPS to `mcp-server.jsherron.com`, completing the Cloudflare Access OAuth flow before reaching the Worker.
+- **MCP Client** _(external)_ — Cloudflare MCP Portal, Workers AI Playground, MCP Inspector, or any remote MCP client. Connects over HTTPS to `mcp-server.jsherron.com`, completing the Cloudflare Access OAuth flow before reaching the Worker.
   - Why: demonstrates authenticated external consumption of the MCP server, separate from the internal orchestrator path.
 
 ## Security and operational considerations
@@ -76,8 +76,8 @@ This document describes the high-level architecture for the MCP demo running on 
 
 ## Deployment tips
 
-- In `packages/ai-orchestrator/wrangler.toml`, configure the Workers AI binding and the AI Gateway integration.
-- In `packages/mcp-server/wrangler.toml`, keep `workers_dev = false` and a single Access-protected custom domain; configure the service binding on the orchestrator side. Protect the external hostname with a Cloudflare Access app (AI controls "MCP server", OAuth).
+- In `packages/ai-orchestrator/wrangler.jsonc`, configure the Workers AI binding and the AI Gateway integration.
+- In `packages/mcp-server/wrangler.jsonc`, keep `workers_dev = false` and a single Access-protected custom domain; configure the service binding on the orchestrator side. Protect the external hostname with a Cloudflare Access app (AI controls "MCP server", OAuth).
 
 ## Viewing and editing this diagram
 
@@ -89,4 +89,4 @@ This document describes the high-level architecture for the MCP demo running on 
 - Security: Cloudflare Access on both hostnames + no unauthenticated bypass routes + AI Gateway guardrails minimize risk and data exposure.
 - Performance: Workers AI binding and Service Bindings remove extra network hops and reduce latency.
 
-If you'd like, I can append example `wrangler.toml` snippets and a short checklist for deploying the orchestrator + private MCP server.
+If you'd like, I can append example `wrangler.jsonc` snippets and a short checklist for deploying the orchestrator + private MCP server.

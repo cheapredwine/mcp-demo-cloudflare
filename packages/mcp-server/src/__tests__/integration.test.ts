@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
-const SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:8787';
+const SERVER_URL = process.env.MCP_SERVER_URL || "http://localhost:8787";
 
 // Type for tool results
 interface ToolResult {
   content: Array<{ type: string; text: string }>;
 }
 
-describe('MCP Server Live Integration', () => {
+describe("MCP Server Live Integration", () => {
   let client: Client;
   let transport: StreamableHTTPClientTransport;
   let connected = false;
@@ -23,21 +23,23 @@ describe('MCP Server Live Integration', () => {
       transport = new StreamableHTTPClientTransport(new URL(`${SERVER_URL}/mcp`));
       await client.connect(transport);
       connected = true;
-    } catch (err) {
+    } catch {
       console.log(`\n⚠️  Could not connect to server at ${SERVER_URL}`);
-      console.log('   Start server with: npm run dev:server');
-      console.log('   Then run: npm run test:integration\n');
+      console.log("   Start server with: npm run dev:server");
+      console.log("   Then run: npm run test:integration\n");
       // Don't throw - tests will check connected flag
     }
   });
 
-  describe('Connection', () => {
-    it('should connect to the server', async () => {
-      expect(connected, `Server not available at ${SERVER_URL}. Run: npm run dev:server`).toBe(true);
+  describe("Connection", () => {
+    it("should connect to the server", async () => {
+      expect(connected, `Server not available at ${SERVER_URL}. Run: npm run dev:server`).toBe(
+        true,
+      );
       expect(client).toBeDefined();
     });
 
-    it('should read server info resource', async () => {
+    it("should read server info resource", async () => {
       expect(connected).toBe(true);
       const result = await client.readResource({
         uri: "mcp://resources/server-info",
@@ -47,115 +49,115 @@ describe('MCP Server Live Integration', () => {
     });
   });
 
-  describe('Echo Tool', () => {
-    it('should echo a message', async () => {
+  describe("Echo Tool", () => {
+    it("should echo a message", async () => {
       expect(connected).toBe(true);
-      const result = await client.callTool({
+      const result = (await client.callTool({
         name: "echo",
         arguments: { message: "Hello MCP!" },
-      }) as ToolResult;
-      
+      })) as ToolResult;
+
       expect(result).toBeDefined();
       expect(result.content).toBeDefined();
-      expect(result.content[0].type).toBe('text');
-      expect(result.content[0].text).toContain('Echo: Hello MCP!');
+      expect(result.content[0].type).toBe("text");
+      expect(result.content[0].text).toContain("Echo: Hello MCP!");
     });
   });
 
-  describe('Calculator Tool', () => {
-    it('should add numbers', async () => {
+  describe("Calculator Tool", () => {
+    it("should add numbers", async () => {
       expect(connected).toBe(true);
-      const result = await client.callTool({
+      const result = (await client.callTool({
         name: "calculator",
         arguments: { operation: "add", a: 5, b: 3 },
-      }) as ToolResult;
-      
-      expect(result.content[0].text).toContain('8');
+      })) as ToolResult;
+
+      expect(result.content[0].text).toContain("8");
     });
 
-    it('should multiply numbers', async () => {
+    it("should multiply numbers", async () => {
       expect(connected).toBe(true);
-      const result = await client.callTool({
+      const result = (await client.callTool({
         name: "calculator",
         arguments: { operation: "multiply", a: 6, b: 7 },
-      }) as ToolResult;
-      
-      expect(result.content[0].text).toContain('42');
+      })) as ToolResult;
+
+      expect(result.content[0].text).toContain("42");
     });
 
-    it('should handle division by zero', async () => {
+    it("should handle division by zero", async () => {
       expect(connected).toBe(true);
-      const result = await client.callTool({
+      const result = (await client.callTool({
         name: "calculator",
         arguments: { operation: "divide", a: 10, b: 0 },
-      }) as ToolResult;
-      
-      expect(result.content[0].text).toContain('Error');
+      })) as ToolResult;
+
+      expect(result.content[0].text).toContain("Error");
     });
   });
 
-  describe('Weather Tool', () => {
-    it('should get weather for a location', async () => {
+  describe("Weather Tool", () => {
+    it("should get weather for a location", async () => {
       expect(connected).toBe(true);
-      const result = await client.callTool({
+      const result = (await client.callTool({
         name: "get_weather",
         arguments: { location: "San Francisco", units: "celsius" },
-      }) as ToolResult;
-      
+      })) as ToolResult;
+
       expect(result).toBeDefined();
-      const allText = result.content.map((c: {text: string}) => c.text).join(' ');
-      expect(allText).toContain('Condition:');
+      const allText = result.content.map((c: { text: string }) => c.text).join(" ");
+      expect(allText).toContain("Condition:");
     });
 
-    it('should get weather in fahrenheit', async () => {
+    it("should get weather in fahrenheit", async () => {
       expect(connected).toBe(true);
-      const result = await client.callTool({
+      const result = (await client.callTool({
         name: "get_weather",
         arguments: { location: "New York", units: "fahrenheit" },
-      }) as ToolResult;
-      
-      const allText = result.content.map((c: {text: string}) => c.text).join(' ');
-      expect(allText).toContain('°F');
+      })) as ToolResult;
+
+      const allText = result.content.map((c: { text: string }) => c.text).join(" ");
+      expect(allText).toContain("°F");
     });
   });
 
-  describe('Random Fact Tool', () => {
-    it('should return a fact from a specific category', async () => {
+  describe("Random Fact Tool", () => {
+    it("should return a fact from a specific category", async () => {
       expect(connected).toBe(true);
-      const result = await client.callTool({
+      const result = (await client.callTool({
         name: "random_fact",
         arguments: { category: "technology" },
-      }) as ToolResult;
-      
+      })) as ToolResult;
+
       expect(result).toBeDefined();
       expect(result.content[0].text.length).toBeGreaterThan(0);
     });
 
-    it('should return a fact from random category when not specified', async () => {
+    it("should return a fact from random category when not specified", async () => {
       expect(connected).toBe(true);
-      const result = await client.callTool({
+      const result = (await client.callTool({
         name: "random_fact",
         arguments: {},
-      }) as ToolResult;
-      
+      })) as ToolResult;
+
       expect(result).toBeDefined();
       expect(result.content[0].text.length).toBeGreaterThan(0);
     });
   });
 
-  describe('Traffic Log Tool', () => {
-    it('should return traffic log', async () => {
+  describe("Traffic Log Tool", () => {
+    it("should return traffic log", async () => {
       expect(connected).toBe(true);
       // First make some calls to generate traffic
       await client.callTool({ name: "echo", arguments: { message: "test" } });
-      
-      const result = await client.callTool({
+
+      const result = (await client.callTool({
         name: "get_traffic_log",
         arguments: { limit: 5 },
-      }) as ToolResult;
-      
+      })) as ToolResult;
+
       expect(result).toBeDefined();
-      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].type).toBe("text");
     });
   });
 });

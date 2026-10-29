@@ -1,6 +1,6 @@
 /**
  * AI Orchestrator - Uses Cloudflare Workers AI with AI Gateway
- * 
+ *
  * Demonstrates:
  * - Workers AI binding with AI Gateway integration (caching, analytics)
  * - MCP Tool Calling via Workers AI
@@ -9,7 +9,7 @@
  */
 
 // Build timestamp - set at deployment time
-const BUILD_TIME = 'UNKNOWN'; // Injected by CI/CD with: sed -i "s/BUILD_TIME = 'UNKNOWN'/BUILD_TIME = '...'/g"
+const BUILD_TIME = "UNKNOWN"; // Injected by CI/CD with: sed -i 's/BUILD_TIME = "UNKNOWN"/BUILD_TIME = "..."/g'
 
 interface Env {
   AI: Ai;
@@ -19,7 +19,7 @@ interface Env {
 // Call log tracking
 interface CallLog {
   timestamp: string;
-  type: 'ai' | 'mcp-tool' | 'auth';
+  type: "ai" | "mcp-tool" | "auth";
   method?: string;
   endpoint: string;
   status?: number;
@@ -29,18 +29,24 @@ interface CallLog {
 
 function createCallLogger() {
   const logs: CallLog[] = [];
-  
-  function log(type: CallLog['type'], endpoint: string, status?: number, details?: string, method?: string) {
+
+  function log(
+    type: CallLog["type"],
+    endpoint: string,
+    status?: number,
+    details?: string,
+    method?: string,
+  ) {
     logs.push({
-      timestamp: new Date().toISOString().split('T')[1].split('.')[0],
+      timestamp: new Date().toISOString().split("T")[1].split(".")[0],
       type,
       method,
       endpoint,
       status,
-      details
+      details,
     });
   }
-  
+
   return { logs, log };
 }
 
@@ -59,75 +65,79 @@ interface ToolDefinition {
 export const AI_TOOLS: ToolDefinition[] = [
   {
     name: "calculator",
-    description: "Use for mathematical calculations and arithmetic operations like addition, subtraction, multiplication, division.",
+    description:
+      "Use for mathematical calculations and arithmetic operations like addition, subtraction, multiplication, division.",
     parameters: {
       type: "object",
       properties: {
-        operation: { 
-          type: "string", 
+        operation: {
+          type: "string",
           enum: ["add", "subtract", "multiply", "divide"],
-          description: "The mathematical operation"
+          description: "The mathematical operation",
         },
         a: { type: "number", description: "First number" },
-        b: { type: "number", description: "Second number" }
+        b: { type: "number", description: "Second number" },
       },
-      required: ["operation", "a", "b"]
-    }
+      required: ["operation", "a", "b"],
+    },
   },
   {
     name: "get_weather",
-    description: "Use when the user asks about weather, temperature, or forecast for a specific location.",
+    description:
+      "Use when the user asks about weather, temperature, or forecast for a specific location.",
     parameters: {
       type: "object",
       properties: {
-        location: { 
-          type: "string", 
-          description: "City name"
+        location: {
+          type: "string",
+          description: "City name",
         },
-        units: { 
-          type: "string", 
+        units: {
+          type: "string",
           enum: ["celsius", "fahrenheit"],
-          description: "Temperature units"
-        }
+          description: "Temperature units",
+        },
       },
-      required: ["location"]
-    }
+      required: ["location"],
+    },
   },
   {
     name: "echo",
-    description: "Use to echo back a message. Good for testing connectivity or repeating user input.",
+    description:
+      "Use to echo back a message. Good for testing connectivity or repeating user input.",
     parameters: {
       type: "object",
       properties: {
-        message: { 
-          type: "string", 
-          description: "Message to echo back"
-        }
+        message: {
+          type: "string",
+          description: "Message to echo back",
+        },
       },
-      required: ["message"]
-    }
+      required: ["message"],
+    },
   },
   {
     name: "random_fact",
-    description: "Use when the user asks for an interesting fact, trivia, or wants to learn something fun.",
+    description:
+      "Use when the user asks for an interesting fact, trivia, or wants to learn something fun.",
     parameters: {
       type: "object",
       properties: {
-        category: { 
-          type: "string", 
+        category: {
+          type: "string",
           enum: ["science", "history", "technology", "nature", "space"],
-          description: "Fact category"
-        }
-      }
-    }
-  }
+          description: "Fact category",
+        },
+      },
+    },
+  },
 ];
 
 // Call Workers AI with AI Gateway
 async function callWorkersAI(
   ai: Ai,
   messages: Array<{ role: string; content: string }>,
-  tools?: ToolDefinition[]
+  tools?: ToolDefinition[],
 ): Promise<{
   response?: string;
   tool_calls?: Array<{ name: string; arguments: Record<string, unknown> }>;
@@ -136,30 +146,26 @@ async function callWorkersAI(
   const body: Record<string, unknown> = {
     messages,
   };
-  
+
   if (tools && tools.length > 0) {
-    body.tools = tools.map(tool => ({
+    body.tools = tools.map((tool) => ({
       type: "function",
       function: {
         name: tool.name,
         description: tool.description,
         parameters: tool.parameters,
-      }
+      },
     }));
   }
 
   try {
-    const response = await ai.run(
-      "@cf/meta/llama-3.1-8b-instruct-fast" as keyof AiModels,
-      body,
-      {
-        gateway: {
-          id: "mcp-demo",
-          skipCache: false,
-          cacheTtl: 86400,
-        },
-      }
-    ) as {
+    const response = (await ai.run("@cf/meta/llama-3.1-8b-instruct-fast" as keyof AiModels, body, {
+      gateway: {
+        id: "mcp-demo",
+        skipCache: false,
+        cacheTtl: 86400,
+      },
+    })) as {
       response?: string;
       tool_calls?: Array<{
         name: string;
@@ -179,7 +185,7 @@ async function callWorkersAI(
 // Call Workers AI with streaming support
 async function callWorkersAIStream(
   ai: Ai,
-  messages: Array<{ role: string; content: string }>
+  messages: Array<{ role: string; content: string }>,
 ): Promise<ReadableStream | null> {
   const body = {
     messages,
@@ -187,28 +193,29 @@ async function callWorkersAIStream(
   };
 
   try {
-    const response = await ai.run(
-      "@cf/meta/llama-3.1-8b-instruct-fast" as keyof AiModels,
-      body,
-      {
-        gateway: {
-          id: "mcp-demo",
-          skipCache: false,
-          cacheTtl: 86400,
-        },
-      }
-    ) as ReadableStream | { status?: number; [key: string]: unknown };
+    const response = (await ai.run("@cf/meta/llama-3.1-8b-instruct-fast" as keyof AiModels, body, {
+      gateway: {
+        id: "mcp-demo",
+        skipCache: false,
+        cacheTtl: 86400,
+      },
+    })) as ReadableStream | { status?: number; [key: string]: unknown };
 
     // Check if it's a ReadableStream by testing for getReader
-    if (response && typeof response === 'object' && 'getReader' in response && typeof response.getReader === 'function') {
+    if (
+      response &&
+      typeof response === "object" &&
+      "getReader" in response &&
+      typeof response.getReader === "function"
+    ) {
       return response as ReadableStream;
     }
-    
+
     // Response was an error object or unexpected format
-    console.error('Unexpected Workers AI response format:', response);
+    console.error("Unexpected Workers AI response format:", response);
     return null;
   } catch (error) {
-    console.error('Streaming error:', error);
+    console.error("Streaming error:", error);
     return null;
   }
 }
@@ -217,24 +224,24 @@ async function callWorkersAIStream(
 async function callMCPTool(
   service: Fetcher,
   toolName: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
 ): Promise<unknown> {
   const toolBody = {
-    jsonrpc: '2.0',
+    jsonrpc: "2.0",
     id: 1,
-    method: 'tools/call',
+    method: "tools/call",
     params: {
       name: toolName,
       arguments: args,
     },
   };
 
-  const response = await service.fetch('http://mcp-server/mcp', {
-    method: 'POST',
+  const response = await service.fetch("http://mcp-server/mcp", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json, text/event-stream',
-      'Mcp-Protocol-Version': '2024-11-05',
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+      "Mcp-Protocol-Version": "2024-11-05",
     },
     body: JSON.stringify(toolBody),
   });
@@ -244,15 +251,19 @@ async function callMCPTool(
     throw new Error(`Tool call failed: ${response.status} - ${errorText}`);
   }
 
-  const data = await response.json() as { result?: unknown; error?: { message?: string; code?: number } | string };
-  
+  const data = (await response.json()) as {
+    result?: unknown;
+    error?: { message?: string; code?: number } | string;
+  };
+
   if (data.error) {
-    const errorMessage = typeof data.error === 'object' 
-      ? (data.error.message || JSON.stringify(data.error))
-      : String(data.error);
+    const errorMessage =
+      typeof data.error === "object"
+        ? data.error.message || JSON.stringify(data.error)
+        : String(data.error);
     throw new Error(errorMessage);
   }
-  
+
   return data.result;
 }
 
@@ -260,20 +271,33 @@ async function callMCPTool(
 async function processToolCalls(
   service: Fetcher,
   toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>,
-  log?: (type: CallLog['type'], endpoint: string, status?: number, details?: string, method?: string) => void
+  log?: (
+    type: CallLog["type"],
+    endpoint: string,
+    status?: number,
+    details?: string,
+    method?: string,
+  ) => void,
 ): Promise<Array<{ tool: string; result: unknown }>> {
   // Call all tools in parallel (stateless - no session init needed)
-  if (log) log('mcp-tool', 'Service Binding: tools/call', undefined, 'Executing ' + toolCalls.length + ' tool call(s) in parallel', 'POST');
-  
+  if (log)
+    log(
+      "mcp-tool",
+      "Service Binding: tools/call",
+      undefined,
+      "Executing " + toolCalls.length + " tool call(s) in parallel",
+      "POST",
+    );
+
   const toolPromises = toolCalls.map(async (call) => {
     const result = await callMCPTool(service, call.name, call.arguments);
     return { tool: call.name, result };
   });
-  
+
   const results = await Promise.all(toolPromises);
-  
-  if (log) log('mcp-tool', 'Service Binding: tools/call', 200, 'All tools completed', 'POST');
-  
+
+  if (log) log("mcp-tool", "Service Binding: tools/call", 200, "All tools completed", "POST");
+
   return results;
 }
 
@@ -1086,9 +1110,9 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 
 // Main Worker export
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    
+
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -1103,10 +1127,11 @@ export default {
     if (url.pathname === "/") {
       // Inject build time into HTML template.
       // In local dev without CI injection, show a runtime timestamp instead of UNKNOWN.
-      const currentBuildTime = BUILD_TIME === 'UNKNOWN'
-        ? new Date().toISOString().replace('T', ' ').split('.')[0] + ' UTC'
-        : BUILD_TIME;
-      const htmlWithBuildTime = HTML_TEMPLATE.replace('__BUILD_TIME__', currentBuildTime);
+      const currentBuildTime =
+        BUILD_TIME === "UNKNOWN"
+          ? new Date().toISOString().replace("T", " ").split(".")[0] + " UTC"
+          : BUILD_TIME;
+      const htmlWithBuildTime = HTML_TEMPLATE.replace("__BUILD_TIME__", currentBuildTime);
       return new Response(htmlWithBuildTime, {
         headers: { "Content-Type": "text/html", ...corsHeaders },
       });
@@ -1115,27 +1140,43 @@ export default {
     // API endpoint to process prompts
     if (url.pathname === "/api/ask" && request.method === "POST") {
       const { logs, log } = createCallLogger();
-      
+
       try {
-        const body = await request.json() as { prompt: string; action: string; stream?: boolean };
+        const body = (await request.json()) as { prompt: string; action: string; stream?: boolean };
         const prompt = body.prompt || "";
-        const action = body.action || 'chat';
+        const action = body.action || "chat";
         const useStream = body.stream === true;
-        
-        log('ai', 'Workers AI /ai/run', undefined, 'Action: ' + action + (useStream ? ' (stream)' : ''), 'POST');
+
+        // Boundary validation: reject requests without a non-empty prompt
+        // before they reach Workers AI (defensive against empty/duplicate
+        // inference calls from malformed clients).
+        if (typeof prompt !== "string" || prompt.trim().length === 0) {
+          return new Response(
+            JSON.stringify({
+              error: "Bad Request",
+              message: "'prompt' is required and must be a non-empty string",
+            }),
+            { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
+          );
+        }
+
+        log(
+          "ai",
+          "Workers AI /ai/run",
+          undefined,
+          "Action: " + action + (useStream ? " (stream)" : ""),
+          "POST",
+        );
 
         // Streaming only supported for chat action
-        if (useStream && action === 'chat') {
-          const stream = await callWorkersAIStream(
-            env.AI,
-            [
-              { 
-                role: 'system', 
-                content: 'You are a helpful assistant. Answer directly and concisely.'
-              },
-              { role: 'user', content: prompt }
-            ]
-          );
+        if (useStream && action === "chat") {
+          const stream = await callWorkersAIStream(env.AI, [
+            {
+              role: "system",
+              content: "You are a helpful assistant. Answer directly and concisely.",
+            },
+            { role: "user", content: prompt },
+          ]);
 
           if (stream) {
             // Prepend callLogs as an initial SSE event so the client can render HTTP logs
@@ -1146,7 +1187,7 @@ export default {
               async start(controller) {
                 try {
                   // Send initial event with callLogs
-                  const initEvent = 'data: ' + JSON.stringify({ callLogs: logs }) + '\n\n';
+                  const initEvent = "data: " + JSON.stringify({ callLogs: logs }) + "\n\n";
                   controller.enqueue(encoder.encode(initEvent));
 
                   const reader = (original as ReadableStream).getReader();
@@ -1159,129 +1200,153 @@ export default {
                 } catch (err) {
                   controller.error(err);
                 }
-              }
+              },
             });
 
             return new Response(combined, {
               headers: {
-                'Content-Type': 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                ...corsHeaders
-              }
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                ...corsHeaders,
+              },
             });
           }
-          
+
           // Fallback if streaming fails
-          log('ai', 'Workers AI /ai/run', 500, 'Streaming failed, falling back');
+          log("ai", "Workers AI /ai/run", 500, "Streaming failed, falling back");
         }
 
         // Route based on user-selected action
         let aiResponse;
-        let toolCalls: Array<{ tool: string; arguments: Record<string, unknown>; result?: unknown }> = [];
-        
+        let toolCalls: Array<{
+          tool: string;
+          arguments: Record<string, unknown>;
+          result?: unknown;
+        }> = [];
+
         try {
-          if (action === 'chat') {
+          if (action === "chat") {
             // Direct AI chat - no tools
-            aiResponse = await callWorkersAI(
-              env.AI,
-              [
-                { 
-                  role: 'system', 
-                  content: 'You are a helpful assistant. Answer directly and concisely.'
-                },
-                { role: 'user', content: prompt }
-              ]
-            );
-          } else if (action === 'calculate') {
+            aiResponse = await callWorkersAI(env.AI, [
+              {
+                role: "system",
+                content: "You are a helpful assistant. Answer directly and concisely.",
+              },
+              { role: "user", content: prompt },
+            ]);
+          } else if (action === "calculate") {
             // Direct to calculator tool
-            log('mcp-tool', 'Service Binding: calculator', undefined, 'Direct tool call', 'POST');
-            
+            log("mcp-tool", "Service Binding: calculator", undefined, "Direct tool call", "POST");
+
             // Extract expression from prompt
-            const expression = prompt.replace(/calculate|compute|what is|math/gi, '').trim();
-            
+            const expression = prompt.replace(/calculate|compute|what is|math/gi, "").trim();
+
             // Try to parse simple expressions like "25 * 47" or "25 times 47"
-            let operation = 'add';
-            let a = 0, b = 0;
-            let opSymbol = '+';
-            
+            let operation = "add";
+            let a = 0,
+              b = 0;
+            let opSymbol = "+";
+
             // Simple parsing for demo
-            const match = expression.match(/(\d+(?:\.\d+)?)\s*([\+\-\*\/]|plus|minus|times?|divided?)\s*(\d+(?:\.\d+)?)/);
+            const match = expression.match(
+              /(\d+(?:\.\d+)?)\s*([+\-*/]|plus|minus|times?|divided?)\s*(\d+(?:\.\d+)?)/,
+            );
             if (match) {
               a = parseFloat(match[1]);
               b = parseFloat(match[3]);
               const opStr = match[2].toLowerCase();
-              if (opStr === '+' || opStr === 'plus') { operation = 'add'; opSymbol = '+'; }
-              else if (opStr === '-' || opStr === 'minus') { operation = 'subtract'; opSymbol = '-'; }
-              else if (opStr === '*' || opStr === 'x' || opStr === 'times') { operation = 'multiply'; opSymbol = '×'; }
-              else if (opStr === '/' || opStr === 'divide') { operation = 'divide'; opSymbol = '÷'; }
+              if (opStr === "+" || opStr === "plus") {
+                operation = "add";
+                opSymbol = "+";
+              } else if (opStr === "-" || opStr === "minus") {
+                operation = "subtract";
+                opSymbol = "-";
+              } else if (opStr === "*" || opStr === "x" || opStr === "times") {
+                operation = "multiply";
+                opSymbol = "×";
+              } else if (opStr === "/" || opStr === "divide") {
+                operation = "divide";
+                opSymbol = "÷";
+              }
             }
-            
-            const result = await callMCPTool(
-              env.MCP_SERVER, 
-              'calculator', 
-              { operation, a, b }
-            ) as { content: Array<{ type: string; text: string }> };
-            
-            toolCalls = [{ tool: 'calculator', arguments: { operation, a, b }, result }];
-            
+
+            const result = (await callMCPTool(env.MCP_SERVER, "calculator", {
+              operation,
+              a,
+              b,
+            })) as { content: Array<{ type: string; text: string }> };
+
+            toolCalls = [{ tool: "calculator", arguments: { operation, a, b }, result }];
+
             // Extract text from MCP response
             const resultText = result.content?.[0]?.text || `${a} ${opSymbol} ${b} = [error]`;
-            
+
             // Format result directly (no AI call needed)
             aiResponse = {
-              response: resultText
+              response: resultText,
             };
-          } else if (action === 'weather') {
+          } else if (action === "weather") {
             // Direct to weather tool
-            log('mcp-tool', 'Service Binding: get_weather', undefined, 'Direct tool call', 'POST');
-            
+            log("mcp-tool", "Service Binding: get_weather", undefined, "Direct tool call", "POST");
+
             // Extract location - handles "What is the weather in Paris?" → "Paris"
-            const locationMatch = prompt.match(/(?:weather|temperature)(?:\s+in|\s+at|\s+for)?\s+([^?]+)/i);
-            const location = locationMatch ? locationMatch[1].trim() : 'Unknown';
-            
-            const result = await callMCPTool(
-              env.MCP_SERVER, 
-              'get_weather', 
-              { location, units: 'celsius' }
-            ) as { content: Array<{ type: string; text: string }> };
-            
-            toolCalls = [{ tool: 'get_weather', arguments: { location, units: 'celsius' }, result }];
-            
+            const locationMatch = prompt.match(
+              /(?:weather|temperature)(?:\s+in|\s+at|\s+for)?\s+([^?]+)/i,
+            );
+            const location = locationMatch ? locationMatch[1].trim() : "Unknown";
+
+            const result = (await callMCPTool(env.MCP_SERVER, "get_weather", {
+              location,
+              units: "celsius",
+            })) as { content: Array<{ type: string; text: string }> };
+
+            toolCalls = [
+              { tool: "get_weather", arguments: { location, units: "celsius" }, result },
+            ];
+
             // Extract text lines from MCP response
-            const weatherLines = result.content?.map(c => c.text).join('\n') || 'Weather data unavailable';
-            
+            const weatherLines =
+              result.content?.map((c) => c.text).join("\n") || "Weather data unavailable";
+
             // Format result directly (no AI call needed)
             aiResponse = {
-              response: weatherLines
+              response: weatherLines,
             };
-          } else if (action === 'multistep') {
+          } else if (action === "multistep") {
             // Multi-step: AI decides which tools to use
-            log('ai', 'Workers AI /ai/run', undefined, 'Multi-step: AI with tools', 'POST');
-            
+            log("ai", "Workers AI /ai/run", undefined, "Multi-step: AI with tools", "POST");
+
             // First call with tools to see what AI wants to do
             const initialResponse = await callWorkersAI(
               env.AI,
               [
-                { 
-                  role: 'system', 
-                  content: 'You are a helpful assistant. Use the calculator or weather tools as needed to answer the question.'
+                {
+                  role: "system",
+                  content:
+                    "You are a helpful assistant. Use the calculator or weather tools as needed to answer the question.",
                 },
-                { role: 'user', content: prompt }
+                { role: "user", content: prompt },
               ],
-              AI_TOOLS
+              AI_TOOLS,
             );
-            
+
             if (initialResponse.tool_calls && initialResponse.tool_calls.length > 0) {
               // AI wants to use tools
-              const VALID_TOOLS = ['calculator', 'get_weather', 'echo', 'random_fact'];
-              const validToolCalls = initialResponse.tool_calls.filter(
-                tc => VALID_TOOLS.includes(tc.name)
+              const VALID_TOOLS = ["calculator", "get_weather", "echo", "random_fact"];
+              const validToolCalls = initialResponse.tool_calls.filter((tc) =>
+                VALID_TOOLS.includes(tc.name),
               );
-              
+
               // Execute the tool calls
-              log('mcp-tool', 'Service Binding: Starting tool execution', undefined, 'Executing ' + validToolCalls.length + ' tool call(s)', 'POST');
+              log(
+                "mcp-tool",
+                "Service Binding: Starting tool execution",
+                undefined,
+                "Executing " + validToolCalls.length + " tool call(s)",
+                "POST",
+              );
               const results = await processToolCalls(env.MCP_SERVER, validToolCalls, log);
-              
+
               for (let i = 0; i < validToolCalls.length; i++) {
                 toolCalls.push({
                   tool: validToolCalls[i].name,
@@ -1289,47 +1354,56 @@ export default {
                   result: results[i]?.result,
                 });
               }
-              
+
               // Get final response with tool results
-              const toolResultsMessage = toolCalls.map(tc => {
-                // Extract readable text from MCP result format
-                const resultText = typeof tc.result === 'object' && tc.result !== null && 'content' in tc.result
-                  ? (tc.result as { content: Array<{ text: string }> }).content.map(c => c.text).join(', ')
-                  : JSON.stringify(tc.result);
-                return `Tool: ${tc.tool}\nArguments: ${JSON.stringify(tc.arguments)}\nResult: ${resultText}`;
-              }).join('\n\n');
-              
-              aiResponse = await callWorkersAI(
-                env.AI,
-                [
-                  { 
-                    role: 'system', 
-                    content: 'You are a helpful assistant answering the user\'s question. The tool results below were computed to help answer the question. Use them to provide a clear, direct answer.'
-                  },
-                  { role: 'user', content: 'Question: ' + prompt },
-                  { role: 'assistant', content: 'Let me use tools to solve this.' },
-                  { role: 'user', content: 'Here are the tool results I computed:\n\n' + toolResultsMessage + '\n\nBased on these results, what is the answer to the question?' }
-                ]
-              );
+              const toolResultsMessage = toolCalls
+                .map((tc) => {
+                  // Extract readable text from MCP result format
+                  const resultText =
+                    typeof tc.result === "object" && tc.result !== null && "content" in tc.result
+                      ? (tc.result as { content: Array<{ text: string }> }).content
+                          .map((c) => c.text)
+                          .join(", ")
+                      : JSON.stringify(tc.result);
+                  return `Tool: ${tc.tool}\nArguments: ${JSON.stringify(tc.arguments)}\nResult: ${resultText}`;
+                })
+                .join("\n\n");
+
+              aiResponse = await callWorkersAI(env.AI, [
+                {
+                  role: "system",
+                  content:
+                    "You are a helpful assistant answering the user's question. The tool results below were computed to help answer the question. Use them to provide a clear, direct answer.",
+                },
+                { role: "user", content: "Question: " + prompt },
+                { role: "assistant", content: "Let me use tools to solve this." },
+                {
+                  role: "user",
+                  content:
+                    "Here are the tool results I computed:\n\n" +
+                    toolResultsMessage +
+                    "\n\nBased on these results, what is the answer to the question?",
+                },
+              ]);
             } else {
               // AI answered directly
               aiResponse = initialResponse;
             }
           }
-          
-          log('ai', 'Workers AI /ai/run', 200, 'AI responded', 'POST');
+
+          log("ai", "Workers AI /ai/run", 200, "AI responded", "POST");
         } catch (error) {
-          log('ai', 'Workers AI /ai/run', 500, 'Error: ' + String(error), 'POST');
-          return new Response(
-            JSON.stringify({ error: String(error), callLogs: logs }, null, 2),
-            { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-          );
+          log("ai", "Workers AI /ai/run", 500, "Error: " + String(error), "POST");
+          return new Response(JSON.stringify({ error: String(error), callLogs: logs }, null, 2), {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
         }
 
         if (!aiResponse || aiResponse.error) {
           return new Response(
-            JSON.stringify({ error: aiResponse?.error || 'No response', callLogs: logs }, null, 2),
-            { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            JSON.stringify({ error: aiResponse?.error || "No response", callLogs: logs }, null, 2),
+            { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
           );
         }
 
@@ -1337,22 +1411,25 @@ export default {
         let finalResponse = aiResponse.response || "";
 
         return new Response(
-          JSON.stringify({
-            ai: { 
-              response: finalResponse,
-              tool_calls: [],
+          JSON.stringify(
+            {
+              ai: {
+                response: finalResponse,
+                tool_calls: [],
+              },
+              toolCalls: toolCalls,
+              callLogs: logs,
             },
-            toolCalls: toolCalls,
-            callLogs: logs,
-          }, null, 2),
-          { headers: { "Content-Type": "application/json", ...corsHeaders } }
+            null,
+            2,
+          ),
+          { headers: { "Content-Type": "application/json", ...corsHeaders } },
         );
-
       } catch (error) {
-        return new Response(
-          JSON.stringify({ error: String(error), callLogs: logs }, null, 2),
-          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
+        return new Response(JSON.stringify({ error: String(error), callLogs: logs }, null, 2), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
       }
     }
 
@@ -1661,7 +1738,7 @@ export default {
   </script>
 </body>
 </html>`;
-      
+
       return new Response(ADMIN_HTML, {
         headers: { "Content-Type": "text/html", ...corsHeaders },
       });
@@ -1669,15 +1746,14 @@ export default {
 
     // Health check
     if (url.pathname === "/health") {
-      return new Response(
-        JSON.stringify({ status: "ok", service: "ai-orchestrator" }, null, 2),
-        { headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ status: "ok", service: "ai-orchestrator" }, null, 2), {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    return new Response(
-      JSON.stringify({ error: "Not found" }, null, 2),
-      { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+    return new Response(JSON.stringify({ error: "Not found" }, null, 2), {
+      status: 404,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   },
 };

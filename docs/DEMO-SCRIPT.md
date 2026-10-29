@@ -3,6 +3,7 @@
 ## Overview
 
 This script guides you through a live demo showing:
+
 1. **Web App** — AI-powered chat with tool calling (internal Service Binding)
 2. **Cloudflare Access** — both the web app and the MCP server require authentication at the edge
 3. **MCP Portal** — external discovery and tool usage from any MCP client, via OAuth
@@ -63,11 +64,13 @@ of inactivity.
 **Narrative:** "Our AI demo is gated by Cloudflare Access."
 
 **Action:**
+
 1. Open https://mcp-demo.jsherron.com/ in a fresh/incognito window.
 2. You're redirected to the Access **One-time PIN** login → enter the allowed email → PIN → in.
 3. Point out the three panels: Prompt | MCP Status | AI Response.
 
 **Demo questions:**
+
 - "What is 25 times 4?" → calculator tool, result 100
 - "What's the weather in Tokyo?" → weather tool, simulated data
 - "Tell me a fun fact about space" → direct AI response (no tool)
@@ -81,6 +84,7 @@ of inactivity.
 **Narrative:** "The MCP server itself isn't open to the internet."
 
 **Action:** hit it unauthenticated and show the OAuth challenge:
+
 ```bash
 curl -i -X POST https://mcp-server.jsherron.com/mcp \
   -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
@@ -97,6 +101,7 @@ curl -i -X POST https://mcp-server.jsherron.com/mcp \
 **Narrative:** "Any MCP client can use these tools — after authenticating."
 
 **Action (Workers AI Playground):**
+
 1. https://playground.ai.cloudflare.com/ → **MCP Servers** → add `https://mcp-portal.jsherron.com/mcp` → **Connect**.
 2. Popup → log in to Cloudflare Access (One-time PIN).
 3. The popup lists upstream servers requiring auth → **Connect** `mcp-server` → **Done**.
@@ -118,6 +123,7 @@ curl -i -X POST https://mcp-server.jsherron.com/mcp \
 **Narrative:** "Everything external is behind Access; the internal path stays fast."
 
 **Talking points:**
+
 - Web app + MCP server each have their own Access application (web app: One-time PIN; MCP server: OAuth).
 - No unauthenticated routes: `workers_dev = false`, no `mcp.jsherron.com` alias, `workers.dev` → 404.
 - The AI Orchestrator reaches tools over an internal **Service Binding**, which bypasses Access by design (zero latency).
@@ -128,13 +134,16 @@ curl -i -X POST https://mcp-server.jsherron.com/mcp \
 ## Talking Points
 
 ### Architecture
+
 - "Two paths to the same MCP server: internal Service Binding (fast, private) and external Access-protected HTTPS (governed)."
 - "The Worker has zero auth logic — Cloudflare Access enforces identity at the edge."
 
 ### Standardization
+
 - "MCP means any compatible client can discover and use our tools after auth — not just our web UI."
 
 ### Performance
+
 - "Internal path: ~0ms. External path adds a hop through Access/Portal but stays usable."
 
 ---
@@ -142,16 +151,20 @@ curl -i -X POST https://mcp-server.jsherron.com/mcp \
 ## Troubleshooting During Demo
 
 ### Web app not loading / not prompting for login
+
 - Confirm the `mcp-demo-app` Access application's domain is exactly `mcp-demo.jsherron.com` and it has an Allow policy + One-time PIN IdP.
 - Test in incognito (an existing 24h session skips the login).
 
 ### Portal homepage shows "Disconnected"
+
 - Expected when no client session is active. Connect a client (Phase 3); it then shows Connected. It is **not** a fault and there is no sign-in button on the page.
 
 ### Portal can't reach the server / "unable to refresh tools"
+
 - AI controls → MCP servers → `mcp-server` must be **Ready**. If Error/Stale, Edit → **Authenticate server**, then **Sync capabilities**.
 
 ### Client login loops or denies
+
 - Check the relevant Access application's Allow policy includes your identity and an IdP is enabled (web app: `mcp-demo-app`; portal: its auto-created Access app; server: `mcp-server`).
 
 ---
@@ -166,4 +179,4 @@ curl -i -X POST https://mcp-server.jsherron.com/mcp \
 
 ---
 
-*Demo script — reflects the Access-protected, stateless-JSON architecture. See `AGENTS.md`/`TODO.md` for canonical state.*
+_Demo script — reflects the Access-protected, stateless-JSON architecture. See `AGENTS.md`/`TODO.md` for canonical state._

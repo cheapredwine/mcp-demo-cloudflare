@@ -8,8 +8,15 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["@cloudflare/workers-types", "@types/node"]
+    "types": []
   },
   "include": ["packages/*/src/**/*"],
-  "exclude": ["node_modules", "**/node_modules", "**/build", "**/dist", "**/__tests__/**", "**/*.test.ts"]
+  "exclude": [
+    "node_modules",
+    "**/node_modules",
+    "**/build",
+    "**/dist",
+    "**/__tests__/**",
+    "**/*.test.ts"
+  ]
 }

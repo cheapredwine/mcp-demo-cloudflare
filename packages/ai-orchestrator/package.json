@@ -1,8 +1,8 @@
 {
-  "license": "MIT",
   "name": "@mcp-demo/ai-orchestrator",
   "version": "1.0.0",
   "description": "AI Orchestrator using Worker AI with MCP tool calling",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
@@ -18,9 +18,8 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250321.0",
-    "typescript": "^5.4.0",
-    "vitest": "^1.0.0",
-    "wrangler": "^4.0.0"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.155.0"
   }
 }

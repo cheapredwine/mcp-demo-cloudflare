@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mcp-demo-server",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+  },
+
+  // Access paths:
+  // 1. Internal: AI Orchestrator -> Service Binding (zero latency)
+  // 2. External: MCP Portal / clients -> custom domain (Cloudflare Access protected)
+  //
+  // workers.dev route is DISABLED so the only public entry point is the
+  // Access-protected custom domain. The *.workers.dev hostname bypasses the
+  // custom-domain Access app, so leaving it enabled would expose the server
+  // unauthenticated.
+  "workers_dev": false,
+
+  // Custom domain (single, Access-protected entry point).
+  // mcp.jsherron.com was removed: it was an unauthenticated alias to the same
+  // Worker and bypassed the Cloudflare Access app that only covers
+  // mcp-server.jsherron.com.
+  "routes": [{ "pattern": "mcp-server.jsherron.com", "custom_domain": true }],
+}

@@ -2,6 +2,20 @@
   "name": "mcp-demo-cloudflare",
   "version": "1.0.0",
   "description": "A two-part MCP demo: mock MCP server (Streamable HTTP) and Cloudflare Workers client",
+  "keywords": [
+    "agents",
+    "ai",
+    "cloudflare",
+    "demo",
+    "mcp",
+    "model-context-protocol",
+    "workers"
+  ],
+  "license": "MIT",
+  "author": "",
+  "workspaces": [
+    "packages/*"
+  ],
   "type": "module",
   "scripts": {
     "dev:server": "cd packages/mcp-server && wrangler dev",
@@ -10,41 +24,32 @@
     "deploy:ai": "cd packages/ai-orchestrator && wrangler deploy",
     "tail:server": "cd packages/mcp-server && wrangler tail",
     "tail:ai": "cd packages/ai-orchestrator && wrangler tail",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "npm run typecheck:server && npm run typecheck:ai",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:integration": "echo 'Start servers first: npm run dev:server & npm run dev:client' && npx vitest run --config vitest.integration.config.ts",
     "portal:client": "node tools/mcp-portal-client.js",
-    "portal:traffic": "node tools/mcp-portal-client.js --batch"
-  },
-  "workspaces": [
-    "packages/*"
-  ],
-  "keywords": [
-    "mcp",
-    "model-context-protocol",
-    "cloudflare",
-    "workers",
-    "ai",
-    "demo",
-    "agents"
-  ],
-  "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250321.0",
-    "@types/node": "^20.0.0",
-    "@vitest/coverage-v8": "^3.0.0",
-    "canvas": "^3.2.3",
-    "typescript": "^5.4.0",
-    "vitest": "^3.0.0",
-    "wrangler": "^4.0.0"
+    "portal:traffic": "node tools/mcp-portal-client.js --batch",
+    "lint": "oxlint .",
+    "format": "oxfmt .",
+    "typecheck:server": "tsc --noEmit -p packages/mcp-server",
+    "typecheck:ai": "tsc --noEmit -p packages/ai-orchestrator",
+    "test:runtime": "cd packages/mcp-server && npx vitest run --config vitest.runtime.config.ts && cd ../../packages/ai-orchestrator && npx vitest run --config vitest.runtime.config.ts"
   },
   "dependencies": {
     "@cloudflare/codemode": "^0.3.4",
     "@modelcontextprotocol/sdk": "^1.8.0",
     "agents": "^0.10.0",
     "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.10",
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^4.1.12",
+    "canvas": "^3.2.3",
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.0.0"
   }
 }

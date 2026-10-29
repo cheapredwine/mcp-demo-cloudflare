@@ -4,7 +4,6 @@
 > NO WARRANTIES, EXPRESS OR IMPLIED. Effectively untested demo code — read everything
 > and dry-run before you run. You assume all risk. See [DISCLAIMER.md](./DISCLAIMER.md).
 
-
 A working MCP (Model Context Protocol) server and client running on Cloudflare Workers with **streaming AI responses**, intelligent tool calling, and **AI Gateway caching**. This demonstrates how to build and deploy MCP infrastructure on Cloudflare's edge platform using **Service Bindings** for worker-to-worker communication.
 
 ## 🚀 Live Demo
@@ -35,12 +34,12 @@ Open the AI Orchestrator Web UI and type a message to see the MCP protocol in ac
 
 ### Interactive Buttons
 
-| Button | Behavior |
-|--------|----------|
-| **🔢 Calculator** | Cycles through preset problems. Shows **NEXT** problem on button, calculates **CURRENT** when clicked. |
-| **🌤️ Weather** | Cycles through 10 cities randomly. Shows **NEXT** city on button, queries **CURRENT** when clicked. |
-| **🔄 Multistep** | Cycles through 6 math word problems. Shows **NEXT** problem on button, solves **CURRENT** when clicked. |
-| **🐱 Tabby Cats** | Streams a response about tabby cats with real-time text display. |
+| Button            | Behavior                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| **🔢 Calculator** | Cycles through preset problems. Shows **NEXT** problem on button, calculates **CURRENT** when clicked.  |
+| **🌤️ Weather**    | Cycles through 10 cities randomly. Shows **NEXT** city on button, queries **CURRENT** when clicked.     |
+| **🔄 Multistep**  | Cycles through 6 math word problems. Shows **NEXT** problem on button, solves **CURRENT** when clicked. |
+| **🐱 Tabby Cats** | Streams a response about tabby cats with real-time text display.                                        |
 
 ### Smart Caching
 
@@ -69,6 +68,7 @@ The canonical architecture and design rationale are documented in `docs/architec
 ### Why Service Bindings?
 
 Cloudflare Workers cannot make HTTP requests to other `*.workers.dev` domains (error 1042). Service Bindings provide direct internal communication between workers, which:
+
 - ✅ Avoids the 1042 error
 - ✅ Lower latency (no HTTP overhead)
 - ✅ More secure (internal network)
@@ -92,6 +92,7 @@ npm install
 ### Local Development
 
 **Terminal 1 - Start MCP Server:**
+
 ```bash
 cd packages/mcp-server
 npm run dev
@@ -99,13 +100,15 @@ npm run dev
 ```
 
 **Terminal 2 - Start AI Orchestrator:**
+
 ```bash
 cd packages/ai-orchestrator
 npm run dev
 # AI Orchestrator runs on http://localhost:8789
 ```
 
-**Open browser:** 
+**Open browser:**
+
 - AI Orchestrator: `http://localhost:8789`
 - Admin Panel: `http://localhost:8789/admin`
 
@@ -113,34 +116,35 @@ npm run dev
 
 The MCP server exposes these tools:
 
-| Tool | Description |
-|------|-------------|
-| `calculator` | Basic math (add, subtract, multiply, divide) |
-| `get_weather` | Simulated weather data for a location |
-| `echo` | Echo back the input message |
-| `random_fact` | Random fact by category (science, history, technology, nature, space) |
-| `get_traffic_log` | Request info (stateless demo) |
+| Tool              | Description                                                           |
+| ----------------- | --------------------------------------------------------------------- |
+| `calculator`      | Basic math (add, subtract, multiply, divide)                          |
+| `get_weather`     | Simulated weather data for a location                                 |
+| `echo`            | Echo back the input message                                           |
+| `random_fact`     | Random fact by category (science, history, technology, nature, space) |
+| `get_traffic_log` | Request info (stateless demo)                                         |
 
 ## API Endpoints
 
 ### Server (http://localhost:8787)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/mcp` | POST | MCP protocol endpoint |
+| Endpoint | Method | Description           |
+| -------- | ------ | --------------------- |
+| `/mcp`   | POST   | MCP protocol endpoint |
 
 ### AI Orchestrator (http://localhost:8789)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | AI Orchestrator Web UI |
-| `/api/ask` | POST | Ask the AI (with MCP tool calling or streaming) |
-| `/admin` | GET | Admin panel for cache warming |
-| `/health` | GET | Health check |
+| Endpoint   | Method | Description                                     |
+| ---------- | ------ | ----------------------------------------------- |
+| `/`        | GET    | AI Orchestrator Web UI                          |
+| `/api/ask` | POST   | Ask the AI (with MCP tool calling or streaming) |
+| `/admin`   | GET    | Admin panel for cache warming                   |
+| `/health`  | GET    | Health check                                    |
 
 ### Admin Panel Features
 
 The `/admin` endpoint provides:
+
 - **Cache Pre-warming**: Warm AI Gateway cache by calling all demo queries
 - **Cache Status**: See which queries are cached vs not cached
 - **Progress Logging**: Real-time progress of cache warming
@@ -157,7 +161,7 @@ const decoder = new TextDecoder();
 while (true) {
   const { done, value } = await reader.read();
   if (done) break;
-  
+
   // Parse SSE format: data: {"response": "text"}
   buffer += decoder.decode(value, { stream: true });
   // ... parse and display
@@ -165,6 +169,7 @@ while (true) {
 ```
 
 **Streaming Features:**
+
 - Real-time text appears as it's generated
 - Parses Workers AI SSE format with `response` field
 - Shows "No MCP used" chip for streaming (chat doesn't use tools)
@@ -181,15 +186,16 @@ while (true) {
 
 **Example Interactions:**
 
-| Prompt | MCP Used? | Why |
-|--------|-----------|-----|
-| `"What is 25 * 47?"` | ✅ **YES** | Calculator tool needed |
-| `"What's the weather in Tokyo?"` | ✅ **YES** | Weather tool needed |
-| `"Hello, how are you?"` | ❌ **NO** | Direct response, streaming used |
-| `"Tell me about tabby cats"` | ❌ **NO** | Direct response, streaming used |
+| Prompt                                              | MCP Used?  | Why                               |
+| --------------------------------------------------- | ---------- | --------------------------------- |
+| `"What is 25 * 47?"`                                | ✅ **YES** | Calculator tool needed            |
+| `"What's the weather in Tokyo?"`                    | ✅ **YES** | Weather tool needed               |
+| `"Hello, how are you?"`                             | ❌ **NO**  | Direct response, streaming used   |
+| `"Tell me about tabby cats"`                        | ❌ **NO**  | Direct response, streaming used   |
 | `"Calculate 10+5 and what's the weather in Paris?"` | ✅ **YES** | Both calculator AND weather tools |
 
 **How it works:**
+
 1. You type a prompt or click a button
 2. For chat: Streaming response with real-time text
 3. For tools: AI analyzes if it needs MCP tools
@@ -199,6 +205,7 @@ while (true) {
 ## Example Tool Call
 
 **Request:**
+
 ```json
 {
   "tool": "get_weather",
@@ -210,6 +217,7 @@ while (true) {
 ```
 
 **Response:**
+
 ```json
 {
   "content": [
@@ -231,30 +239,34 @@ while (true) {
 3. Push to main branch - GitHub Actions deploys automatically
 
 **Build Timestamp:** The deployment workflow automatically injects the build timestamp:
+
 ```bash
 BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
-sed -i "s/BUILD_TIME = 'UNKNOWN'/BUILD_TIME = '$BUILD_TIME'/g" packages/ai-orchestrator/src/index.ts
+sed -i 's/BUILD_TIME = "UNKNOWN"/BUILD_TIME = "'$BUILD_TIME'"/g' packages/ai-orchestrator/src/index.ts
 ```
 
 **To get your Account ID:**
+
 - Go to https://dash.cloudflare.com
 - Look at the right sidebar, or check the URL: `https://dash.cloudflare.com/<ACCOUNT_ID>/home`
 
 ### Manual Deploy
 
 **Deploy MCP Server:**
+
 ```bash
 cd packages/mcp-server
 wrangler deploy
 ```
 
 **Deploy AI Orchestrator:**
+
 ```bash
 cd packages/ai-orchestrator
 
 # Inject build timestamp first
 BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
-sed -i '' "s/BUILD_TIME = 'UNKNOWN'/BUILD_TIME = '$BUILD_TIME'/g" src/index.ts
+sed -i '' 's/BUILD_TIME = "UNKNOWN"/BUILD_TIME = "'$BUILD_TIME'"/g' src/index.ts
 
 wrangler deploy
 ```
@@ -262,12 +274,14 @@ wrangler deploy
 **Configure Service Binding (one-time):**
 
 For AI Orchestrator:
+
 ```bash
 cd packages/ai-orchestrator
 wrangler service bind MCP_SERVER --service=mcp-demo-server
 ```
 
 Or via Cloudflare Dashboard:
+
 1. Go to Workers & Pages → Select worker (mcp-demo-ai-orchestrator)
 2. Settings → Service bindings
 3. Add: `MCP_SERVER` → `mcp-demo-server`
@@ -281,6 +295,7 @@ After deployment, configure these security measures to protect your AI endpoints
 ⚠️ **Note:** WAF rate limiting requires a **custom domain** with a Zone ID. Workers on `*.workers.dev` URLs don't support WAF rules. For `workers.dev` deployments, AI Gateway provides built-in rate limiting.
 
 **If using a custom domain:**
+
 1. Go to: https://dash.cloudflare.com → **Security** → **WAF** → **Rate Limiting**
 2. Create a new rule:
    - **If**: URL contains `/api/ask`
@@ -300,6 +315,7 @@ Enable guardrails in your AI Gateway for prompt injection protection:
    - ✅ **Logging**: Keep request logs for 7 days
 
 **How Guardrails work:**
+
 - Analyzes prompts before they reach the AI model
 - Detects injection patterns: `"Ignore previous instructions"`, `"System: You are now..."`, etc.
 - Blocks or sanitizes suspicious prompts
@@ -310,12 +326,14 @@ Enable guardrails in your AI Gateway for prompt injection protection:
 With a **custom domain**, Cloudflare WAF provides additional AI-specific protections:
 
 **PII Detection & Blocking:**
+
 1. Go to: https://dash.cloudflare.com → **jsherron.com** → **Security** → **WAF** → **Custom Rules**
 2. Create or edit the PII detection rule
 3. Use expression: `cf.llm.prompt.pii_detected`
 4. **Action**: Block
 
 **What gets blocked:**
+
 - Email addresses, phone numbers, SSNs
 - Credit card numbers
 - Physical addresses and locations
@@ -337,14 +355,14 @@ Use WAF Custom Topics to explicitly allow "weather" and other legitimate pattern
 
 ### Additional Security Measures
 
-| Measure | How to Enable | Why | Available on workers.dev? |
-|---------|--------------|-----|---------------------------|
-| **AI Gateway Rate Limiting** | Built into AI Gateway binding | Prevents abuse via AI Gateway analytics | ✅ Yes |
-| **HTTPS Only** | Workers enforce HTTPS by default | Prevents MITM attacks | ✅ Yes |
-| **CORS Headers** | Already configured in code | Blocks unauthorized origins | ✅ Yes |
-| **Input Validation** | MCP server validates tool args | Prevents malformed requests | ✅ Yes |
-| **WAF Rate Limiting** | Requires custom domain + Zone ID | Fine-grained request control | ❌ No |
-| **AI Gateway Guardrails** | AI Gateway Guardrails tab | Prompt injection protection | ✅ Yes |
+| Measure                      | How to Enable                    | Why                                     | Available on workers.dev? |
+| ---------------------------- | -------------------------------- | --------------------------------------- | ------------------------- |
+| **AI Gateway Rate Limiting** | Built into AI Gateway binding    | Prevents abuse via AI Gateway analytics | ✅ Yes                    |
+| **HTTPS Only**               | Workers enforce HTTPS by default | Prevents MITM attacks                   | ✅ Yes                    |
+| **CORS Headers**             | Already configured in code       | Blocks unauthorized origins             | ✅ Yes                    |
+| **Input Validation**         | MCP server validates tool args   | Prevents malformed requests             | ✅ Yes                    |
+| **WAF Rate Limiting**        | Requires custom domain + Zone ID | Fine-grained request control            | ❌ No                     |
+| **AI Gateway Guardrails**    | AI Gateway Guardrails tab        | Prompt injection protection             | ✅ Yes                    |
 
 ### API Token Best Practices
 
@@ -371,6 +389,7 @@ Zone: None (unless using WAF rules)
 ### Client shows 500 errors
 
 **Check:**
+
 1. Is the AI Orchestrator deployed? Check the live demo URL
 2. Is the MCP server deployed? (External URL is Access-protected; verify via Cloudflare Dashboard or an authenticated MCP client)
 3. Is the service binding configured? Check Cloudflare Dashboard → Workers → Service Bindings
@@ -379,12 +398,14 @@ Zone: None (unless using WAF rules)
 ### GitHub Actions deployment fails
 
 **Check secrets:**
+
 - `CLOUDFLARE_API_TOKEN` must have "Edit Cloudflare Workers" permission
 - `CLOUDFLARE_ACCOUNT_ID` must be your actual account ID (not token ID)
 
 ### Streaming not working
 
 **Check:**
+
 1. AI Gateway is configured correctly
 2. Workers AI binding is active
 3. No PII filter blocking the prompt (try "hello" instead of specific locations)
@@ -397,18 +418,22 @@ Watch live logs with wrangler:
 # Watch server logs
 wrangler tail --name mcp-demo-server
 
-# Watch AI Orchestrator logs  
+# Watch AI Orchestrator logs
 wrangler tail --name mcp-demo-ai-orchestrator
 ```
 
 Or view in Cloudflare Dashboard:
+
 - Workers & Pages → Select worker → Logs
 
 ## Testing
 
 ```bash
-# Run all tests
+# Run all unit tests
 npm test
+
+# Run Workers-runtime tests (workerd via @cloudflare/vitest-plugin)
+npm run test:runtime
 
 # Run tests in watch mode
 npm run test:watch
@@ -419,11 +444,15 @@ npm run test:integration
 # Type check
 npm run typecheck
 
+# Lint / format
+npm run lint
+npm run format
+
 # With coverage
 npm run test:coverage
 ```
 
-**Current Test Count: 84 tests passing**
+**Current Test Count: 98 tests passing (87 unit + 11 Workers-runtime)**
 
 ## Project Structure
 
@@ -431,16 +460,15 @@ npm run test:coverage
 packages/
 ├── mcp-server/          # MCP protocol server
 │   ├── src/index.ts     # Server implementation
-│   ├── src/__tests__/   # Tests (40 tests)
-│   ├── wrangler.toml    # Worker config
-│   └── package.json
+│   ├── src/__tests__/   # Unit + runtime tests
+│   ├── wrangler.jsonc   # Worker config
+│   └── worker-configuration.d.ts  # Generated by `wrangler types`
 │
 └── ai-orchestrator/     # AI Orchestrator with Worker AI
     ├── src/index.ts     # AI + MCP integration + streaming
-    ├── src/__tests__/   # Tests (44 tests: 17 index + 27 mcp-protocol)
-    ├── wrangler.toml    # Worker config (AI binding + service binding)
-    └── package.json
-
+    ├── src/__tests__/   # Unit + runtime tests
+    ├── wrangler.jsonc   # Worker config (AI binding + service binding)
+    └── worker-configuration.d.ts  # Generated by `wrangler types`
 scripts/
 └── inject-build-time.sh # Build timestamp injection
 
@@ -464,6 +492,7 @@ scripts/
 ## How It Works
 
 ### AI Orchestrator Flow
+
 1. **AI Orchestrator receives prompt** from browser
 2. **If chat action**: Stream response via SSE
 3. **If tool action**: Worker AI processes with tool definitions
@@ -473,21 +502,25 @@ scripts/
 7. **Formatted response** returned to browser
 
 ### Button Cycling Logic
+
 Buttons show the NEXT item but execute the CURRENT item:
+
 ```javascript
 // On click:
-const current = items[index];        // Use this
-index = (index + 1) % items.length;  // Move to next
-const next = items[index];            // Show this on button
+const current = items[index]; // Use this
+index = (index + 1) % items.length; // Move to next
+const next = items[index]; // Show this on button
 ```
 
 ### Build Timestamp Injection
+
 CI/CD injects build time before deployment:
+
 ```yaml
 - name: Inject build timestamp
   run: |
     BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
-    sed -i "s/BUILD_TIME = 'UNKNOWN'/BUILD_TIME = '$BUILD_TIME'/g" src/index.ts
+    sed -i 's/BUILD_TIME = "UNKNOWN"/BUILD_TIME = "'$BUILD_TIME'"/g' src/index.ts
 ```
 
 ## Resources
