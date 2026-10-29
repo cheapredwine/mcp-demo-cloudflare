@@ -78,7 +78,7 @@ Cloudflare Workers cannot make HTTP requests to other `*.workers.dev` domains (e
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 24+ (pinned via `.nvmrc` and `"engines"` in package.json)
 - Cloudflare account (for deployment)
 - Wrangler CLI: `npm install -g wrangler`
 
