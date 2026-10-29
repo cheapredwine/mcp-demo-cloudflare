@@ -1158,7 +1158,14 @@ export default {
           : BUILD_TIME;
       const htmlWithBuildTime = HTML_TEMPLATE.replace("__BUILD_TIME__", currentBuildTime);
       return new Response(htmlWithBuildTime, {
-        headers: { "Content-Type": "text/html", ...corsHeaders },
+        headers: {
+          "Content-Type": "text/html",
+          // The UI embeds its own client JS. Never let the browser heuristically
+          // cache this page: a stale copy would run old client code against a
+          // newer backend (e.g. missing the session-expired fetch guard).
+          "Cache-Control": "no-store",
+          ...corsHeaders,
+        },
       });
     }
 
