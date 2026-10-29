@@ -434,6 +434,25 @@ Workers cannot make HTTP requests to other `*.workers.dev` domains. This project
   response content-type and surface "Session expired — please reload the page
   to sign in again" instead of a parse crash. Reload the page to re-authenticate.
 
+### Zone WAF / AI Security notes (jsherron.com — weather-button debugging, 2026-10-29)
+- The zone `jsherron.com` runs WAF managed rules + **AI Security (Firewall for AI)**.
+  The LLM classifier false-positives benign demo prompts — "What is the weather in
+  Paris?" scored as high-risk prompt injection (blocked even at threshold `ge 80`),
+  and any prompt it selects for analysis got blanket-blocked by the injection rule.
+  The AI Security product's own direct blocking has no exemption mechanism and
+  broke the weather button; it is therefore **disabled** for this zone
+  (`zones/aisecurity/settings enabled: false`).
+- Custom WAF ruleset (`default`, phase `http_request_firewall_custom`) current state:
+  1. "Skip likely weather" (skip, first) — kept for future re-enable
+  2. "Block high-risk prompt injection" — **disabled**, expression fixed
+     (`ge 20`, not the old inverted `lt 20`) and carries a body-regex exemption
+     for the demo's weather-button phrasing if ever re-enabled
+  3. "Block unsafe topics" — enabled
+  4. "Block PII in prompts" — enabled
+- Symptom when WAF blocks an API route: browser gets `403 text/html` ("Attention
+  Required") on `/api/ask`, client shows "Unexpected token '<'". The Worker logs
+  show nothing (request never arrives) — check zone WAF/AI Security, not the Worker.
+
 ### Streaming Issues
 
 - Verify AI Gateway configuration
