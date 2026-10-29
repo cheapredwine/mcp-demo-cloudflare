@@ -1,0 +1,14 @@
+{
+  // Test-only config for vitest.runtime.config.ts. Mirrors wrangler.jsonc but
+  // omits the [ai] binding: @cloudflare/vitest-plugin would otherwise start a
+  // remote proxy session for it, requiring CLOUDFLARE_API_TOKEN in CI. The AI
+  // binding is stubbed as a service binding in the vitest config instead.
+  "name": "mcp-demo-app-test",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "services": [
+    { "binding": "MCP_SERVER", "service": "mcp-demo-server" }
+  ]
+}
