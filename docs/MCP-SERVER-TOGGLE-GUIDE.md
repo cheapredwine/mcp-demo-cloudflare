@@ -30,12 +30,12 @@ The MCP server has **two independent access paths**:
 To take the MCP server offline for external clients, change the **Access policy**
 or the **route** — not `workers_dev`:
 
-| Goal                             | Action                                                                                                    | Effect                                                                           |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Block all external users         | Edit the `mcp-server` Access app policy → set to **Block** (or remove the Allow include)                  | External clients/Portal can't authenticate; internal Service Binding still works |
-| Restrict to specific people      | Access policy Include → **Emails**/domain                                                                 | Only those identities pass                                                       |
+| Goal                             | Action                                                                                                     | Effect                                                                           |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Block all external users         | Edit the `mcp-server` Access app policy → set to **Block** (or remove the Allow include)                   | External clients/Portal can't authenticate; internal Service Binding still works |
+| Restrict to specific people      | Access policy Include → **Emails**/domain                                                                  | Only those identities pass                                                       |
 | Fully remove the public endpoint | Remove the `mcp-server.jsherron.com` route from `packages/mcp-server/wrangler.jsonc` and `wrangler deploy` | Hostname stops serving the Worker; internal Service Binding still works          |
-| Pause Portal exposure only       | AI controls → portal → disable the server, or AI controls → MCP servers → remove its Allow policy         | Server no longer surfaced in the portal                                          |
+| Pause Portal exposure only       | AI controls → portal → disable the server, or AI controls → MCP servers → remove its Allow policy          | Server no longer surfaced in the portal                                          |
 
 In every case the **web app keeps working**, because it reaches the MCP server
 over the internal Service Binding, independent of the external Access path.
@@ -61,7 +61,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://mcp-demo.jsherron.com/         
 | ---------------------------- | ---------------------------------------------------------- | ------- |
 | Block external access        | Set the `mcp-server` Access policy to Block / remove Allow | seconds |
 | Limit who can connect        | Scope the Access policy Include                            | seconds |
-| Remove the endpoint entirely | Drop the route in `wrangler.jsonc` + deploy                 | ~1 min  |
+| Remove the endpoint entirely | Drop the route in `wrangler.jsonc` + deploy                | ~1 min  |
 | Keep internal app running    | Nothing — Service Binding is always independent            | —       |
 
 See `AGENTS.md` → "MCP Server Security" and `TODO.md` for the canonical state.

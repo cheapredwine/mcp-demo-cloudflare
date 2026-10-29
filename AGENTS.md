@@ -158,33 +158,34 @@ Or via Cloudflare Dashboard:
 
 ### AI Orchestrator (packages/ai-orchestrator/wrangler.jsonc)
 
-```toml
-name = "mcp-demo-app"
-routes = [
-  { pattern = "mcp-demo.jsherron.com", custom_domain = true }
-]
-
-# Service binding to MCP server
-[[services]]
-binding = "MCP_SERVER"
-service = "mcp-demo-server"
-
-# Workers AI binding with AI Gateway integration
-[ai]
-binding = "AI"
+```jsonc
+{
+  "name": "mcp-demo-app",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "routes": [{ "pattern": "mcp-demo.jsherron.com", "custom_domain": true }],
+  "services": [
+    { "binding": "MCP_SERVER", "service": "mcp-demo-server" }
+  ],
+  "ai": { "binding": "AI" }
+}
 ```
 
 ### MCP Server (packages/mcp-server/wrangler.jsonc)
 
-```toml
-name = "mcp-demo-server"
-workers_dev = false  # No unauthenticated workers.dev bypass
-
-# Single Access-protected custom domain (the mcp.jsherron.com alias was
-# removed because it bypassed Access)
-routes = [
-  { pattern = "mcp-server.jsherron.com", custom_domain = true }
-]
+```jsonc
+{
+  "name": "mcp-demo-server",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // No unauthenticated workers.dev bypass
+  "workers_dev": false,
+  // Single Access-protected custom domain (the mcp.jsherron.com alias was
+  // removed because it bypassed Access)
+  "routes": [{ "pattern": "mcp-server.jsherron.com", "custom_domain": true }]
+}
 ```
 
 ### Build Timestamp
