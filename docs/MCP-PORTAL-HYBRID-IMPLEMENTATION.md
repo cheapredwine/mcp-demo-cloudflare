@@ -58,11 +58,12 @@ Enable Cloudflare MCP Portal to access our MCP server via HTTP while preserving 
 
 **File:** `packages/mcp-server/wrangler.jsonc`
 
-```toml
-workers_dev = false          # no unauthenticated workers.dev bypass
-routes = [
-  { pattern = "mcp-server.jsherron.com", custom_domain = true }
-]
+```jsonc
+{
+  // no unauthenticated workers.dev bypass
+  "workers_dev": false,
+  "routes": [{ "pattern": "mcp-server.jsherron.com", "custom_domain": true }]
+}
 ```
 
 The MCP server is reachable at:
@@ -217,10 +218,10 @@ If anything breaks:
 
 ## Files to Modify
 
-| File                                     | Change            | Status |
-| ---------------------------------------- | ----------------- | ------ |
+| File                                      | Change            | Status |
+| ----------------------------------------- | ----------------- | ------ |
 | `packages/mcp-server/wrangler.jsonc`      | Add public route  | Ready  |
-| `packages/ai-orchestrator/src/index.ts`  | No changes needed | N/A    |
+| `packages/ai-orchestrator/src/index.ts`   | No changes needed | N/A    |
 | `packages/ai-orchestrator/wrangler.jsonc` | No changes needed | N/A    |
 
 **New files:**

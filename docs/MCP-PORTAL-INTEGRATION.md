@@ -215,7 +215,7 @@ Cloudflare MCP Portal could support Service Bindings in several ways:
 ```toml
 [[services]]
 binding = "MCP_PORTAL"
-service = "mcp-portal"  # If Portal is a Worker service
+service = "mcp-portal" # If Portal is a Worker service
 ```
 
 AI Orchestrator calls `env.MCP_PORTAL.fetch()` instead of `fetch()`.
@@ -327,7 +327,7 @@ if (env.MCP_PORTAL_URL) {
 Keep private:
 
 ```toml
-workers_dev = false  # Remains private, accessed only via Service Binding
+workers_dev = false # Remains private, accessed only via Service Binding
 ```
 
 ### Phase 4: Fetch-Based Fallback (Only if Required)
