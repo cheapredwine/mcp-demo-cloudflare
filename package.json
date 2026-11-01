@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.4.10",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^4.1.12",
     "canvas": "^3.2.3",
     "oxfmt": "^0.75.0",
